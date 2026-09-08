@@ -23,7 +23,7 @@ export interface NuevaFacturaInput {
 
 export async function registrarFacturaCompra(input: NuevaFacturaInput): Promise<{ id: string }> {
   const supabase = createClient()
-  const { data, error } = await supabase.rpc('registrar_factura_compra', { payload: input })
+  const { data, error } = await supabase.rpc('registrar_factura_compra', { payload: input } as never)
   if (error) throw error
   return { id: data as string }
 }
@@ -59,6 +59,6 @@ export async function obtenerFacturaConItems(
 
 export async function anularFactura(id: string): Promise<void> {
   const supabase = createClient()
-  const { error } = await supabase.rpc('anular_factura_compra', { p_factura_id: id })
+  const { error } = await supabase.rpc('anular_factura_compra', { p_factura_id: id } as never)
   if (error) throw error
 }
