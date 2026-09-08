@@ -18,13 +18,14 @@ const TIPOS_COMPROBANTE: TipoComprobante[] = [
 
 interface ItemDraft {
   producto_id: string
+  productoTexto: string
   cantidad: string
   costo_unitario: string
   alicuota_iva: string
 }
 
 function emptyItem(): ItemDraft {
-  return { producto_id: '', cantidad: '', costo_unitario: '', alicuota_iva: '21' }
+  return { producto_id: '', productoTexto: '', cantidad: '', costo_unitario: '', alicuota_iva: '21' }
 }
 
 export default function NuevaFacturaPage() {
@@ -68,7 +69,7 @@ export default function NuevaFacturaPage() {
       activo: true,
     })
     setProductos((prev) => [...prev, nuevo])
-    updateItem(index, { producto_id: nuevo.id, alicuota_iva: String(nuevo.alicuota_iva) })
+    updateItem(index, { producto_id: nuevo.id, productoTexto: nuevo.nombre, alicuota_iva: String(nuevo.alicuota_iva) })
   }
 
   const itemsParaCalculo = items
@@ -194,18 +195,25 @@ export default function NuevaFacturaPage() {
                     <input
                       list={`productos-list`}
                       placeholder="Buscar o crear producto…"
-                      value={
-                        productos.find((p) => p.id === item.producto_id)?.nombre ?? ''
-                      }
+                      value={item.productoTexto}
                       onChange={(e) => {
-                        const match = productos.find((p) => p.nombre === e.target.value)
+                        const texto = e.target.value
+                        const match = productos.find((p) => p.nombre === texto)
                         if (match) {
                           updateItem(index, {
                             producto_id: match.id,
+                            productoTexto: texto,
                             alicuota_iva: String(match.alicuota_iva),
                           })
-                        } else if (e.target.value.trim().length > 2) {
-                          crearProductoRapido(index, e.target.value.trim())
+                        } else {
+                          updateItem(index, { producto_id: '', productoTexto: texto })
+                        }
+                      }}
+                      onBlur={() => {
+                        const texto = item.productoTexto.trim()
+                        const match = productos.find((p) => p.nombre === texto)
+                        if (!match && texto.length > 2) {
+                          crearProductoRapido(index, texto)
                         }
                       }}
                       className="w-full rounded border p-1"
