@@ -75,22 +75,46 @@ export interface MovimientoStock {
 export interface Database {
   public: {
     Tables: {
-      proveedores: { Row: Proveedor; Insert: Partial<Proveedor>; Update: Partial<Proveedor> }
-      productos: { Row: Producto; Insert: Partial<Producto>; Update: Partial<Producto> }
+      proveedores: {
+        Row: Pick<Proveedor, keyof Proveedor>
+        Insert: Partial<Proveedor>
+        Update: Partial<Proveedor>
+        Relationships: []
+      }
+      productos: {
+        Row: Pick<Producto, keyof Producto>
+        Insert: Partial<Producto>
+        Update: Partial<Producto>
+        Relationships: []
+      }
       facturas_compra: {
-        Row: FacturaCompra
+        Row: Pick<FacturaCompra, keyof FacturaCompra>
         Insert: Partial<FacturaCompra>
         Update: Partial<FacturaCompra>
+        Relationships: []
       }
       items_factura: {
-        Row: ItemFactura
+        Row: Pick<ItemFactura, keyof ItemFactura>
         Insert: Partial<ItemFactura>
         Update: Partial<ItemFactura>
+        Relationships: []
       }
       movimientos_stock: {
-        Row: MovimientoStock
+        Row: Pick<MovimientoStock, keyof MovimientoStock>
         Insert: Partial<MovimientoStock>
         Update: Partial<MovimientoStock>
+        Relationships: []
+      }
+    }
+    Views: Record<string, never>
+    Functions: {
+      registrar_factura_compra: {
+        Args: { payload: unknown }
+        Returns: string
+      }
+      anular_factura_compra: {
+        Args: { p_factura_id: string }
+        Returns: void
       }
     }
   }
