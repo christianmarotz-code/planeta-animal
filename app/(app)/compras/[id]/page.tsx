@@ -15,6 +15,7 @@ export default function DetalleFacturaPage() {
   const [proveedor, setProveedor] = useState<Proveedor | null>(null)
   const [productos, setProductos] = useState<Producto[]>([])
   const [anulando, setAnulando] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     obtenerFacturaConItems(id).then(({ factura, items }) => {
@@ -29,12 +30,15 @@ export default function DetalleFacturaPage() {
 
   async function handleAnular() {
     if (!confirm('¿Anular esta factura? Se revertirá el stock que sumó.')) return
+    setError(null)
     setAnulando(true)
     try {
       await anularFactura(id)
       router.refresh()
       const { factura: actualizada } = await obtenerFacturaConItems(id)
       setFactura(actualizada)
+    } catch (err) {
+      setError('No se pudo anular la factura. Intentá de nuevo.')
     } finally {
       setAnulando(false)
     }
@@ -84,13 +88,16 @@ export default function DetalleFacturaPage() {
         </div>
       </div>
       {factura.estado === 'cargada' && (
-        <button
-          onClick={handleAnular}
-          disabled={anulando}
-          className="mt-4 rounded border border-red-600 px-4 py-2 text-red-600 disabled:opacity-50"
-        >
-          {anulando ? 'Anulando…' : 'Anular factura'}
-        </button>
+        <>
+          <button
+            onClick={handleAnular}
+            disabled={anulando}
+            className="mt-4 rounded border border-red-600 px-4 py-2 text-red-600 disabled:opacity-50"
+          >
+            {anulando ? 'Anulando…' : 'Anular factura'}
+          </button>
+          {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+        </>
       )}
     </div>
   )

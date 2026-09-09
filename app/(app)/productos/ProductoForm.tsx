@@ -32,6 +32,7 @@ export function ProductoForm({
     alicuota_iva: initial?.alicuota_iva ?? 21,
   })
   const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   function set<K extends keyof ProductoFormValues>(key: K, value: ProductoFormValues[K]) {
     setValues((v) => ({ ...v, [key]: value }))
@@ -39,9 +40,12 @@ export function ProductoForm({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    setError(null)
     setSaving(true)
     try {
       await onSubmit(values)
+    } catch (err) {
+      setError('No se pudo guardar. Intentá de nuevo.')
     } finally {
       setSaving(false)
     }
@@ -113,6 +117,7 @@ export function ProductoForm({
           className="mt-1 w-full rounded border p-2"
         />
       </label>
+      {error && <p className="text-sm text-red-600">{error}</p>}
       <button
         type="submit"
         disabled={saving}

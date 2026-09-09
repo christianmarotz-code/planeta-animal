@@ -30,6 +30,7 @@ export function ProveedorForm({
     notas: initial?.notas ?? '',
   })
   const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   function set<K extends keyof ProveedorFormValues>(key: K, value: string) {
     setValues((v) => ({ ...v, [key]: value }))
@@ -37,9 +38,12 @@ export function ProveedorForm({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    setError(null)
     setSaving(true)
     try {
       await onSubmit(values)
+    } catch (err) {
+      setError('No se pudo guardar. Intentá de nuevo.')
     } finally {
       setSaving(false)
     }
@@ -55,6 +59,7 @@ export function ProveedorForm({
         className="rounded border p-2"
       />
       <input
+        required
         placeholder="CUIT"
         value={values.cuit}
         onChange={(e) => set('cuit', e.target.value)}
@@ -84,6 +89,7 @@ export function ProveedorForm({
         onChange={(e) => set('notas', e.target.value)}
         className="rounded border p-2"
       />
+      {error && <p className="text-sm text-red-600">{error}</p>}
       <button
         type="submit"
         disabled={saving}

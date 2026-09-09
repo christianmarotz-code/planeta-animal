@@ -22,11 +22,15 @@ export default function StockPage() {
     setError(null)
     if (!motivo.trim()) return setError('El motivo es obligatorio.')
     if (!cantidad || Number(cantidad) === 0) return setError('Ingresá una cantidad distinta de 0.')
-    await ajustarStockManual(productoId, Number(cantidad), motivo.trim())
-    setAjusteAbierto(null)
-    setCantidad('')
-    setMotivo('')
-    cargar()
+    try {
+      await ajustarStockManual(productoId, Number(cantidad), motivo.trim())
+      setAjusteAbierto(null)
+      setCantidad('')
+      setMotivo('')
+      cargar()
+    } catch (err) {
+      setError('No se pudo ajustar el stock. Intentá de nuevo.')
+    }
   }
 
   return (
@@ -57,7 +61,12 @@ export default function StockPage() {
                 </td>
                 <td className="p-2">
                   <button
-                    onClick={() => setAjusteAbierto(ajusteAbierto === p.id ? null : p.id)}
+                    onClick={() => {
+                      setAjusteAbierto(ajusteAbierto === p.id ? null : p.id)
+                      setCantidad('')
+                      setMotivo('')
+                      setError(null)
+                    }}
                     className="text-sm text-slate-600 underline"
                   >
                     Ajustar
