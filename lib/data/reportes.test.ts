@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { calcularGastoPorProveedor, calcularValorStock, calcularGastoPorSemana, inicioSemana, calcularGastoPorMes } from './reportes'
+import { calcularGastoPorProveedor, calcularValorStock, calcularGastoPorSemana, inicioSemana, calcularGastoPorMes, calcularGastoPorDiaSemana } from './reportes'
 import type { FacturaCompra, Proveedor, Producto } from '@/types/database'
 
 function proveedor(id: string, nombre: string): Proveedor {
@@ -176,6 +176,57 @@ describe('calcularGastoPorMes', () => {
     expect(result).toEqual([
       { mes: '2025-12', total: 700 },
       { mes: '2026-01', total: 0 },
+    ])
+  })
+})
+
+describe('calcularGastoPorDiaSemana', () => {
+  it('sums non-annulled invoice totals by day of week within the last N months', () => {
+    const hoy = new Date('2026-09-09T12:00:00') // Miércoles
+    const facturas = [
+      factura('p1', 1000, 'cargada', '2026-09-07'), // Lunes
+      factura('p1', 300, 'cargada', '2026-09-08'), // Martes
+      factura('p1', 200, 'cargada', '2026-09-08'), // Martes también
+      factura('p1', 9999, 'anulada', '2026-09-07'), // excluida
+    ]
+    const result = calcularGastoPorDiaSemana(facturas, 1, hoy)
+    expect(result).toEqual([
+      { dia: 'Lunes', total: 1000 },
+      { dia: 'Martes', total: 500 },
+      { dia: 'Miércoles', total: 0 },
+      { dia: 'Jueves', total: 0 },
+      { dia: 'Viernes', total: 0 },
+      { dia: 'Sábado', total: 0 },
+      { dia: 'Domingo', total: 0 },
+    ])
+  })
+
+  it('returns all 7 days at zero when there are no invoices', () => {
+    const hoy = new Date('2026-09-09T12:00:00')
+    const result = calcularGastoPorDiaSemana([], 1, hoy)
+    expect(result).toEqual([
+      { dia: 'Lunes', total: 0 },
+      { dia: 'Martes', total: 0 },
+      { dia: 'Miércoles', total: 0 },
+      { dia: 'Jueves', total: 0 },
+      { dia: 'Viernes', total: 0 },
+      { dia: 'Sábado', total: 0 },
+      { dia: 'Domingo', total: 0 },
+    ])
+  })
+
+  it('ignores invoices older than the requested month window', () => {
+    const hoy = new Date('2026-09-09T12:00:00')
+    const facturas = [factura('p1', 1000, 'cargada', '2026-01-05')] // Lunes, pero fuera de la ventana de 1 mes
+    const result = calcularGastoPorDiaSemana(facturas, 1, hoy)
+    expect(result).toEqual([
+      { dia: 'Lunes', total: 0 },
+      { dia: 'Martes', total: 0 },
+      { dia: 'Miércoles', total: 0 },
+      { dia: 'Jueves', total: 0 },
+      { dia: 'Viernes', total: 0 },
+      { dia: 'Sábado', total: 0 },
+      { dia: 'Domingo', total: 0 },
     ])
   })
 })

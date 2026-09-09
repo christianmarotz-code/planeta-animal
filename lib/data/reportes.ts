@@ -86,3 +86,25 @@ export function calcularGastoPorMes(
   }
   return etiquetas.map((clave) => ({ mes: clave, total: totales.get(clave) ?? 0 }))
 }
+
+const DIAS_SEMANA = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
+const ORDEN_LUNES_A_DOMINGO = [1, 2, 3, 4, 5, 6, 0] // índices de Date.getDay() (0 = domingo)
+
+export function calcularGastoPorDiaSemana(
+  facturas: FacturaCompra[],
+  meses: number,
+  hoy: Date = new Date()
+): { dia: string; total: number }[] {
+  const desde = new Date(hoy.getFullYear(), hoy.getMonth() - meses, hoy.getDate())
+  const totalesPorIndiceJs = [0, 0, 0, 0, 0, 0, 0]
+  for (const f of facturas) {
+    if (f.estado === 'anulada') continue
+    const fecha = parseFechaLocal(f.fecha)
+    if (fecha < desde || fecha > hoy) continue
+    totalesPorIndiceJs[fecha.getDay()] += f.total
+  }
+  return ORDEN_LUNES_A_DOMINGO.map((indiceJs, i) => ({
+    dia: DIAS_SEMANA[i],
+    total: totalesPorIndiceJs[indiceJs],
+  }))
+}
