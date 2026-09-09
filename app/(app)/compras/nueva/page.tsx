@@ -39,6 +39,7 @@ export default function NuevaFacturaPage() {
   const [items, setItems] = useState<ItemDraft[]>([emptyItem()])
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+  const [creandoProductoIndices, setCreandoProductoIndices] = useState<Set<number>>(new Set())
 
   useEffect(() => {
     listarProveedores().then(setProveedores)
@@ -58,18 +59,27 @@ export default function NuevaFacturaPage() {
   }
 
   async function crearProductoRapido(index: number, nombre: string) {
-    const nuevo = await crearProducto({
-      nombre,
-      categoria: '',
-      unidad_compra: 'unidad',
-      unidad_stock: 'unidad',
-      factor_conversion: 1,
-      stock_minimo: 0,
-      alicuota_iva: 21,
-      activo: true,
-    })
-    setProductos((prev) => [...prev, nuevo])
-    updateItem(index, { producto_id: nuevo.id, productoTexto: nuevo.nombre, alicuota_iva: String(nuevo.alicuota_iva) })
+    setCreandoProductoIndices((prev) => new Set(prev).add(index))
+    try {
+      const nuevo = await crearProducto({
+        nombre,
+        categoria: '',
+        unidad_compra: 'unidad',
+        unidad_stock: 'unidad',
+        factor_conversion: 1,
+        stock_minimo: 0,
+        alicuota_iva: 21,
+        activo: true,
+      })
+      setProductos((prev) => [...prev, nuevo])
+      updateItem(index, { producto_id: nuevo.id, productoTexto: nuevo.nombre, alicuota_iva: String(nuevo.alicuota_iva) })
+    } finally {
+      setCreandoProductoIndices((prev) => {
+        const next = new Set(prev)
+        next.delete(index)
+        return next
+      })
+    }
   }
 
   const itemsParaCalculo = items
@@ -218,6 +228,9 @@ export default function NuevaFacturaPage() {
                       }}
                       className="w-full rounded border p-1"
                     />
+                    {creandoProductoIndices.has(index) && (
+                      <p className="mt-1 text-xs text-slate-500">Creando producto…</p>
+                    )}
                   </td>
                   <td className="p-2">
                     <input
@@ -288,10 +301,14 @@ export default function NuevaFacturaPage() {
         {error && <p className="text-sm text-red-600">{error}</p>}
         <button
           type="submit"
-          disabled={saving}
+          disabled={saving || creandoProductoIndices.size > 0}
           className="w-fit rounded bg-slate-900 px-4 py-2 text-white disabled:opacity-50"
         >
-          {saving ? 'Guardando…' : 'Guardar factura'}
+          {saving
+            ? 'Guardando…'
+            : creandoProductoIndices.size > 0
+              ? 'Creando producto…'
+              : 'Guardar factura'}
         </button>
       </form>
     </div>
