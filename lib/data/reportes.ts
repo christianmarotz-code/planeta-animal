@@ -95,7 +95,7 @@ export function calcularGastoPorDiaSemana(
   meses: number,
   hoy: Date = new Date()
 ): { dia: string; total: number }[] {
-  const desde = new Date(hoy.getFullYear(), hoy.getMonth() - meses, hoy.getDate())
+  const desde = new Date(hoy.getFullYear(), hoy.getMonth() - (meses - 1), 1)
   const totalesPorIndiceJs = [0, 0, 0, 0, 0, 0, 0]
   for (const f of facturas) {
     if (f.estado === 'anulada') continue

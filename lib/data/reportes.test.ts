@@ -229,4 +229,30 @@ describe('calcularGastoPorDiaSemana', () => {
       { dia: 'Domingo', total: 0 },
     ])
   })
+
+  it('counts invoices in the Sunday bucket correctly', () => {
+    const hoy = new Date('2026-09-09T12:00:00')
+    const facturas = [factura('p1', 800, 'cargada', '2026-09-06')] // Domingo
+    const result = calcularGastoPorDiaSemana(facturas, 1, hoy)
+    expect(result).toEqual([
+      { dia: 'Lunes', total: 0 },
+      { dia: 'Martes', total: 0 },
+      { dia: 'Miércoles', total: 0 },
+      { dia: 'Jueves', total: 0 },
+      { dia: 'Viernes', total: 0 },
+      { dia: 'Sábado', total: 0 },
+      { dia: 'Domingo', total: 800 },
+    ])
+  })
+
+  it('includes invoices exactly on the window start and end boundaries', () => {
+    const hoy = new Date('2026-09-09T12:00:00')
+    const facturas = [
+      factura('p1', 100, 'cargada', '2026-09-01'), // desde, inclusive (1er día del mes actual con meses=1)
+      factura('p1', 200, 'cargada', '2026-09-09'), // hoy, inclusive
+    ]
+    const result = calcularGastoPorDiaSemana(facturas, 1, hoy)
+    const total = result.reduce((acc, d) => acc + d.total, 0)
+    expect(total).toBe(300)
+  })
 })
