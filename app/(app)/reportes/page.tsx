@@ -23,40 +23,66 @@ export default function ReportesPage() {
   const productosStockBajo = productos.filter((p) => p.stock_actual <= p.stock_minimo)
 
   return (
-    <div className="flex flex-col gap-8">
-      <h1 className="text-xl font-semibold">Reportes</h1>
+    <div className="mx-auto flex max-w-6xl flex-col gap-5 p-5 sm:p-8">
+      <div className="rise">
+        <p className="text-[11.5px] font-semibold uppercase tracking-[0.14em] text-ink-faint">
+          Gestión
+        </p>
+        <h1 className="mt-1 text-[27px] text-ink">Reportes</h1>
+      </div>
 
-      <section>
-        <h2 className="mb-2 font-semibold">Valor total del stock actual</h2>
-        <p className="text-2xl">${valorStock.toLocaleString('es-AR')}</p>
-      </section>
+      <div className="shell w-fit rise">
+        <div className="core">
+          <p className="text-[11.5px] font-semibold uppercase tracking-[0.14em] text-ink-faint">
+            Valor total del stock actual
+          </p>
+          <p className="mono mt-2 text-[40px] font-medium leading-none text-ink">
+            ${valorStock.toLocaleString('es-AR')}
+          </p>
+        </div>
+      </div>
 
-      <section>
-        <h2 className="mb-2 font-semibold">Gasto en compras por proveedor</h2>
-        <ul className="divide-y rounded border">
-          {gastoPorProveedor.map((g) => (
-            <li key={g.proveedor} className="flex justify-between p-2">
-              <span>{g.proveedor}</span>
-              <span>${g.total.toLocaleString('es-AR')}</span>
-            </li>
-          ))}
-          {gastoPorProveedor.length === 0 && <li className="p-2 text-slate-500">Sin compras aún.</li>}
-        </ul>
-      </section>
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+        <div className="shell rise">
+          <div className="core">
+            <p className="mb-3 text-[11.5px] font-semibold uppercase tracking-[0.14em] text-ink-faint">
+              Gasto en compras por proveedor
+            </p>
+            <ul className="divide-y divide-line">
+              {gastoPorProveedor.map((g) => (
+                <li key={g.proveedor} className="flex justify-between py-2.5 text-sm">
+                  <span className="text-ink">{g.proveedor}</span>
+                  <span className="mono font-semibold text-ink">${g.total.toLocaleString('es-AR')}</span>
+                </li>
+              ))}
+              {gastoPorProveedor.length === 0 && (
+                <li className="py-2.5 text-sm text-ink-faint">Sin compras aún.</li>
+              )}
+            </ul>
+          </div>
+        </div>
 
-      <section>
-        <h2 className="mb-2 font-semibold">Productos con stock bajo</h2>
-        <ul className="divide-y rounded border">
-          {productosStockBajo.map((p) => (
-            <li key={p.id} className="p-2">
-              {p.nombre}: {p.stock_actual} {p.unidad_stock} (mínimo {p.stock_minimo})
-            </li>
-          ))}
-          {productosStockBajo.length === 0 && (
-            <li className="p-2 text-slate-500">Ningún producto está bajo el mínimo.</li>
-          )}
-        </ul>
-      </section>
+        <div className="shell rise">
+          <div className="core">
+            <p className="mb-3 text-[11.5px] font-semibold uppercase tracking-[0.14em] text-ink-faint">
+              Productos con stock bajo
+            </p>
+            <ul className="divide-y divide-line">
+              {productosStockBajo.map((p) => (
+                <li key={p.id} className="flex items-center justify-between py-2.5 text-sm">
+                  <span className="text-ink">{p.nombre}</span>
+                  <span className="chip down">
+                    {p.stock_actual} / {p.stock_minimo} {p.unidad_stock}
+                  </span>
+                </li>
+              ))}
+              {productosStockBajo.length === 0 && (
+                <li className="py-2.5 text-sm text-ink-faint">Ningún producto está bajo el mínimo.</li>
+              )}
+            </ul>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }

@@ -58,13 +58,13 @@ export function ProductoForm({
         placeholder="Nombre"
         value={values.nombre}
         onChange={(e) => set('nombre', e.target.value)}
-        className="rounded border p-2"
+        className="rounded-[var(--r-sm)] border border-line bg-surface-sunk p-2.5 text-sm text-ink outline-none transition focus:border-accent"
       />
       <input
         placeholder="Categoría"
         value={values.categoria}
         onChange={(e) => set('categoria', e.target.value)}
-        className="rounded border p-2"
+        className="rounded-[var(--r-sm)] border border-line bg-surface-sunk p-2.5 text-sm text-ink outline-none transition focus:border-accent"
       />
       <div className="flex gap-2">
         <input
@@ -72,17 +72,17 @@ export function ProductoForm({
           placeholder="Unidad de compra (ej. caja)"
           value={values.unidad_compra}
           onChange={(e) => set('unidad_compra', e.target.value)}
-          className="w-1/2 rounded border p-2"
+          className="w-1/2 rounded-[var(--r-sm)] border border-line bg-surface-sunk p-2.5 text-sm text-ink outline-none transition focus:border-accent"
         />
         <input
           required
           placeholder="Unidad de stock (ej. comprimido)"
           value={values.unidad_stock}
           onChange={(e) => set('unidad_stock', e.target.value)}
-          className="w-1/2 rounded border p-2"
+          className="w-1/2 rounded-[var(--r-sm)] border border-line bg-surface-sunk p-2.5 text-sm text-ink outline-none transition focus:border-accent"
         />
       </div>
-      <label className="text-sm text-slate-600">
+      <label className="text-sm font-medium text-ink-soft">
         Factor de conversión (1 unidad de compra = X unidades de stock)
         <input
           required
@@ -91,10 +91,10 @@ export function ProductoForm({
           step="any"
           value={values.factor_conversion}
           onChange={(e) => set('factor_conversion', Number(e.target.value))}
-          className="mt-1 w-full rounded border p-2"
+          className="mt-1 w-full rounded-[var(--r-sm)] border border-line bg-surface-sunk p-2.5 text-sm text-ink outline-none transition focus:border-accent"
         />
       </label>
-      <label className="text-sm text-slate-600">
+      <label className="text-sm font-medium text-ink-soft">
         Stock mínimo (en unidad de stock)
         <input
           type="number"
@@ -102,10 +102,10 @@ export function ProductoForm({
           step="any"
           value={values.stock_minimo}
           onChange={(e) => set('stock_minimo', Number(e.target.value))}
-          className="mt-1 w-full rounded border p-2"
+          className="mt-1 w-full rounded-[var(--r-sm)] border border-line bg-surface-sunk p-2.5 text-sm text-ink outline-none transition focus:border-accent"
         />
       </label>
-      <label className="text-sm text-slate-600">
+      <label className="text-sm font-medium text-ink-soft">
         Alícuota IVA (%)
         <input
           required
@@ -114,15 +114,11 @@ export function ProductoForm({
           step="any"
           value={values.alicuota_iva}
           onChange={(e) => set('alicuota_iva', Number(e.target.value))}
-          className="mt-1 w-full rounded border p-2"
+          className="mt-1 w-full rounded-[var(--r-sm)] border border-line bg-surface-sunk p-2.5 text-sm text-ink outline-none transition focus:border-accent"
         />
       </label>
-      {error && <p className="text-sm text-red-600">{error}</p>}
-      <button
-        type="submit"
-        disabled={saving}
-        className="rounded bg-slate-900 p-2 text-white disabled:opacity-50"
-      >
+      {error && <p className="text-sm text-negative">{error}</p>}
+      <button type="submit" disabled={saving} className="pill-btn justify-center disabled:opacity-50">
         {saving ? 'Guardando…' : submitLabel}
       </button>
     </form>

@@ -138,15 +138,20 @@ export default function NuevaFacturaPage() {
   }
 
   return (
-    <div>
-      <h1 className="mb-4 text-xl font-semibold">Nueva factura de compra</h1>
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+    <div className="mx-auto flex max-w-4xl flex-col gap-5 p-5 sm:p-8">
+      <div className="rise">
+        <p className="text-[11.5px] font-semibold uppercase tracking-[0.14em] text-ink-faint">
+          Gestión
+        </p>
+        <h1 className="mt-1 text-[27px] text-ink">Nueva factura de compra</h1>
+      </div>
+      <form onSubmit={handleSubmit} className="flex flex-col gap-5 rise">
         <div className="flex flex-wrap gap-2">
           <select
             required
             value={proveedorId}
             onChange={(e) => setProveedorId(e.target.value)}
-            className="rounded border p-2"
+            className="rounded-[var(--r-sm)] border border-line bg-surface p-2.5 text-sm text-ink outline-none transition focus:border-accent"
           >
             <option value="">Proveedor…</option>
             {proveedores.map((p) => (
@@ -158,7 +163,7 @@ export default function NuevaFacturaPage() {
           <select
             value={tipoComprobante}
             onChange={(e) => setTipoComprobante(e.target.value as TipoComprobante)}
-            className="rounded border p-2"
+            className="rounded-[var(--r-sm)] border border-line bg-surface p-2.5 text-sm text-ink outline-none transition focus:border-accent"
           >
             {TIPOS_COMPROBANTE.map((t) => (
               <option key={t} value={t}>
@@ -171,25 +176,25 @@ export default function NuevaFacturaPage() {
             placeholder="Número de comprobante"
             value={numeroComprobante}
             onChange={(e) => setNumeroComprobante(e.target.value)}
-            className="rounded border p-2"
+            className="rounded-[var(--r-sm)] border border-line bg-surface p-2.5 text-sm text-ink outline-none transition focus:border-accent"
           />
           <input
             required
             type="date"
             value={fecha}
             onChange={(e) => setFecha(e.target.value)}
-            className="rounded border p-2"
+            className="rounded-[var(--r-sm)] border border-line bg-surface p-2.5 text-sm text-ink outline-none transition focus:border-accent"
           />
         </div>
 
-        <table className="w-full border-collapse text-sm">
+        <table className="card w-full border-collapse text-sm">
           <thead>
-            <tr className="border-b bg-slate-50 text-left">
-              <th className="p-2">Producto</th>
-              <th className="p-2">Cantidad</th>
-              <th className="p-2">Costo unitario</th>
-              <th className="p-2">IVA %</th>
-              <th className="p-2">Subtotal</th>
+            <tr className="border-b border-line text-left">
+              <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-faint">Producto</th>
+              <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-faint">Cantidad</th>
+              <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-faint">Costo unitario</th>
+              <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-faint">IVA %</th>
+              <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-faint">Subtotal</th>
               <th />
             </tr>
           </thead>
@@ -200,8 +205,8 @@ export default function NuevaFacturaPage() {
                   ? Number(item.cantidad) * Number(item.costo_unitario)
                   : 0
               return (
-                <tr key={index} className="border-b">
-                  <td className="p-2">
+                <tr key={index} className="border-b border-line last:border-0">
+                  <td className="px-3 py-2 text-ink">
                     <input
                       list={`productos-list`}
                       placeholder="Buscar o crear producto…"
@@ -226,45 +231,45 @@ export default function NuevaFacturaPage() {
                           crearProductoRapido(index, texto)
                         }
                       }}
-                      className="w-full rounded border p-1"
+                      className="w-full rounded-[var(--r-sm)] border border-line bg-surface p-2 text-sm text-ink outline-none transition focus:border-accent"
                     />
                     {creandoProductoIndices.has(index) && (
-                      <p className="mt-1 text-xs text-slate-500">Creando producto…</p>
+                      <p className="mt-1 text-xs text-ink-faint">Creando producto…</p>
                     )}
                   </td>
-                  <td className="p-2">
+                  <td className="px-3 py-2 text-ink">
                     <input
                       type="number"
                       min={0}
                       step="any"
                       value={item.cantidad}
                       onChange={(e) => updateItem(index, { cantidad: e.target.value })}
-                      className="w-20 rounded border p-1"
+                      className="w-20 rounded-[var(--r-sm)] border border-line bg-surface p-2 text-sm text-ink outline-none transition focus:border-accent"
                     />
                   </td>
-                  <td className="p-2">
+                  <td className="px-3 py-2 text-ink">
                     <input
                       type="number"
                       min={0}
                       step="any"
                       value={item.costo_unitario}
                       onChange={(e) => updateItem(index, { costo_unitario: e.target.value })}
-                      className="w-24 rounded border p-1"
+                      className="w-24 rounded-[var(--r-sm)] border border-line bg-surface p-2 text-sm text-ink outline-none transition focus:border-accent"
                     />
                   </td>
-                  <td className="p-2">
+                  <td className="px-3 py-2 text-ink">
                     <input
                       type="number"
                       min={0}
                       step="any"
                       value={item.alicuota_iva}
                       onChange={(e) => updateItem(index, { alicuota_iva: e.target.value })}
-                      className="w-16 rounded border p-1"
+                      className="w-16 rounded-[var(--r-sm)] border border-line bg-surface p-2 text-sm text-ink outline-none transition focus:border-accent"
                     />
                   </td>
-                  <td className="p-2">${subtotalItem.toLocaleString('es-AR')}</td>
-                  <td className="p-2">
-                    <button type="button" onClick={() => removeItem(index)} className="text-red-600">
+                  <td className="px-3 py-2 text-ink">${subtotalItem.toLocaleString('es-AR')}</td>
+                  <td className="px-3 py-2 text-ink">
+                    <button type="button" onClick={() => removeItem(index)} className="text-xs font-semibold text-negative hover:underline">
                       Quitar
                     </button>
                   </td>
@@ -279,30 +284,32 @@ export default function NuevaFacturaPage() {
           ))}
         </datalist>
 
-        <button type="button" onClick={addItem} className="w-fit rounded border px-3 py-1 text-sm">
+        <button type="button" onClick={addItem} className="pill-btn ghost w-fit">
           + Agregar ítem
         </button>
 
-        <div className="ml-auto w-64 rounded border p-3 text-sm">
-          <div className="flex justify-between">
-            <span>Subtotal</span>
-            <span>${totales.subtotal.toLocaleString('es-AR')}</span>
-          </div>
-          <div className="flex justify-between">
-            <span>IVA</span>
-            <span>${totales.ivaTotal.toLocaleString('es-AR')}</span>
-          </div>
-          <div className="flex justify-between font-semibold">
-            <span>Total</span>
-            <span>${totales.total.toLocaleString('es-AR')}</span>
+        <div className="shell ml-auto w-64">
+          <div className="core flex flex-col gap-2 text-sm">
+            <div className="flex justify-between text-ink-soft">
+              <span>Subtotal</span>
+              <span className="mono">${totales.subtotal.toLocaleString('es-AR')}</span>
+            </div>
+            <div className="flex justify-between text-ink-soft">
+              <span>IVA</span>
+              <span className="mono">${totales.ivaTotal.toLocaleString('es-AR')}</span>
+            </div>
+            <div className="flex justify-between border-t border-line pt-2 font-semibold text-ink">
+              <span>Total</span>
+              <span className="mono">${totales.total.toLocaleString('es-AR')}</span>
+            </div>
           </div>
         </div>
 
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && <p className="text-sm text-negative">{error}</p>}
         <button
           type="submit"
           disabled={saving || creandoProductoIndices.size > 0}
-          className="w-fit rounded bg-slate-900 px-4 py-2 text-white disabled:opacity-50"
+          className="pill-btn w-fit disabled:opacity-50"
         >
           {saving
             ? 'Guardando…'

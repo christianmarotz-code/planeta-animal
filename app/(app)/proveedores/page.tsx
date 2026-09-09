@@ -16,27 +16,36 @@ export default function ProveedoresPage() {
   }, [])
 
   return (
-    <div>
-      <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-xl font-semibold">Proveedores</h1>
-        <Link href="/proveedores/nuevo" className="rounded bg-slate-900 px-3 py-2 text-white">
-          Nuevo proveedor
+    <div className="mx-auto flex max-w-6xl flex-col gap-5 p-5 sm:p-8">
+      <div className="flex items-center justify-between rise">
+        <div>
+          <p className="text-[11.5px] font-semibold uppercase tracking-[0.14em] text-ink-faint">
+            Gestión
+          </p>
+          <h1 className="mt-1 text-[27px] text-ink">Proveedores</h1>
+        </div>
+        <Link href="/proveedores/nuevo" className="pill-btn">
+          + Nuevo proveedor
         </Link>
       </div>
       {loading ? (
-        <p>Cargando…</p>
+        <p className="text-sm text-ink-soft">Cargando…</p>
       ) : (
-        <ul className="divide-y rounded border">
+        <div className="card rise divide-y divide-line">
           {proveedores.map((p) => (
-            <li key={p.id} className="p-3 hover:bg-slate-50">
-              <Link href={`/proveedores/${p.id}`}>
-                <span className="font-medium">{p.nombre}</span>
-                {p.cuit && <span className="ml-2 text-sm text-slate-500">CUIT {p.cuit}</span>}
-              </Link>
-            </li>
+            <Link
+              key={p.id}
+              href={`/proveedores/${p.id}`}
+              className="flex items-center justify-between px-5 py-3.5 text-sm transition hover:bg-surface-sunk"
+            >
+              <span className="font-medium text-ink">{p.nombre}</span>
+              {p.cuit && <span className="mono text-xs text-ink-faint">CUIT {p.cuit}</span>}
+            </Link>
           ))}
-          {proveedores.length === 0 && <li className="p-3 text-slate-500">Sin proveedores aún.</li>}
-        </ul>
+          {proveedores.length === 0 && (
+            <p className="px-5 py-6 text-sm text-ink-faint">Sin proveedores aún.</p>
+          )}
+        </div>
       )}
     </div>
   )

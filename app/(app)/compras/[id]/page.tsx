@@ -26,7 +26,7 @@ export default function DetalleFacturaPage() {
     listarProductos().then(setProductos)
   }, [id])
 
-  if (!factura) return <p>Cargando…</p>
+  if (!factura) return <p className="p-8 text-sm text-ink-soft">Cargando…</p>
 
   async function handleAnular() {
     if (!confirm('¿Anular esta factura? Se revertirá el stock que sumó.')) return
@@ -45,59 +45,78 @@ export default function DetalleFacturaPage() {
   }
 
   return (
-    <div>
-      <h1 className="mb-2 text-xl font-semibold">
-        {factura.tipo_comprobante} {factura.numero_comprobante}
-        {factura.estado === 'anulada' && <span className="ml-2 text-sm text-red-600">ANULADA</span>}
-      </h1>
-      <p className="mb-4 text-sm text-slate-500">
-        {proveedor?.nombre} — {factura.fecha}
-      </p>
-      <table className="w-full border-collapse text-sm">
-        <thead>
-          <tr className="border-b bg-slate-50 text-left">
-            <th className="p-2">Producto</th>
-            <th className="p-2">Cantidad</th>
-            <th className="p-2">Costo unitario</th>
-            <th className="p-2">Subtotal</th>
-          </tr>
-        </thead>
-        <tbody>
-          {items.map((item) => (
-            <tr key={item.id} className="border-b">
-              <td className="p-2">{productos.find((p) => p.id === item.producto_id)?.nombre}</td>
-              <td className="p-2">{item.cantidad}</td>
-              <td className="p-2">${item.costo_unitario.toLocaleString('es-AR')}</td>
-              <td className="p-2">${item.subtotal.toLocaleString('es-AR')}</td>
+    <div className="mx-auto flex max-w-4xl flex-col gap-5 p-5 sm:p-8">
+      <div className="rise">
+        <h1 className="flex items-center gap-2 text-[27px] text-ink">
+          {factura.tipo_comprobante} {factura.numero_comprobante}
+          {factura.estado === 'anulada' && <span className="chip down">ANULADA</span>}
+        </h1>
+        <p className="mt-1 text-sm text-ink-soft">
+          {proveedor?.nombre} — <span className="mono">{factura.fecha}</span>
+        </p>
+      </div>
+
+      <div className="card rise overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-line text-left">
+              <th className="px-5 py-3 text-[11.5px] font-semibold uppercase tracking-[0.1em] text-ink-faint">
+                Producto
+              </th>
+              <th className="px-5 py-3 text-[11.5px] font-semibold uppercase tracking-[0.1em] text-ink-faint">
+                Cantidad
+              </th>
+              <th className="px-5 py-3 text-[11.5px] font-semibold uppercase tracking-[0.1em] text-ink-faint">
+                Costo unitario
+              </th>
+              <th className="px-5 py-3 text-[11.5px] font-semibold uppercase tracking-[0.1em] text-ink-faint">
+                Subtotal
+              </th>
             </tr>
-          ))}
-        </tbody>
-      </table>
-      <div className="ml-auto mt-4 w-64 rounded border p-3 text-sm">
-        <div className="flex justify-between">
-          <span>Subtotal</span>
-          <span>${factura.subtotal.toLocaleString('es-AR')}</span>
-        </div>
-        <div className="flex justify-between">
-          <span>IVA</span>
-          <span>${factura.iva_total.toLocaleString('es-AR')}</span>
-        </div>
-        <div className="flex justify-between font-semibold">
-          <span>Total</span>
-          <span>${factura.total.toLocaleString('es-AR')}</span>
+          </thead>
+          <tbody>
+            {items.map((item) => (
+              <tr key={item.id} className="border-b border-line last:border-0">
+                <td className="px-5 py-3 text-ink">
+                  {productos.find((p) => p.id === item.producto_id)?.nombre}
+                </td>
+                <td className="mono px-5 py-3 text-ink">{item.cantidad}</td>
+                <td className="mono px-5 py-3 text-ink">${item.costo_unitario.toLocaleString('es-AR')}</td>
+                <td className="mono px-5 py-3 text-ink">${item.subtotal.toLocaleString('es-AR')}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="shell ml-auto w-72 rise">
+        <div className="core flex flex-col gap-2 text-sm">
+          <div className="flex justify-between text-ink-soft">
+            <span>Subtotal</span>
+            <span className="mono">${factura.subtotal.toLocaleString('es-AR')}</span>
+          </div>
+          <div className="flex justify-between text-ink-soft">
+            <span>IVA</span>
+            <span className="mono">${factura.iva_total.toLocaleString('es-AR')}</span>
+          </div>
+          <div className="flex justify-between border-t border-line pt-2 font-semibold text-ink">
+            <span>Total</span>
+            <span className="mono">${factura.total.toLocaleString('es-AR')}</span>
+          </div>
         </div>
       </div>
+
       {factura.estado === 'cargada' && (
-        <>
+        <div className="rise">
           <button
             onClick={handleAnular}
             disabled={anulando}
-            className="mt-4 rounded border border-red-600 px-4 py-2 text-red-600 disabled:opacity-50"
+            className="pill-btn ghost !text-negative disabled:opacity-50"
           >
             {anulando ? 'Anulando…' : 'Anular factura'}
           </button>
-          {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
-        </>
+          {error && <p className="mt-2 text-sm text-negative">{error}</p>}
+        </div>
       )}
     </div>
   )

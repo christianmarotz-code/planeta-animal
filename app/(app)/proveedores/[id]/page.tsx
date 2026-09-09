@@ -18,12 +18,15 @@ export default function EditarProveedorPage() {
     listarFacturas({ proveedorId: id }).then(setFacturas)
   }, [id])
 
-  if (!proveedor) return <p>Cargando…</p>
+  if (!proveedor) return <p className="p-8 text-sm text-ink-soft">Cargando…</p>
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="mx-auto flex max-w-md flex-col gap-8 p-5 sm:p-8 rise">
       <div>
-        <h1 className="mb-4 text-xl font-semibold">Editar proveedor</h1>
+        <p className="text-[11.5px] font-semibold uppercase tracking-[0.14em] text-ink-faint">
+          Gestión
+        </p>
+        <h1 className="mb-4 mt-1 text-[27px] text-ink">Editar proveedor</h1>
         <ProveedorForm
           initial={proveedor}
           submitLabel="Guardar cambios"
@@ -34,16 +37,20 @@ export default function EditarProveedorPage() {
         />
       </div>
       <div>
-        <h2 className="mb-2 font-semibold">Historial de compras</h2>
-        <ul className="divide-y rounded border">
+        <p className="mb-3 text-[11.5px] font-semibold uppercase tracking-[0.14em] text-ink-faint">
+          Historial de compras
+        </p>
+        <div className="card divide-y divide-line">
           {facturas.map((f) => (
-            <li key={f.id} className="p-3">
-              {f.fecha} — {f.tipo_comprobante} {f.numero_comprobante} — $
-              {f.total.toLocaleString('es-AR')}
-            </li>
+            <p key={f.id} className="px-5 py-3 text-sm text-ink">
+              <span className="mono text-ink-faint">{f.fecha}</span> — {f.tipo_comprobante}{' '}
+              {f.numero_comprobante} — <span className="mono font-semibold">${f.total.toLocaleString('es-AR')}</span>
+            </p>
           ))}
-          {facturas.length === 0 && <li className="p-3 text-slate-500">Sin compras aún.</li>}
-        </ul>
+          {facturas.length === 0 && (
+            <p className="px-5 py-6 text-sm text-ink-faint">Sin compras aún.</p>
+          )}
+        </div>
       </div>
     </div>
   )

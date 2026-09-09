@@ -18,48 +18,83 @@ export default function ProductosPage() {
   }, [soloStockBajo])
 
   return (
-    <div>
-      <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-xl font-semibold">Productos</h1>
-        <Link href="/productos/nuevo" className="rounded bg-slate-900 px-3 py-2 text-white">
-          Nuevo producto
+    <div className="mx-auto flex max-w-6xl flex-col gap-5 p-5 sm:p-8">
+      <div className="flex items-center justify-between rise">
+        <div>
+          <p className="text-[11.5px] font-semibold uppercase tracking-[0.14em] text-ink-faint">
+            Gestión
+          </p>
+          <h1 className="mt-1 text-[27px] text-ink">Productos</h1>
+        </div>
+        <Link href="/productos/nuevo" className="pill-btn">
+          + Nuevo producto
         </Link>
       </div>
-      <label className="mb-3 flex items-center gap-2 text-sm">
+      <label className="flex items-center gap-2 text-sm text-ink-soft rise">
         <input
           type="checkbox"
           checked={soloStockBajo}
           onChange={(e) => setSoloStockBajo(e.target.checked)}
+          className="accent-accent"
         />
         Mostrar solo stock bajo
       </label>
       {loading ? (
-        <p>Cargando…</p>
+        <p className="text-sm text-ink-soft">Cargando…</p>
       ) : (
-        <table className="w-full border-collapse rounded border text-sm">
-          <thead>
-            <tr className="border-b bg-slate-50 text-left">
-              <th className="p-2">Nombre</th>
-              <th className="p-2">Categoría</th>
-              <th className="p-2">Stock actual</th>
-              <th className="p-2">Costo unitario</th>
-            </tr>
-          </thead>
-          <tbody>
-            {productos.map((p) => (
-              <tr key={p.id} className="border-b hover:bg-slate-50">
-                <td className="p-2">
-                  <Link href={`/productos/${p.id}`}>{p.nombre}</Link>
-                </td>
-                <td className="p-2">{p.categoria}</td>
-                <td className={`p-2 ${p.stock_actual <= p.stock_minimo ? 'text-red-600' : ''}`}>
-                  {p.stock_actual} {p.unidad_stock}
-                </td>
-                <td className="p-2">${p.costo_unitario_actual.toLocaleString('es-AR')}</td>
+        <div className="card rise overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-line text-left">
+                <th className="px-5 py-3 text-[11.5px] font-semibold uppercase tracking-[0.1em] text-ink-faint">
+                  Nombre
+                </th>
+                <th className="px-5 py-3 text-[11.5px] font-semibold uppercase tracking-[0.1em] text-ink-faint">
+                  Categoría
+                </th>
+                <th className="px-5 py-3 text-[11.5px] font-semibold uppercase tracking-[0.1em] text-ink-faint">
+                  Stock actual
+                </th>
+                <th className="px-5 py-3 text-[11.5px] font-semibold uppercase tracking-[0.1em] text-ink-faint">
+                  Costo unitario
+                </th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {productos.map((p) => (
+                <tr key={p.id} className="border-b border-line transition last:border-0 hover:bg-surface-sunk">
+                  <td className="px-5 py-3">
+                    <Link href={`/productos/${p.id}`} className="font-medium text-ink hover:text-accent">
+                      {p.nombre}
+                    </Link>
+                  </td>
+                  <td className="px-5 py-3 text-ink-soft">{p.categoria}</td>
+                  <td className="px-5 py-3">
+                    {p.stock_actual <= p.stock_minimo ? (
+                      <span className="chip down">
+                        {p.stock_actual} {p.unidad_stock}
+                      </span>
+                    ) : (
+                      <span className="mono text-ink">
+                        {p.stock_actual} {p.unidad_stock}
+                      </span>
+                    )}
+                  </td>
+                  <td className="mono px-5 py-3 text-ink">
+                    ${p.costo_unitario_actual.toLocaleString('es-AR')}
+                  </td>
+                </tr>
+              ))}
+              {productos.length === 0 && (
+                <tr>
+                  <td colSpan={4} className="px-5 py-6 text-sm text-ink-faint">
+                    Sin productos aún.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       )}
     </div>
   )

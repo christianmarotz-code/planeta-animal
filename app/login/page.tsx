@@ -25,36 +25,42 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="mx-auto mt-24 max-w-sm p-4">
-      <div className="mb-6 flex flex-col items-center gap-3">
-        <PawIcon className="h-16 w-16" />
-        <h1 className="text-xl font-semibold text-brand-dark">Planeta Animal</h1>
+    <main className="flex min-h-[100dvh] items-center justify-center bg-page px-4">
+      <div className="shell w-full max-w-sm rise">
+        <div className="core">
+          <div className="mb-7 flex flex-col items-center gap-4">
+            <PawIcon className="h-14 w-14" />
+            <div className="text-center">
+              <p className="text-[11.5px] font-semibold uppercase tracking-[0.14em] text-ink-faint">
+                Bienvenido
+              </p>
+              <h1 className="mt-1 text-[22px] text-ink">Planeta Animal</h1>
+            </div>
+          </div>
+          <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+            <input
+              type="email"
+              placeholder="Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="rounded-[var(--r-sm)] border border-line bg-surface-sunk p-3 text-sm text-ink outline-none transition focus:border-accent"
+              required
+            />
+            <input
+              type="password"
+              placeholder="Contraseña"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="rounded-[var(--r-sm)] border border-line bg-surface-sunk p-3 text-sm text-ink outline-none transition focus:border-accent"
+              required
+            />
+            {error && <p className="text-sm text-negative">{error}</p>}
+            <button type="submit" className="pill-btn mt-2 justify-center">
+              Ingresar
+            </button>
+          </form>
+        </div>
       </div>
-      <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="rounded border p-2 focus:border-brand-orange focus:outline-none"
-          required
-        />
-        <input
-          type="password"
-          placeholder="Contraseña"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="rounded border p-2 focus:border-brand-orange focus:outline-none"
-          required
-        />
-        {error && <p className="text-sm text-red-600">{error}</p>}
-        <button
-          type="submit"
-          className="rounded bg-brand-orange p-2 font-semibold text-brand-dark transition hover:brightness-95"
-        >
-          Ingresar
-        </button>
-      </form>
     </main>
   )
 }

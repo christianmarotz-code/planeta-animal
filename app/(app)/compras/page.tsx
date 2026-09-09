@@ -20,17 +20,22 @@ export default function ComprasPage() {
   }, [proveedorId])
 
   return (
-    <div>
-      <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-xl font-semibold">Compras</h1>
-        <Link href="/compras/nueva" className="rounded bg-slate-900 px-3 py-2 text-white">
-          Nueva factura
+    <div className="mx-auto flex max-w-6xl flex-col gap-5 p-5 sm:p-8">
+      <div className="flex items-center justify-between rise">
+        <div>
+          <p className="text-[11.5px] font-semibold uppercase tracking-[0.14em] text-ink-faint">
+            Gestión
+          </p>
+          <h1 className="mt-1 text-[27px] text-ink">Compras</h1>
+        </div>
+        <Link href="/compras/nueva" className="pill-btn">
+          + Nueva factura
         </Link>
       </div>
       <select
         value={proveedorId}
         onChange={(e) => setProveedorId(e.target.value)}
-        className="mb-3 rounded border p-2"
+        className="rise w-fit rounded-[var(--r-sm)] border border-line bg-surface p-2.5 text-sm text-ink outline-none transition focus:border-accent"
       >
         <option value="">Todos los proveedores</option>
         {proveedores.map((p) => (
@@ -39,25 +44,28 @@ export default function ComprasPage() {
           </option>
         ))}
       </select>
-      <ul className="divide-y rounded border">
+      <div className="card rise divide-y divide-line">
         {facturas.map((f) => {
           const proveedor = proveedores.find((p) => p.id === f.proveedor_id)
           return (
-            <li key={f.id} className="p-3 hover:bg-slate-50">
-              <Link href={`/compras/${f.id}`} className="flex justify-between">
-                <span>
-                  {f.fecha} — {proveedor?.nombre ?? '—'} — {f.tipo_comprobante} {f.numero_comprobante}
-                  {f.estado === 'anulada' && (
-                    <span className="ml-2 text-xs text-red-600">ANULADA</span>
-                  )}
-                </span>
-                <span>${f.total.toLocaleString('es-AR')}</span>
-              </Link>
-            </li>
+            <Link
+              key={f.id}
+              href={`/compras/${f.id}`}
+              className="flex items-center justify-between px-5 py-3.5 text-sm transition hover:bg-surface-sunk"
+            >
+              <span className="text-ink">
+                <span className="mono text-ink-faint">{f.fecha}</span> — {proveedor?.nombre ?? '—'} —{' '}
+                {f.tipo_comprobante} {f.numero_comprobante}
+                {f.estado === 'anulada' && <span className="chip down ml-2">ANULADA</span>}
+              </span>
+              <span className="mono font-semibold text-ink">${f.total.toLocaleString('es-AR')}</span>
+            </Link>
           )
         })}
-        {facturas.length === 0 && <li className="p-3 text-slate-500">Sin facturas aún.</li>}
-      </ul>
+        {facturas.length === 0 && (
+          <p className="px-5 py-6 text-sm text-ink-faint">Sin facturas aún.</p>
+        )}
+      </div>
     </div>
   )
 }

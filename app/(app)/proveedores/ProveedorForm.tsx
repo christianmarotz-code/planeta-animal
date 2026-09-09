@@ -56,45 +56,41 @@ export function ProveedorForm({
         placeholder="Nombre"
         value={values.nombre}
         onChange={(e) => set('nombre', e.target.value)}
-        className="rounded border p-2"
+        className="rounded-[var(--r-sm)] border border-line bg-surface-sunk p-2.5 text-sm text-ink outline-none transition focus:border-accent"
       />
       <input
         required
         placeholder="CUIT"
         value={values.cuit}
         onChange={(e) => set('cuit', e.target.value)}
-        className="rounded border p-2"
+        className="rounded-[var(--r-sm)] border border-line bg-surface-sunk p-2.5 text-sm text-ink outline-none transition focus:border-accent"
       />
       <input
         placeholder="Teléfono"
         value={values.telefono}
         onChange={(e) => set('telefono', e.target.value)}
-        className="rounded border p-2"
+        className="rounded-[var(--r-sm)] border border-line bg-surface-sunk p-2.5 text-sm text-ink outline-none transition focus:border-accent"
       />
       <input
         placeholder="Email"
         value={values.email}
         onChange={(e) => set('email', e.target.value)}
-        className="rounded border p-2"
+        className="rounded-[var(--r-sm)] border border-line bg-surface-sunk p-2.5 text-sm text-ink outline-none transition focus:border-accent"
       />
       <input
         placeholder="Dirección"
         value={values.direccion}
         onChange={(e) => set('direccion', e.target.value)}
-        className="rounded border p-2"
+        className="rounded-[var(--r-sm)] border border-line bg-surface-sunk p-2.5 text-sm text-ink outline-none transition focus:border-accent"
       />
       <textarea
         placeholder="Notas"
         value={values.notas}
         onChange={(e) => set('notas', e.target.value)}
-        className="rounded border p-2"
+        className="rounded-[var(--r-sm)] border border-line bg-surface-sunk p-2.5 text-sm text-ink outline-none transition focus:border-accent"
       />
-      {error && <p className="text-sm text-red-600">{error}</p>}
-      <button
-        type="submit"
-        disabled={saving}
-        className="rounded bg-slate-900 p-2 text-white disabled:opacity-50"
-      >
+      {error && <p className="text-sm text-negative">{error}</p>}
+      <button type="submit" disabled={saving} className="pill-btn justify-center disabled:opacity-50">
         {saving ? 'Guardando…' : submitLabel}
       </button>
     </form>

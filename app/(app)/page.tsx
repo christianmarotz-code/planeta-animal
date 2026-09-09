@@ -37,6 +37,37 @@ function gastoPorSemana(facturas: FacturaCompra[], semanas: number) {
   return etiquetas.map((clave) => ({ semana: clave, total: totales.get(clave) ?? 0 }))
 }
 
+function StatShell({
+  eyebrow,
+  value,
+  delta,
+  children,
+}: {
+  eyebrow: string
+  value: string
+  delta?: { texto: string; positivo: boolean }
+  children?: React.ReactNode
+}) {
+  return (
+    <div className="shell rise">
+      <div className="core flex h-full flex-col justify-between gap-4">
+        <div className="flex items-start justify-between">
+          <p className="text-[11.5px] font-semibold uppercase tracking-[0.14em] text-ink-faint">
+            {eyebrow}
+          </p>
+          {delta && (
+            <span className={`chip ${delta.positivo ? 'up' : 'down'}`}>
+              {delta.positivo ? '↑' : '↓'} {delta.texto}
+            </span>
+          )}
+        </div>
+        <p className="mono text-[27px] font-medium leading-none text-ink">{value}</p>
+        {children}
+      </div>
+    </div>
+  )
+}
+
 export default function DashboardPage() {
   const [facturas, setFacturas] = useState<FacturaCompra[]>([])
   const [proveedores, setProveedores] = useState<Proveedor[]>([])
@@ -53,111 +84,135 @@ export default function DashboardPage() {
       .finally(() => setLoading(false))
   }, [])
 
-  if (loading) return <p>Cargando…</p>
+  if (loading) {
+    return <p className="text-sm text-ink-soft">Cargando…</p>
+  }
 
   const valorStock = calcularValorStock(productos)
   const hace30Dias = new Date()
   hace30Dias.setDate(hace30Dias.getDate() - 30)
+  const hace60Dias = new Date()
+  hace60Dias.setDate(hace60Dias.getDate() - 60)
   const facturasUltimos30 = facturas.filter(
     (f) => f.estado !== 'anulada' && new Date(f.fecha) >= hace30Dias
   )
+  const facturas30a60 = facturas.filter(
+    (f) => f.estado !== 'anulada' && new Date(f.fecha) >= hace60Dias && new Date(f.fecha) < hace30Dias
+  )
   const gastoUltimos30 = facturasUltimos30.reduce((acc, f) => acc + f.total, 0)
+  const gastoPrevios30 = facturas30a60.reduce((acc, f) => acc + f.total, 0)
+  const variacionGasto =
+    gastoPrevios30 > 0 ? ((gastoUltimos30 - gastoPrevios30) / gastoPrevios30) * 100 : null
+
   const productosStockBajo = productos.filter((p) => p.stock_actual <= p.stock_minimo)
-  const ultimasFacturas = [...facturas]
-    .sort((a, b) => (a.fecha < b.fecha ? 1 : -1))
-    .slice(0, 5)
-  const semanas = gastoPorSemana(facturas, 6)
+  const ultimasFacturas = [...facturas].sort((a, b) => (a.fecha < b.fecha ? 1 : -1)).slice(0, 5)
+  const semanas = gastoPorSemana(facturas, 8)
   const maxSemana = Math.max(1, ...semanas.map((s) => s.total))
 
   return (
-    <div className="flex flex-col gap-4">
-      <h1 className="text-xl font-semibold text-brand-dark">Inicio</h1>
-
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div className="rounded-2xl border bg-white p-5">
-          <p className="text-sm text-slate-500">Valor total del stock</p>
-          <p className="mt-1 text-2xl font-semibold text-brand-dark">
-            ${valorStock.toLocaleString('es-AR')}
-          </p>
-        </div>
-        <div className="rounded-2xl border bg-white p-5">
-          <p className="text-sm text-slate-500">Gasto en compras (30 días)</p>
-          <p className="mt-1 text-2xl font-semibold text-brand-dark">
-            ${gastoUltimos30.toLocaleString('es-AR')}
-          </p>
-        </div>
-        <div className="rounded-2xl border bg-white p-5">
-          <p className="text-sm text-slate-500">Facturas cargadas</p>
-          <p className="mt-1 text-2xl font-semibold text-brand-dark">{facturas.length}</p>
-        </div>
+    <div className="mx-auto flex max-w-6xl flex-col gap-5 p-5 sm:p-8">
+      <div className="rise">
+        <p className="text-[11.5px] font-semibold uppercase tracking-[0.14em] text-ink-faint">
+          Panel general
+        </p>
+        <h1 className="mt-1 text-[27px] text-ink">Inicio</h1>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <div className="rounded-2xl border bg-white p-5">
-          <p className="mb-4 text-sm font-medium text-slate-700">Gasto por semana</p>
-          <div className="flex h-32 items-end gap-3">
-            {semanas.map((s) => (
-              <div key={s.semana} className="flex flex-1 flex-col items-center gap-1">
-                <div
-                  className="w-full rounded-t bg-brand-orange"
-                  style={{ height: `${Math.max(4, (s.total / maxSemana) * 100)}%` }}
-                  title={`$${s.total.toLocaleString('es-AR')}`}
-                />
-                <span className="text-[10px] text-slate-400">
-                  {new Date(s.semana).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' })}
-                </span>
-              </div>
-            ))}
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
+        <StatShell eyebrow="Valor total del stock" value={`$${valorStock.toLocaleString('es-AR')}`} />
+        <StatShell
+          eyebrow="Gasto en compras (30 días)"
+          value={`$${gastoUltimos30.toLocaleString('es-AR')}`}
+          delta={
+            variacionGasto === null
+              ? undefined
+              : { texto: `${Math.abs(variacionGasto).toFixed(0)}%`, positivo: variacionGasto <= 0 }
+          }
+        />
+        <StatShell eyebrow="Facturas cargadas" value={String(facturas.length)} />
+      </div>
+
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-5">
+        <div className="shell rise lg:col-span-3">
+          <div className="core">
+            <div className="mb-6 flex items-center justify-between">
+              <p className="text-[11.5px] font-semibold uppercase tracking-[0.14em] text-ink-faint">
+                Gasto por semana
+              </p>
+              <span className="mono text-xs text-ink-faint">últimas 8 semanas</span>
+            </div>
+            <div className="flex h-36 items-end gap-3">
+              {semanas.map((s) => (
+                <div key={s.semana} className="flex flex-1 flex-col items-center gap-2">
+                  <div
+                    className="w-full rounded-t-[8px] bg-accent transition-[height] duration-500"
+                    style={{ height: `${Math.max(4, (s.total / maxSemana) * 100)}%` }}
+                    title={`$${s.total.toLocaleString('es-AR')}`}
+                  />
+                  <span className="mono text-[10px] text-ink-faint">
+                    {new Date(s.semana).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' })}
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
 
-        <div className="rounded-2xl border bg-white p-5">
+        <div className="shell rise lg:col-span-2">
+          <div className="core">
+            <div className="mb-3 flex items-center justify-between">
+              <p className="text-[11.5px] font-semibold uppercase tracking-[0.14em] text-ink-faint">
+                Stock bajo
+              </p>
+              <Link href="/stock" className="text-xs font-semibold text-accent hover:underline">
+                Ver todo
+              </Link>
+            </div>
+            <ul className="divide-y divide-line">
+              {productosStockBajo.slice(0, 6).map((p) => (
+                <li key={p.id} className="flex items-center justify-between py-2.5 text-sm">
+                  <span className="text-ink">{p.nombre}</span>
+                  <span className="chip down">
+                    {p.stock_actual} {p.unidad_stock}
+                  </span>
+                </li>
+              ))}
+              {productosStockBajo.length === 0 && (
+                <li className="py-2.5 text-sm text-ink-faint">Ningún producto está bajo el mínimo.</li>
+              )}
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div className="shell rise">
+        <div className="core">
           <div className="mb-3 flex items-center justify-between">
-            <p className="text-sm font-medium text-slate-700">Productos con stock bajo</p>
-            <Link href="/stock" className="text-xs text-brand-orange hover:underline">
+            <p className="text-[11.5px] font-semibold uppercase tracking-[0.14em] text-ink-faint">
+              Últimas facturas
+            </p>
+            <Link href="/compras" className="text-xs font-semibold text-accent hover:underline">
               Ver todo
             </Link>
           </div>
-          <ul className="divide-y">
-            {productosStockBajo.slice(0, 6).map((p) => (
-              <li key={p.id} className="flex justify-between py-2 text-sm">
-                <span>{p.nombre}</span>
-                <span className="font-medium text-red-600">
-                  {p.stock_actual} {p.unidad_stock}
-                </span>
-              </li>
-            ))}
-            {productosStockBajo.length === 0 && (
-              <li className="py-2 text-sm text-slate-500">Ningún producto está bajo el mínimo.</li>
+          <ul className="divide-y divide-line">
+            {ultimasFacturas.map((f) => {
+              const proveedor = proveedores.find((p) => p.id === f.proveedor_id)
+              return (
+                <li key={f.id} className="flex items-center justify-between py-2.5 text-sm">
+                  <span className="text-ink">
+                    <span className="mono text-ink-faint">{f.fecha}</span> — {proveedor?.nombre ?? '—'}
+                    {f.estado === 'anulada' && <span className="chip down ml-2">ANULADA</span>}
+                  </span>
+                  <span className="mono font-semibold text-ink">${f.total.toLocaleString('es-AR')}</span>
+                </li>
+              )
+            })}
+            {ultimasFacturas.length === 0 && (
+              <li className="py-2.5 text-sm text-ink-faint">Sin facturas aún.</li>
             )}
           </ul>
         </div>
-      </div>
-
-      <div className="rounded-2xl border bg-white p-5">
-        <div className="mb-3 flex items-center justify-between">
-          <p className="text-sm font-medium text-slate-700">Últimas facturas</p>
-          <Link href="/compras" className="text-xs text-brand-orange hover:underline">
-            Ver todo
-          </Link>
-        </div>
-        <ul className="divide-y">
-          {ultimasFacturas.map((f) => {
-            const proveedor = proveedores.find((p) => p.id === f.proveedor_id)
-            return (
-              <li key={f.id} className="flex justify-between py-2 text-sm">
-                <span>
-                  {f.fecha} — {proveedor?.nombre ?? '—'}
-                  {f.estado === 'anulada' && <span className="ml-2 text-xs text-red-600">ANULADA</span>}
-                </span>
-                <span className="font-medium">${f.total.toLocaleString('es-AR')}</span>
-              </li>
-            )
-          })}
-          {ultimasFacturas.length === 0 && (
-            <li className="py-2 text-sm text-slate-500">Sin facturas aún.</li>
-          )}
-        </ul>
       </div>
     </div>
   )

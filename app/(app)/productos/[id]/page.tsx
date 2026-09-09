@@ -15,15 +15,20 @@ export default function EditarProductoPage() {
     obtenerProducto(id).then(setProducto)
   }, [id])
 
-  if (!producto) return <p>Cargando…</p>
+  if (!producto) return <p className="p-8 text-sm text-ink-soft">Cargando…</p>
 
   return (
-    <div>
-      <h1 className="mb-4 text-xl font-semibold">Editar producto</h1>
-      <p className="mb-4 text-sm text-slate-500">
-        Stock actual: {producto.stock_actual} {producto.unidad_stock} — Costo unitario: $
+    <div className="mx-auto flex max-w-md flex-col gap-3 p-5 sm:p-8 rise">
+      <div>
+        <p className="text-[11.5px] font-semibold uppercase tracking-[0.14em] text-ink-faint">
+          Gestión
+        </p>
+        <h1 className="mt-1 text-[27px] text-ink">Editar producto</h1>
+      </div>
+      <div className="chip up mb-2 w-fit">
+        Stock: {producto.stock_actual} {producto.unidad_stock} · Costo: $
         {producto.costo_unitario_actual.toLocaleString('es-AR')}
-      </p>
+      </div>
       <ProductoForm
         initial={producto}
         submitLabel="Guardar cambios"
