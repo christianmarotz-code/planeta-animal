@@ -6,6 +6,11 @@ export interface Proveedor {
   email: string | null
   direccion: string | null
   notas: string | null
+  aplica_iibb: boolean
+  tasa_iibb: number
+  aplica_perc_iva: boolean
+  tasa_perc_iva: number
+  descuento_pronto_pago: number
   created_at: string
 }
 

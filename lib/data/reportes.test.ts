@@ -3,7 +3,21 @@ import { calcularGastoPorProveedor, calcularValorStock } from './reportes'
 import type { FacturaCompra, Proveedor, Producto } from '@/types/database'
 
 function proveedor(id: string, nombre: string): Proveedor {
-  return { id, nombre, cuit: null, telefono: null, email: null, direccion: null, notas: null, created_at: '' }
+  return {
+    id,
+    nombre,
+    cuit: null,
+    telefono: null,
+    email: null,
+    direccion: null,
+    notas: null,
+    aplica_iibb: false,
+    tasa_iibb: 4,
+    aplica_perc_iva: false,
+    tasa_perc_iva: 3,
+    descuento_pronto_pago: 0,
+    created_at: '',
+  }
 }
 
 function factura(proveedorId: string, total: number, estado: 'cargada' | 'anulada' = 'cargada'): FacturaCompra {

@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { obtenerFacturaConItems, anularFactura } from '@/lib/data/facturas'
 import { obtenerProveedor } from '@/lib/data/proveedores'
 import { listarProductos } from '@/lib/data/productos'
+import { calcularCostoRealUnitario } from '@/lib/calc/costoReal'
 import type { FacturaCompra, ItemFactura, Proveedor, Producto } from '@/types/database'
 
 export default function DetalleFacturaPage() {
@@ -67,7 +68,10 @@ export default function DetalleFacturaPage() {
                 Cantidad
               </th>
               <th className="px-5 py-3 text-[11.5px] font-semibold uppercase tracking-[0.1em] text-ink-faint">
-                Costo unitario
+                Costo neto
+              </th>
+              <th className="px-5 py-3 text-[11.5px] font-semibold uppercase tracking-[0.1em] text-ink-faint">
+                Costo real (con imp.)
               </th>
               <th className="px-5 py-3 text-[11.5px] font-semibold uppercase tracking-[0.1em] text-ink-faint">
                 Subtotal
@@ -75,19 +79,44 @@ export default function DetalleFacturaPage() {
             </tr>
           </thead>
           <tbody>
-            {items.map((item) => (
-              <tr key={item.id} className="border-b border-line last:border-0">
-                <td className="px-5 py-3 text-ink">
-                  {productos.find((p) => p.id === item.producto_id)?.nombre}
-                </td>
-                <td className="mono px-5 py-3 text-ink">{item.cantidad}</td>
-                <td className="mono px-5 py-3 text-ink">${item.costo_unitario.toLocaleString('es-AR')}</td>
-                <td className="mono px-5 py-3 text-ink">${item.subtotal.toLocaleString('es-AR')}</td>
-              </tr>
-            ))}
+            {items.map((item) => {
+              const costoReal = proveedor
+                ? calcularCostoRealUnitario(item.costo_unitario, item.alicuota_iva, {
+                    aplicaIibb: proveedor.aplica_iibb,
+                    tasaIibb: proveedor.tasa_iibb,
+                    aplicaPercIva: proveedor.aplica_perc_iva,
+                    tasaPercIva: proveedor.tasa_perc_iva,
+                    descuentoProntoPago: proveedor.descuento_pronto_pago,
+                  })
+                : null
+              return (
+                <tr key={item.id} className="border-b border-line last:border-0">
+                  <td className="px-5 py-3 text-ink">
+                    {productos.find((p) => p.id === item.producto_id)?.nombre}
+                  </td>
+                  <td className="mono px-5 py-3 text-ink">{item.cantidad}</td>
+                  <td className="mono px-5 py-3 text-ink-soft">${item.costo_unitario.toLocaleString('es-AR')}</td>
+                  <td className="mono px-5 py-3 font-semibold text-ink">
+                    {costoReal !== null ? `$${costoReal.toLocaleString('es-AR')}` : '—'}
+                  </td>
+                  <td className="mono px-5 py-3 text-ink">${item.subtotal.toLocaleString('es-AR')}</td>
+                </tr>
+              )
+            })}
           </tbody>
         </table>
       </div>
+      {proveedor && (proveedor.aplica_iibb || proveedor.aplica_perc_iva || proveedor.descuento_pronto_pago > 0) && (
+        <p className="text-xs text-ink-faint rise">
+          Costo real = costo neto × (1 + IVA
+          {proveedor.aplica_iibb && ` + II.BB. ${proveedor.tasa_iibb}%`}
+          {proveedor.aplica_perc_iva && ` + Perc. IVA ${proveedor.tasa_perc_iva}%`}) ×{' '}
+          {proveedor.descuento_pronto_pago > 0
+            ? `(1 − ${proveedor.descuento_pronto_pago}% dto. pronto pago)`
+            : '1'}{' '}
+          — configurado en la ficha de {proveedor.nombre}.
+        </p>
+      )}
 
       <div className="shell ml-auto w-72 rise">
         <div className="core flex flex-col gap-2 text-sm">

@@ -6,6 +6,7 @@ import { listarProveedores } from '@/lib/data/proveedores'
 import { listarProductos, crearProducto } from '@/lib/data/productos'
 import { registrarFacturaCompra, type NuevaFacturaItemInput } from '@/lib/data/facturas'
 import { calcularTotalesFactura } from '@/lib/calc/factura'
+import { calcularCostoRealUnitario } from '@/lib/calc/costoReal'
 import type { Proveedor, Producto, TipoComprobante } from '@/types/database'
 
 const TIPOS_COMPROBANTE: TipoComprobante[] = [
@@ -90,6 +91,7 @@ export default function NuevaFacturaPage() {
       alicuotaIva: Number(it.alicuota_iva),
     }))
   const totales = calcularTotalesFactura(itemsParaCalculo)
+  const proveedorSeleccionado = proveedores.find((p) => p.id === proveedorId) ?? null
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -195,6 +197,7 @@ export default function NuevaFacturaPage() {
               <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-faint">Costo unitario</th>
               <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-faint">IVA %</th>
               <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-faint">Subtotal</th>
+              <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-faint">Costo real</th>
               <th />
             </tr>
           </thead>
@@ -204,6 +207,16 @@ export default function NuevaFacturaPage() {
                 item.cantidad && item.costo_unitario
                   ? Number(item.cantidad) * Number(item.costo_unitario)
                   : 0
+              const costoReal =
+                proveedorSeleccionado && item.costo_unitario
+                  ? calcularCostoRealUnitario(Number(item.costo_unitario), Number(item.alicuota_iva), {
+                      aplicaIibb: proveedorSeleccionado.aplica_iibb,
+                      tasaIibb: proveedorSeleccionado.tasa_iibb,
+                      aplicaPercIva: proveedorSeleccionado.aplica_perc_iva,
+                      tasaPercIva: proveedorSeleccionado.tasa_perc_iva,
+                      descuentoProntoPago: proveedorSeleccionado.descuento_pronto_pago,
+                    })
+                  : null
               return (
                 <tr key={index} className="border-b border-line last:border-0">
                   <td className="px-3 py-2 text-ink">
@@ -267,7 +280,10 @@ export default function NuevaFacturaPage() {
                       className="w-16 rounded-[var(--r-sm)] border border-line bg-surface p-2 text-sm text-ink outline-none transition focus:border-accent"
                     />
                   </td>
-                  <td className="px-3 py-2 text-ink">${subtotalItem.toLocaleString('es-AR')}</td>
+                  <td className="mono px-3 py-2 text-ink">${subtotalItem.toLocaleString('es-AR')}</td>
+                  <td className="mono px-3 py-2 font-semibold text-ink">
+                    {costoReal !== null ? `$${costoReal.toLocaleString('es-AR')}` : '—'}
+                  </td>
                   <td className="px-3 py-2 text-ink">
                     <button type="button" onClick={() => removeItem(index)} className="text-xs font-semibold text-negative hover:underline">
                       Quitar
