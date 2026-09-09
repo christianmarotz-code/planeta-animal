@@ -6,7 +6,8 @@ import { listarFacturas } from '@/lib/data/facturas'
 import { listarProveedores } from '@/lib/data/proveedores'
 import { listarProductos } from '@/lib/data/productos'
 import { calcularValorStock, calcularGastoPorSemana } from '@/lib/data/reportes'
-import type { FacturaCompra, Proveedor, Producto } from '@/types/database'
+import { obtenerOCrearPerfilActual } from '@/lib/data/perfiles'
+import type { FacturaCompra, Proveedor, Producto, Perfil } from '@/types/database'
 
 function StatShell({
   eyebrow,
@@ -43,14 +44,16 @@ export default function DashboardPage() {
   const [facturas, setFacturas] = useState<FacturaCompra[]>([])
   const [proveedores, setProveedores] = useState<Proveedor[]>([])
   const [productos, setProductos] = useState<Producto[]>([])
+  const [perfil, setPerfil] = useState<Perfil | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    Promise.all([listarFacturas(), listarProveedores(), listarProductos()])
-      .then(([f, p, pr]) => {
+    Promise.all([listarFacturas(), listarProveedores(), listarProductos(), obtenerOCrearPerfilActual()])
+      .then(([f, p, pr, perf]) => {
         setFacturas(f)
         setProveedores(p)
         setProductos(pr)
+        setPerfil(perf)
       })
       .finally(() => setLoading(false))
   }, [])
@@ -86,7 +89,7 @@ export default function DashboardPage() {
         <p className="text-[11.5px] font-semibold uppercase tracking-[0.14em] text-ink-faint">
           Panel general
         </p>
-        <h1 className="mt-1 text-[27px] text-ink">Inicio</h1>
+        <h1 className="mt-1 text-[27px] text-ink">Bienvenido, {perfil?.nombre ?? '...'}</h1>
       </div>
 
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
