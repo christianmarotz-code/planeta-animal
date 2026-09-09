@@ -59,3 +59,30 @@ export function calcularGastoPorSemana(
   }
   return etiquetas.map((clave) => ({ semana: clave, total: totales.get(clave) ?? 0 }))
 }
+
+function claveMes(fecha: Date): string {
+  return `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, '0')}`
+}
+
+export function calcularGastoPorMes(
+  facturas: FacturaCompra[],
+  meses: number,
+  hoy: Date = new Date()
+): { mes: string; total: number }[] {
+  const etiquetas: string[] = []
+  const totales = new Map<string, number>()
+  for (let i = meses - 1; i >= 0; i--) {
+    const d = new Date(hoy.getFullYear(), hoy.getMonth() - i, 1)
+    const clave = claveMes(d)
+    etiquetas.push(clave)
+    totales.set(clave, 0)
+  }
+  for (const f of facturas) {
+    if (f.estado === 'anulada') continue
+    const clave = claveMes(parseFechaLocal(f.fecha))
+    if (totales.has(clave)) {
+      totales.set(clave, (totales.get(clave) ?? 0) + f.total)
+    }
+  }
+  return etiquetas.map((clave) => ({ mes: clave, total: totales.get(clave) ?? 0 }))
+}

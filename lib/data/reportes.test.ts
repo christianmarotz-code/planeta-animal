@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { calcularGastoPorProveedor, calcularValorStock, calcularGastoPorSemana, inicioSemana } from './reportes'
+import { calcularGastoPorProveedor, calcularValorStock, calcularGastoPorSemana, inicioSemana, calcularGastoPorMes } from './reportes'
 import type { FacturaCompra, Proveedor, Producto } from '@/types/database'
 
 function proveedor(id: string, nombre: string): Proveedor {
@@ -134,5 +134,48 @@ describe('calcularGastoPorSemana', () => {
     const facturas = [factura('p1', 1000, 'cargada', '2026-01-01')]
     const result = calcularGastoPorSemana(facturas, 1, hoy)
     expect(result).toEqual([{ semana: '2026-09-07', total: 0 }])
+  })
+})
+
+describe('calcularGastoPorMes', () => {
+  it('sums non-annulled invoice totals into monthly buckets anchored to a reference date', () => {
+    const hoy = new Date('2026-09-09T12:00:00') // Septiembre
+    const facturas = [
+      factura('p1', 1000, 'cargada', '2026-09-05'), // este mes
+      factura('p1', 500, 'cargada', '2026-08-15'), // mes anterior
+      factura('p1', 9999, 'anulada', '2026-09-05'), // excluida
+    ]
+    const result = calcularGastoPorMes(facturas, 2, hoy)
+    expect(result).toEqual([
+      { mes: '2026-08', total: 500 },
+      { mes: '2026-09', total: 1000 },
+    ])
+  })
+
+  it('returns zero-total months when there are no invoices', () => {
+    const hoy = new Date('2026-09-09T12:00:00')
+    const result = calcularGastoPorMes([], 3, hoy)
+    expect(result).toEqual([
+      { mes: '2026-07', total: 0 },
+      { mes: '2026-08', total: 0 },
+      { mes: '2026-09', total: 0 },
+    ])
+  })
+
+  it('ignores invoices outside the requested month range', () => {
+    const hoy = new Date('2026-09-09T12:00:00')
+    const facturas = [factura('p1', 1000, 'cargada', '2025-01-01')]
+    const result = calcularGastoPorMes(facturas, 1, hoy)
+    expect(result).toEqual([{ mes: '2026-09', total: 0 }])
+  })
+
+  it('rolls back into the previous year when the reference date is in January', () => {
+    const hoy = new Date('2026-01-15T12:00:00')
+    const facturas = [factura('p1', 700, 'cargada', '2025-12-20')]
+    const result = calcularGastoPorMes(facturas, 2, hoy)
+    expect(result).toEqual([
+      { mes: '2025-12', total: 700 },
+      { mes: '2026-01', total: 0 },
+    ])
   })
 })
