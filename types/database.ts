@@ -77,6 +77,13 @@ export interface MovimientoStock {
   usuario_id: string | null
 }
 
+export interface Perfil {
+  id: string
+  nombre: string
+  avatar_url: string | null
+  created_at: string
+}
+
 export interface Database {
   public: {
     Tables: {
@@ -97,6 +104,7 @@ export interface Database {
         Insert: Partial<MovimientoStock>
         Update: Partial<MovimientoStock>
       }
+      perfiles: { Row: Perfil; Insert: Partial<Perfil>; Update: Partial<Perfil> }
     }
   }
 }
