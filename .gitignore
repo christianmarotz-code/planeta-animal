@@ -46,3 +46,6 @@ next-env.d.ts
 
 # raw brand source files (the assets actually used ship from public/branding)
 /Branding/
+
+# graphify knowledge-graph output (generated, regenerate with /graphify)
+/graphify-out/

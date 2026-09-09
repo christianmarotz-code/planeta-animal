@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { calcularGastoPorProveedor, calcularValorStock } from './reportes'
+import { calcularGastoPorProveedor, calcularValorStock, calcularGastoPorSemana, inicioSemana } from './reportes'
 import type { FacturaCompra, Proveedor, Producto } from '@/types/database'
 
 function proveedor(id: string, nombre: string): Proveedor {
@@ -20,13 +20,18 @@ function proveedor(id: string, nombre: string): Proveedor {
   }
 }
 
-function factura(proveedorId: string, total: number, estado: 'cargada' | 'anulada' = 'cargada'): FacturaCompra {
+function factura(
+  proveedorId: string,
+  total: number,
+  estado: 'cargada' | 'anulada' = 'cargada',
+  fecha = '2026-09-01'
+): FacturaCompra {
   return {
     id: crypto.randomUUID(),
     proveedor_id: proveedorId,
     numero_comprobante: '0001',
     tipo_comprobante: 'Factura A',
-    fecha: '2026-09-01',
+    fecha,
     subtotal: total,
     iva_total: 0,
     total,
@@ -82,5 +87,52 @@ describe('calcularValorStock', () => {
 
   it('returns 0 for no products', () => {
     expect(calcularValorStock([])).toBe(0)
+  })
+})
+
+describe('inicioSemana', () => {
+  it('returns the Monday of the week for a mid-week date', () => {
+    expect(inicioSemana(new Date('2026-09-09T12:00:00'))).toBe('2026-09-07')
+  })
+
+  it('returns the previous Monday for a Sunday', () => {
+    expect(inicioSemana(new Date('2026-09-06T12:00:00'))).toBe('2026-08-31')
+  })
+
+  it('returns the same date for a Monday', () => {
+    expect(inicioSemana(new Date('2026-09-07T12:00:00'))).toBe('2026-09-07')
+  })
+})
+
+describe('calcularGastoPorSemana', () => {
+  it('sums non-annulled invoice totals into weekly buckets anchored to a reference date', () => {
+    const hoy = new Date('2026-09-09T12:00:00') // Wednesday, week of 2026-09-07
+    const facturas = [
+      factura('p1', 1000, 'cargada', '2026-09-08'), // same week
+      factura('p1', 500, 'cargada', '2026-09-01'), // previous week
+      factura('p1', 9999, 'anulada', '2026-09-08'), // excluded
+    ]
+    const result = calcularGastoPorSemana(facturas, 2, hoy)
+    expect(result).toEqual([
+      { semana: '2026-08-31', total: 500 },
+      { semana: '2026-09-07', total: 1000 },
+    ])
+  })
+
+  it('returns zero-total weeks when there are no invoices', () => {
+    const hoy = new Date('2026-09-09T12:00:00')
+    const result = calcularGastoPorSemana([], 3, hoy)
+    expect(result).toEqual([
+      { semana: '2026-08-24', total: 0 },
+      { semana: '2026-08-31', total: 0 },
+      { semana: '2026-09-07', total: 0 },
+    ])
+  })
+
+  it('ignores invoices outside the requested week range', () => {
+    const hoy = new Date('2026-09-09T12:00:00')
+    const facturas = [factura('p1', 1000, 'cargada', '2026-01-01')]
+    const result = calcularGastoPorSemana(facturas, 1, hoy)
+    expect(result).toEqual([{ semana: '2026-09-07', total: 0 }])
   })
 })

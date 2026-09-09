@@ -5,37 +5,8 @@ import Link from 'next/link'
 import { listarFacturas } from '@/lib/data/facturas'
 import { listarProveedores } from '@/lib/data/proveedores'
 import { listarProductos } from '@/lib/data/productos'
-import { calcularValorStock } from '@/lib/data/reportes'
+import { calcularValorStock, calcularGastoPorSemana } from '@/lib/data/reportes'
 import type { FacturaCompra, Proveedor, Producto } from '@/types/database'
-
-function inicioSemana(fecha: Date): string {
-  const d = new Date(fecha)
-  const dia = d.getDay()
-  const diff = d.getDate() - dia + (dia === 0 ? -6 : 1)
-  d.setDate(diff)
-  return d.toISOString().slice(0, 10)
-}
-
-function gastoPorSemana(facturas: FacturaCompra[], semanas: number) {
-  const hoy = new Date()
-  const etiquetas: string[] = []
-  const totales = new Map<string, number>()
-  for (let i = semanas - 1; i >= 0; i--) {
-    const d = new Date(hoy)
-    d.setDate(d.getDate() - i * 7)
-    const clave = inicioSemana(d)
-    etiquetas.push(clave)
-    totales.set(clave, 0)
-  }
-  for (const f of facturas) {
-    if (f.estado === 'anulada') continue
-    const clave = inicioSemana(new Date(f.fecha))
-    if (totales.has(clave)) {
-      totales.set(clave, (totales.get(clave) ?? 0) + f.total)
-    }
-  }
-  return etiquetas.map((clave) => ({ semana: clave, total: totales.get(clave) ?? 0 }))
-}
 
 function StatShell({
   eyebrow,
@@ -106,7 +77,7 @@ export default function DashboardPage() {
 
   const productosStockBajo = productos.filter((p) => p.stock_actual <= p.stock_minimo)
   const ultimasFacturas = [...facturas].sort((a, b) => (a.fecha < b.fecha ? 1 : -1)).slice(0, 5)
-  const semanas = gastoPorSemana(facturas, 8)
+  const semanas = calcularGastoPorSemana(facturas, 8)
   const maxSemana = Math.max(1, ...semanas.map((s) => s.total))
 
   return (
