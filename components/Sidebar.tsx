@@ -48,7 +48,10 @@ function PerfilYSalir({ perfil, onNavigate }: { perfil: Perfil | null; onNavigat
         className="flex items-center gap-2.5 rounded-full px-2.5 py-2 text-[13.5px] font-medium text-white/75 transition-colors duration-300 hover:bg-white/10 hover:text-white"
       >
         <Avatar nombre={perfil?.nombre ?? ''} avatarUrl={perfil?.avatar_url ?? null} size="sm" />
-        Mi perfil
+        <span className="flex flex-col leading-tight">
+          <span className="text-white">{perfil?.nombre ?? '...'}</span>
+          <span className="text-[11px] text-white/50">Mi perfil</span>
+        </span>
       </Link>
       <form action="/api/auth/signout" method="post">
         <button
@@ -68,7 +71,9 @@ export function Sidebar({ children }: { children: React.ReactNode }) {
   const [menuAbierto, setMenuAbierto] = useState(false)
 
   useEffect(() => {
-    obtenerOCrearPerfilActual().then(setPerfil)
+    obtenerOCrearPerfilActual()
+      .then(setPerfil)
+      .catch((err) => console.error('No se pudo cargar el perfil', err))
   }, [])
 
   return (
@@ -119,6 +124,7 @@ export function Sidebar({ children }: { children: React.ReactNode }) {
 
         {/* Panel deslizante mobile */}
         <aside
+          inert={!menuAbierto}
           className={`fixed inset-y-0 left-0 z-20 flex w-60 flex-col gap-1 bg-accent-ink p-4 text-white transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] md:hidden ${
             menuAbierto ? 'translate-x-0' : '-translate-x-full'
           }`}

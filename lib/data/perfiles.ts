@@ -8,11 +8,12 @@ export async function obtenerOCrearPerfilActual(): Promise<Perfil> {
   } = await supabase.auth.getUser()
   if (!user) throw new Error('No autenticado')
 
-  const { data: existente } = await supabase
+  const { data: existente, error: errorSelect } = await supabase
     .from('perfiles')
     .select('*')
     .eq('id', user.id)
     .maybeSingle()
+  if (errorSelect) throw errorSelect
   if (existente) return existente as Perfil
 
   const nombreDefault = user.email?.split('@')[0] ?? 'Usuario'
@@ -53,7 +54,7 @@ export async function subirAvatar(file: File): Promise<string> {
   } = await supabase.auth.getUser()
   if (!user) throw new Error('No autenticado')
 
-  const extension = file.name.split('.').pop() ?? 'jpg'
+  const extension = (file.name.split('.').pop() ?? 'jpg').toLowerCase()
   const ruta = `${user.id}/avatar.${extension}`
 
   const { error: errorSubida } = await supabase.storage
@@ -65,11 +66,13 @@ export async function subirAvatar(file: File): Promise<string> {
     data: { publicUrl },
   } = supabase.storage.from('avatars').getPublicUrl(ruta)
 
+  const urlConCacheBuster = `${publicUrl}?v=${Date.now()}`
+
   const { error: errorUpdate } = await supabase
     .from('perfiles')
-    .update({ avatar_url: publicUrl } as never)
+    .update({ avatar_url: urlConCacheBuster } as never)
     .eq('id', user.id)
   if (errorUpdate) throw errorUpdate
 
-  return publicUrl
+  return urlConCacheBuster
 }

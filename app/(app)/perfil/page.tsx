@@ -20,10 +20,12 @@ export default function PerfilPage() {
   const inputArchivoRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
-    obtenerOCrearPerfilActual().then((p) => {
-      setPerfil(p)
-      setNombre(p.nombre)
-    })
+    obtenerOCrearPerfilActual()
+      .then((p) => {
+        setPerfil(p)
+        setNombre(p.nombre)
+      })
+      .catch(() => setError('No se pudo cargar tu perfil. Intentá de nuevo más tarde.'))
   }, [])
 
   function handleSeleccionArchivo(e: React.ChangeEvent<HTMLInputElement>) {
@@ -61,6 +63,8 @@ export default function PerfilPage() {
       setSaving(false)
     }
   }
+
+  if (!perfil && error) return <p className="p-8 text-sm text-negative">{error}</p>
 
   if (!perfil) return <p className="p-8 text-sm text-ink-soft">Cargando…</p>
 

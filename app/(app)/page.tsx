@@ -45,17 +45,23 @@ export default function DashboardPage() {
   const [proveedores, setProveedores] = useState<Proveedor[]>([])
   const [productos, setProductos] = useState<Producto[]>([])
   const [perfil, setPerfil] = useState<Perfil | null>(null)
+  const [perfilError, setPerfilError] = useState(false)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    Promise.all([listarFacturas(), listarProveedores(), listarProductos(), obtenerOCrearPerfilActual()])
-      .then(([f, p, pr, perf]) => {
+    Promise.all([listarFacturas(), listarProveedores(), listarProductos()])
+      .then(([f, p, pr]) => {
         setFacturas(f)
         setProveedores(p)
         setProductos(pr)
-        setPerfil(perf)
       })
       .finally(() => setLoading(false))
+  }, [])
+
+  useEffect(() => {
+    obtenerOCrearPerfilActual()
+      .then(setPerfil)
+      .catch(() => setPerfilError(true))
   }, [])
 
   if (loading) {
@@ -89,7 +95,12 @@ export default function DashboardPage() {
         <p className="text-[11.5px] font-semibold uppercase tracking-[0.14em] text-ink-faint">
           Panel general
         </p>
-        <h1 className="mt-1 text-[27px] text-ink">Bienvenido, {perfil?.nombre ?? '...'}</h1>
+        <h1 className="mt-1 text-[27px] text-ink">
+          {perfil?.nombre ? `Bienvenido, ${perfil.nombre}` : 'Bienvenido'}
+        </h1>
+        {perfilError && (
+          <p className="text-xs text-negative">No se pudo cargar tu perfil.</p>
+        )}
       </div>
 
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
