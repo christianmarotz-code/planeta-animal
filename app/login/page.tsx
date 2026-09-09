@@ -20,7 +20,7 @@ export default function LoginPage() {
       setError('Email o contraseña incorrectos.')
       return
     }
-    router.push('/proveedores')
+    router.push('/')
     router.refresh()
   }
 

@@ -13,8 +13,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
     <div className="min-h-screen">
       <nav className="flex flex-wrap items-center gap-5 bg-brand-dark px-4 py-3 text-sm text-white">
-        <Link href="/proveedores">
+        <Link href="/">
           <Logo />
+        </Link>
+        <Link href="/" className="transition hover:text-brand-orange">
+          Inicio
         </Link>
         <Link href="/proveedores" className="transition hover:text-brand-orange">
           Proveedores

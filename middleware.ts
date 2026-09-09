@@ -35,7 +35,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
   if (user && isAuthRoute) {
-    return NextResponse.redirect(new URL('/proveedores', request.url))
+    return NextResponse.redirect(new URL('/', request.url))
   }
 
   return response
