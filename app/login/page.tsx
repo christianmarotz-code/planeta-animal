@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { PawIcon } from '@/components/Logo'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -25,14 +26,17 @@ export default function LoginPage() {
 
   return (
     <main className="mx-auto mt-24 max-w-sm p-4">
-      <h1 className="mb-6 text-xl font-semibold">Planeta Animal — Ingresar</h1>
+      <div className="mb-6 flex flex-col items-center gap-3">
+        <PawIcon className="h-16 w-16" />
+        <h1 className="text-xl font-semibold text-brand-dark">Planeta Animal</h1>
+      </div>
       <form onSubmit={handleSubmit} className="flex flex-col gap-3">
         <input
           type="email"
           placeholder="Email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="rounded border p-2"
+          className="rounded border p-2 focus:border-brand-orange focus:outline-none"
           required
         />
         <input
@@ -40,11 +44,14 @@ export default function LoginPage() {
           placeholder="Contraseña"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="rounded border p-2"
+          className="rounded border p-2 focus:border-brand-orange focus:outline-none"
           required
         />
         {error && <p className="text-sm text-red-600">{error}</p>}
-        <button type="submit" className="rounded bg-slate-900 p-2 text-white">
+        <button
+          type="submit"
+          className="rounded bg-brand-orange p-2 font-semibold text-brand-dark transition hover:brightness-95"
+        >
           Ingresar
         </button>
       </form>
