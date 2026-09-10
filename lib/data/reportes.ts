@@ -1,4 +1,4 @@
-import type { FacturaCompra, Proveedor, Producto } from '@/types/database'
+import type { FacturaCompra, Proveedor, Producto, ItemFactura, Rama, TipoComprobante } from '@/types/database'
 
 export function calcularGastoPorProveedor(
   facturas: FacturaCompra[],
@@ -17,6 +17,91 @@ export function calcularGastoPorProveedor(
 
 export function calcularValorStock(productos: Producto[]): number {
   return productos.reduce((acc, p) => acc + p.stock_actual * p.costo_unitario_actual, 0)
+}
+
+export const RAMAS: Rama[] = ['clinica', 'petshop']
+
+export function calcularCapitalEnRiesgoPorRama(
+  productos: Producto[]
+): Record<Rama, { valor: number; cantidad: number }> {
+  const resultado: Record<Rama, { valor: number; cantidad: number }> = {
+    clinica: { valor: 0, cantidad: 0 },
+    petshop: { valor: 0, cantidad: 0 },
+  }
+  for (const p of productos) {
+    if (p.rama === null || p.stock_actual > p.stock_minimo) continue
+    resultado[p.rama].valor += p.stock_actual * p.costo_unitario_actual
+    resultado[p.rama].cantidad += 1
+  }
+  return resultado
+}
+
+interface ItemConContexto {
+  item: ItemFactura
+  factura: FacturaCompra
+  rama: Rama | null
+}
+
+function enriquecerItems(
+  items: ItemFactura[],
+  facturas: FacturaCompra[],
+  productos: Producto[]
+): ItemConContexto[] {
+  const facturaPorId = new Map(facturas.map((f) => [f.id, f]))
+  const productoPorId = new Map(productos.map((p) => [p.id, p]))
+  const resultado: ItemConContexto[] = []
+  for (const item of items) {
+    const factura = facturaPorId.get(item.factura_id)
+    if (!factura || factura.estado === 'anulada') continue
+    resultado.push({ item, factura, rama: productoPorId.get(item.producto_id)?.rama ?? null })
+  }
+  return resultado
+}
+
+// Gasto por proveedor calculado a nivel de línea de factura (item.subtotal,
+// neto de IVA) porque una factura puede mezclar productos de ambas ramas —
+// a diferencia de calcularGastoPorProveedor, que usa factura.total (con IVA)
+// porque ahí no hace falta discriminar por rama.
+export function calcularGastoPorProveedorPorRama(
+  items: ItemFactura[],
+  facturas: FacturaCompra[],
+  productos: Producto[],
+  proveedores: Proveedor[],
+  rama: Rama
+): { proveedor: string; total: number }[] {
+  const totalesPorProveedor = new Map<string, number>()
+  for (const { item, factura, rama: ramaItem } of enriquecerItems(items, facturas, productos)) {
+    if (ramaItem !== rama) continue
+    totalesPorProveedor.set(
+      factura.proveedor_id,
+      (totalesPorProveedor.get(factura.proveedor_id) ?? 0) + item.subtotal
+    )
+  }
+  return Array.from(totalesPorProveedor.entries())
+    .map(([proveedorId, total]) => ({
+      proveedor: proveedores.find((p) => p.id === proveedorId)?.nombre ?? 'Desconocido',
+      total,
+    }))
+    .sort((a, b) => b.total - a.total)
+}
+
+export function calcularComprobantesPorRama(
+  items: ItemFactura[],
+  facturas: FacturaCompra[],
+  productos: Producto[],
+  rama: Rama
+): { tipo: TipoComprobante; total: number; cantidad: number }[] {
+  const porTipo = new Map<TipoComprobante, { total: number; cantidad: number }>()
+  for (const { item, factura, rama: ramaItem } of enriquecerItems(items, facturas, productos)) {
+    if (ramaItem !== rama) continue
+    const actual = porTipo.get(factura.tipo_comprobante) ?? { total: 0, cantidad: 0 }
+    actual.total += item.subtotal
+    actual.cantidad += 1
+    porTipo.set(factura.tipo_comprobante, actual)
+  }
+  return Array.from(porTipo.entries())
+    .map(([tipo, valores]) => ({ tipo, ...valores }))
+    .sort((a, b) => b.total - a.total)
 }
 
 export function inicioSemana(fecha: Date): string {

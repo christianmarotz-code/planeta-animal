@@ -67,6 +67,7 @@ export default function NuevaFacturaPage() {
       const nuevo = await crearProducto({
         nombre,
         categoria: '',
+        rama: null,
         unidad_compra: 'unidad',
         unidad_stock: 'unidad',
         factor_conversion: 1,

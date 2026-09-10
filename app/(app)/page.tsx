@@ -2,12 +2,27 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { listarFacturas } from '@/lib/data/facturas'
+import { listarFacturas, listarItemsFactura } from '@/lib/data/facturas'
 import { listarProveedores } from '@/lib/data/proveedores'
 import { listarProductos } from '@/lib/data/productos'
-import { calcularValorStock, calcularGastoPorSemana } from '@/lib/data/reportes'
+import { listarMovimientosStock } from '@/lib/data/movimientos'
+import { listarUsuarios, type UsuarioConEmail } from '@/lib/data/usuarios'
+import {
+  calcularValorStock,
+  calcularGastoPorSemana,
+  calcularCapitalEnRiesgoPorRama,
+  calcularGastoPorProveedorPorRama,
+  calcularComprobantesPorRama,
+  RAMAS,
+} from '@/lib/data/reportes'
 import { obtenerOCrearPerfilActual } from '@/lib/data/perfiles'
-import type { FacturaCompra, Proveedor, Producto, Perfil } from '@/types/database'
+import type { FacturaCompra, Proveedor, Producto, Perfil, ItemFactura, MovimientoStock, Rama } from '@/types/database'
+
+const NOMBRE_RAMA: Record<Rama, string> = { clinica: 'Clínica', petshop: 'Petshop' }
+const NOMBRE_TIPO_MOVIMIENTO: Record<MovimientoStock['tipo'], string> = {
+  entrada_compra: 'Entrada por compra',
+  ajuste_manual: 'Ajuste manual',
+}
 
 function StatShell({
   eyebrow,
@@ -40,27 +55,152 @@ function StatShell({
   )
 }
 
+function SeccionRama({
+  rama,
+  productos,
+  facturasUltimos30,
+  items,
+  proveedores,
+  movimientos,
+  usuarios,
+}: {
+  rama: Rama
+  productos: Producto[]
+  facturasUltimos30: FacturaCompra[]
+  items: ItemFactura[]
+  proveedores: Proveedor[]
+  movimientos: MovimientoStock[]
+  usuarios: UsuarioConEmail[]
+}) {
+  const productosPorId = new Map(productos.map((p) => [p.id, p]))
+  const capital = calcularCapitalEnRiesgoPorRama(productos)[rama]
+  const topProveedores = calcularGastoPorProveedorPorRama(
+    items,
+    facturasUltimos30,
+    productos,
+    proveedores,
+    rama
+  ).slice(0, 3)
+  const comprobantes = calcularComprobantesPorRama(items, facturasUltimos30, productos, rama)
+  const usuariosPorId = new Map(usuarios.map((u) => [u.id, u.nombre]))
+  const actividad = movimientos
+    .filter((m) => productosPorId.get(m.producto_id)?.rama === rama)
+    .slice(0, 5)
+
+  return (
+    <div className="shell rise">
+      <div className="core flex flex-col gap-5">
+        <p className="text-[11.5px] font-semibold uppercase tracking-[0.14em] text-ink-faint">
+          {NOMBRE_RAMA[rama]}
+        </p>
+
+        <div className="flex items-start justify-between">
+          <p className="text-xs text-ink-faint">Capital en riesgo (stock bajo mínimo)</p>
+          <span className="chip down">{capital.cantidad} prod.</span>
+        </div>
+        <p className="mono -mt-3 text-xl font-medium text-ink">
+          ${capital.valor.toLocaleString('es-AR')}
+        </p>
+
+        <div>
+          <p className="mb-2 text-xs text-ink-faint">Top proveedores (30 días, neto)</p>
+          <ul className="divide-y divide-line">
+            {topProveedores.map((p) => (
+              <li key={p.proveedor} className="flex items-center justify-between py-2 text-sm">
+                <span className="text-ink">{p.proveedor}</span>
+                <span className="mono text-ink-soft">${p.total.toLocaleString('es-AR')}</span>
+              </li>
+            ))}
+            {topProveedores.length === 0 && (
+              <li className="py-2 text-sm text-ink-faint">Sin compras en los últimos 30 días.</li>
+            )}
+          </ul>
+        </div>
+
+        <div>
+          <p className="mb-2 text-xs text-ink-faint">Comprobantes (30 días)</p>
+          <ul className="divide-y divide-line">
+            {comprobantes.map((c) => (
+              <li key={c.tipo} className="flex items-center justify-between py-2 text-sm">
+                <span className="text-ink">
+                  {c.tipo} <span className="text-ink-faint">({c.cantidad})</span>
+                </span>
+                <span className="mono text-ink-soft">${c.total.toLocaleString('es-AR')}</span>
+              </li>
+            ))}
+            {comprobantes.length === 0 && (
+              <li className="py-2 text-sm text-ink-faint">Sin comprobantes en los últimos 30 días.</li>
+            )}
+          </ul>
+        </div>
+
+        <div>
+          <p className="mb-2 text-xs text-ink-faint">Actividad reciente</p>
+          <ul className="divide-y divide-line">
+            {actividad.map((m) => (
+              <li key={m.id} className="py-2 text-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-ink">{productosPorId.get(m.producto_id)?.nombre ?? '—'}</span>
+                  <span className="mono text-ink-soft">
+                    {m.tipo === 'ajuste_manual' && m.cantidad > 0 ? '+' : ''}
+                    {m.cantidad}
+                  </span>
+                </div>
+                <p className="mono text-[11px] text-ink-faint">
+                  {NOMBRE_TIPO_MOVIMIENTO[m.tipo]}
+                  {m.usuario_id && usuariosPorId.get(m.usuario_id) ? ` · ${usuariosPorId.get(m.usuario_id)}` : ''}
+                  {' · '}
+                  {new Date(m.fecha).toLocaleDateString('es-AR')}
+                </p>
+              </li>
+            ))}
+            {actividad.length === 0 && (
+              <li className="py-2 text-sm text-ink-faint">Sin movimientos recientes.</li>
+            )}
+          </ul>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function DashboardPage() {
   const [facturas, setFacturas] = useState<FacturaCompra[]>([])
   const [proveedores, setProveedores] = useState<Proveedor[]>([])
   const [productos, setProductos] = useState<Producto[]>([])
+  const [items, setItems] = useState<ItemFactura[]>([])
+  const [movimientos, setMovimientos] = useState<MovimientoStock[]>([])
+  const [usuarios, setUsuarios] = useState<UsuarioConEmail[]>([])
   const [perfil, setPerfil] = useState<Perfil | null>(null)
   const [perfilError, setPerfilError] = useState(false)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    Promise.all([listarFacturas(), listarProveedores(), listarProductos()])
-      .then(([f, p, pr]) => {
+    Promise.all([
+      listarFacturas(),
+      listarProveedores(),
+      listarProductos(),
+      listarItemsFactura(),
+      listarMovimientosStock(),
+    ])
+      .then(([f, p, pr, it, mv]) => {
         setFacturas(f)
         setProveedores(p)
         setProductos(pr)
+        setItems(it)
+        setMovimientos(mv)
       })
       .finally(() => setLoading(false))
   }, [])
 
   useEffect(() => {
     obtenerOCrearPerfilActual()
-      .then(setPerfil)
+      .then((perfilActual) => {
+        setPerfil(perfilActual)
+        if (perfilActual.rol === 'administrador') {
+          listarUsuarios().then(setUsuarios).catch(() => {})
+        }
+      })
       .catch(() => setPerfilError(true))
   }, [])
 
@@ -141,6 +281,26 @@ export default function DashboardPage() {
                   </div>
                 ))}
               </div>
+            </div>
+          </div>
+
+          <div>
+            <p className="mb-3 text-[11.5px] font-semibold uppercase tracking-[0.14em] text-ink-faint">
+              Por rama de negocio
+            </p>
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+              {RAMAS.map((rama) => (
+                <SeccionRama
+                  key={rama}
+                  rama={rama}
+                  productos={productos}
+                  facturasUltimos30={facturasUltimos30}
+                  items={items}
+                  proveedores={proveedores}
+                  movimientos={movimientos}
+                  usuarios={usuarios}
+                />
+              ))}
             </div>
           </div>
         </>

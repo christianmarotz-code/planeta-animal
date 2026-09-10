@@ -14,10 +14,13 @@ export interface Proveedor {
   created_at: string
 }
 
+export type Rama = 'clinica' | 'petshop'
+
 export interface Producto {
   id: string
   nombre: string
   categoria: string | null
+  rama: Rama | null
   unidad_compra: string
   unidad_stock: string
   factor_conversion: number

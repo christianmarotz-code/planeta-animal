@@ -1,11 +1,12 @@
 'use client'
 
 import { useState } from 'react'
-import type { Producto } from '@/types/database'
+import type { Producto, Rama } from '@/types/database'
 
 export interface ProductoFormValues {
   nombre: string
   categoria: string
+  rama: Rama | ''
   unidad_compra: string
   unidad_stock: string
   factor_conversion: number
@@ -13,18 +14,21 @@ export interface ProductoFormValues {
   alicuota_iva: number
 }
 
+export type ProductoFormSubmitValues = Omit<ProductoFormValues, 'rama'> & { rama: Rama }
+
 export function ProductoForm({
   initial,
   onSubmit,
   submitLabel,
 }: {
   initial?: Partial<Producto>
-  onSubmit: (values: ProductoFormValues) => Promise<void>
+  onSubmit: (values: ProductoFormSubmitValues) => Promise<void>
   submitLabel: string
 }) {
   const [values, setValues] = useState<ProductoFormValues>({
     nombre: initial?.nombre ?? '',
     categoria: initial?.categoria ?? '',
+    rama: initial?.rama ?? '',
     unidad_compra: initial?.unidad_compra ?? '',
     unidad_stock: initial?.unidad_stock ?? '',
     factor_conversion: initial?.factor_conversion ?? 1,
@@ -40,10 +44,11 @@ export function ProductoForm({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    if (values.rama === '') return
     setError(null)
     setSaving(true)
     try {
-      await onSubmit(values)
+      await onSubmit({ ...values, rama: values.rama })
     } catch (err) {
       setError('No se pudo guardar. Intentá de nuevo.')
     } finally {
@@ -66,6 +71,21 @@ export function ProductoForm({
         onChange={(e) => set('categoria', e.target.value)}
         className="rounded-[var(--r-sm)] border border-line bg-surface-sunk p-2.5 text-sm text-ink outline-none transition focus:border-accent"
       />
+      <label className="text-sm font-medium text-ink-soft">
+        Rama
+        <select
+          required
+          value={values.rama}
+          onChange={(e) => set('rama', e.target.value as Rama)}
+          className="mt-1 w-full rounded-[var(--r-sm)] border border-line bg-surface-sunk p-2.5 text-sm text-ink outline-none transition focus:border-accent"
+        >
+          <option value="" disabled>
+            Seleccionar rama
+          </option>
+          <option value="clinica">Clínica</option>
+          <option value="petshop">Petshop</option>
+        </select>
+      </label>
       <div className="flex gap-2">
         <input
           required

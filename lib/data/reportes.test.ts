@@ -1,6 +1,16 @@
 import { describe, it, expect } from 'vitest'
-import { calcularGastoPorProveedor, calcularValorStock, calcularGastoPorSemana, inicioSemana, calcularGastoPorMes, calcularGastoPorDiaSemana } from './reportes'
-import type { FacturaCompra, Proveedor, Producto } from '@/types/database'
+import {
+  calcularGastoPorProveedor,
+  calcularValorStock,
+  calcularGastoPorSemana,
+  inicioSemana,
+  calcularGastoPorMes,
+  calcularGastoPorDiaSemana,
+  calcularCapitalEnRiesgoPorRama,
+  calcularGastoPorProveedorPorRama,
+  calcularComprobantesPorRama,
+} from './reportes'
+import type { FacturaCompra, Proveedor, Producto, ItemFactura, Rama } from '@/types/database'
 
 function proveedor(id: string, nombre: string): Proveedor {
   return {
@@ -62,23 +72,46 @@ describe('calcularGastoPorProveedor', () => {
   })
 })
 
-describe('calcularValorStock', () => {
-  function producto(stock: number, costo: number): Producto {
-    return {
-      id: crypto.randomUUID(),
-      nombre: 'x',
-      categoria: null,
-      unidad_compra: 'u',
-      unidad_stock: 'u',
-      factor_conversion: 1,
-      stock_actual: stock,
-      stock_minimo: 0,
-      costo_unitario_actual: costo,
-      alicuota_iva: 21,
-      activo: true,
-      created_at: '',
-    }
+function producto(
+  stock: number,
+  costo: number,
+  opciones?: { rama?: Rama | null; stockMinimo?: number; id?: string }
+): Producto {
+  return {
+    id: opciones?.id ?? crypto.randomUUID(),
+    nombre: 'x',
+    categoria: null,
+    rama: opciones?.rama ?? null,
+    unidad_compra: 'u',
+    unidad_stock: 'u',
+    factor_conversion: 1,
+    stock_actual: stock,
+    stock_minimo: opciones?.stockMinimo ?? 0,
+    costo_unitario_actual: costo,
+    alicuota_iva: 21,
+    activo: true,
+    created_at: '',
   }
+}
+
+function itemFactura(
+  facturaId: string,
+  productoId: string,
+  subtotal: number,
+  id = crypto.randomUUID()
+): ItemFactura {
+  return {
+    id,
+    factura_id: facturaId,
+    producto_id: productoId,
+    cantidad: 1,
+    costo_unitario: subtotal,
+    alicuota_iva: 21,
+    subtotal,
+  }
+}
+
+describe('calcularValorStock', () => {
 
   it('sums stock quantity times current unit cost across products', () => {
     const productos = [producto(10, 100), producto(5, 50)]
@@ -254,5 +287,65 @@ describe('calcularGastoPorDiaSemana', () => {
     const result = calcularGastoPorDiaSemana(facturas, 1, hoy)
     const total = result.reduce((acc, d) => acc + d.total, 0)
     expect(total).toBe(300)
+  })
+})
+
+describe('calcularCapitalEnRiesgoPorRama', () => {
+  it('sums stock value only for products below or at their minimum, grouped by rama', () => {
+    const productos = [
+      producto(2, 100, { rama: 'clinica', stockMinimo: 5 }), // bajo mínimo
+      producto(10, 50, { rama: 'clinica', stockMinimo: 5 }), // por encima, no cuenta
+      producto(1, 200, { rama: 'petshop', stockMinimo: 3 }), // bajo mínimo
+    ]
+    const result = calcularCapitalEnRiesgoPorRama(productos)
+    expect(result.clinica).toEqual({ valor: 200, cantidad: 1 })
+    expect(result.petshop).toEqual({ valor: 200, cantidad: 1 })
+  })
+
+  it('ignores products without a rama assigned', () => {
+    const productos = [producto(1, 100, { rama: null, stockMinimo: 5 })]
+    const result = calcularCapitalEnRiesgoPorRama(productos)
+    expect(result.clinica).toEqual({ valor: 0, cantidad: 0 })
+    expect(result.petshop).toEqual({ valor: 0, cantidad: 0 })
+  })
+})
+
+describe('calcularGastoPorProveedorPorRama', () => {
+  it('sums item subtotals by proveedor, scoped to a single rama and excluding annulled invoices', () => {
+    const proveedores = [proveedor('p1', 'Proveedor Uno'), proveedor('p2', 'Proveedor Dos')]
+    const productos = [
+      producto(0, 0, { rama: 'clinica', id: 'prod-clinica' }),
+      producto(0, 0, { rama: 'petshop', id: 'prod-petshop' }),
+    ]
+    const facturaClinica = factura('p1', 1000)
+    const facturaPetshop = factura('p2', 500)
+    const facturaAnulada = factura('p1', 9999, 'anulada')
+    const facturas = [facturaClinica, facturaPetshop, facturaAnulada]
+    const items = [
+      itemFactura(facturaClinica.id, 'prod-clinica', 300),
+      itemFactura(facturaPetshop.id, 'prod-petshop', 500),
+      itemFactura(facturaAnulada.id, 'prod-clinica', 9999),
+    ]
+    const result = calcularGastoPorProveedorPorRama(items, facturas, productos, proveedores, 'clinica')
+    expect(result).toEqual([{ proveedor: 'Proveedor Uno', total: 300 }])
+  })
+})
+
+describe('calcularComprobantesPorRama', () => {
+  it('groups item subtotals and counts by tipo_comprobante, scoped to a rama', () => {
+    const productos = [producto(0, 0, { rama: 'petshop', id: 'prod-1' })]
+    const facturaA = { ...factura('p1', 100), tipo_comprobante: 'Factura A' as const }
+    const facturaB = { ...factura('p1', 200), tipo_comprobante: 'Factura B' as const }
+    const facturas = [facturaA, facturaB]
+    const items = [
+      itemFactura(facturaA.id, 'prod-1', 60),
+      itemFactura(facturaA.id, 'prod-1', 40),
+      itemFactura(facturaB.id, 'prod-1', 200),
+    ]
+    const result = calcularComprobantesPorRama(items, facturas, productos, 'petshop')
+    expect(result).toEqual([
+      { tipo: 'Factura B', total: 200, cantidad: 1 },
+      { tipo: 'Factura A', total: 100, cantidad: 2 },
+    ])
   })
 })

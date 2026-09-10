@@ -43,6 +43,13 @@ export async function listarFacturas(filtros?: {
   return data
 }
 
+export async function listarItemsFactura(): Promise<ItemFactura[]> {
+  const supabase = createClient()
+  const { data, error } = await supabase.from('items_factura').select('*')
+  if (error) throw error
+  return data as ItemFactura[]
+}
+
 export async function obtenerFacturaConItems(
   id: string
 ): Promise<{ factura: FacturaCompra; items: ItemFactura[] }> {
