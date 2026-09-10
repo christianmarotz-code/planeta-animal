@@ -5,10 +5,12 @@ import { useParams, useRouter } from 'next/navigation'
 import { obtenerProducto, actualizarProducto } from '@/lib/data/productos'
 import type { Producto } from '@/types/database'
 import { ProductoForm } from '../ProductoForm'
+import { useEsAdministrador } from '@/lib/hooks/useEsAdministrador'
 
 export default function EditarProductoPage() {
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
+  const esAdmin = useEsAdministrador()
   const [producto, setProducto] = useState<Producto | null>(null)
 
   useEffect(() => {
@@ -26,8 +28,8 @@ export default function EditarProductoPage() {
         <h1 className="mt-1 text-[27px] text-ink">Editar producto</h1>
       </div>
       <div className="chip up mb-2 w-fit">
-        Stock: {producto.stock_actual} {producto.unidad_stock} · Costo: $
-        {producto.costo_unitario_actual.toLocaleString('es-AR')}
+        Stock: {producto.stock_actual} {producto.unidad_stock}
+        {esAdmin && ` · Costo: $${producto.costo_unitario_actual.toLocaleString('es-AR')}`}
       </div>
       <ProductoForm
         initial={producto}

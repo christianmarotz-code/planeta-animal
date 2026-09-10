@@ -4,8 +4,10 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { listarProductos } from '@/lib/data/productos'
 import type { Producto } from '@/types/database'
+import { useEsAdministrador } from '@/lib/hooks/useEsAdministrador'
 
 export default function ProductosPage() {
+  const esAdmin = useEsAdministrador()
   const [productos, setProductos] = useState<Producto[]>([])
   const [soloStockBajo, setSoloStockBajo] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -55,9 +57,11 @@ export default function ProductosPage() {
                 <th className="px-5 py-3 text-[11.5px] font-semibold uppercase tracking-[0.1em] text-ink-faint">
                   Stock actual
                 </th>
-                <th className="px-5 py-3 text-[11.5px] font-semibold uppercase tracking-[0.1em] text-ink-faint">
-                  Costo unitario
-                </th>
+                {esAdmin && (
+                  <th className="px-5 py-3 text-[11.5px] font-semibold uppercase tracking-[0.1em] text-ink-faint">
+                    Costo unitario
+                  </th>
+                )}
               </tr>
             </thead>
             <tbody>
@@ -80,14 +84,16 @@ export default function ProductosPage() {
                       </span>
                     )}
                   </td>
-                  <td className="mono px-5 py-3 text-ink">
-                    ${p.costo_unitario_actual.toLocaleString('es-AR')}
-                  </td>
+                  {esAdmin && (
+                    <td className="mono px-5 py-3 text-ink">
+                      ${p.costo_unitario_actual.toLocaleString('es-AR')}
+                    </td>
+                  )}
                 </tr>
               ))}
               {productos.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="px-5 py-6 text-sm text-ink-faint">
+                  <td colSpan={esAdmin ? 4 : 3} className="px-5 py-6 text-sm text-ink-faint">
                     Sin productos aún.
                   </td>
                 </tr>
