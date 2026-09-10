@@ -52,3 +52,6 @@ next-env.d.ts
 
 # graphify knowledge-graph output (generated, regenerate with /graphify)
 /graphify-out/
+
+# facturas escaneadas de proveedores (documentos personales/financieros, no código)
+/facturas planeta animal/

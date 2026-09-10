@@ -88,8 +88,11 @@ function producto(
     stock_actual: stock,
     stock_minimo: opciones?.stockMinimo ?? 0,
     costo_unitario_actual: costo,
+    precio_venta: 0,
     alicuota_iva: 21,
     activo: true,
+    codigo: null,
+    codigo_barras: null,
     created_at: '',
   }
 }

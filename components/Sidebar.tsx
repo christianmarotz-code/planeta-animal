@@ -14,6 +14,8 @@ const LINKS = [
   { href: '/productos', label: 'Productos' },
   { href: '/compras', label: 'Compras' },
   { href: '/stock', label: 'Stock' },
+  { href: '/comparador', label: 'Comparador', soloAdmin: true },
+  { href: '/gastos', label: 'Gastos', soloAdmin: true },
   { href: '/reportes', label: 'Reportes', soloAdmin: true },
   { href: '/usuarios', label: 'Usuarios', soloAdmin: true },
 ]

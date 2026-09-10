@@ -27,8 +27,11 @@ export interface Producto {
   stock_actual: number
   stock_minimo: number
   costo_unitario_actual: number
+  precio_venta: number
   alicuota_iva: number
   activo: boolean
+  codigo: string | null
+  codigo_barras: string | null
   created_at: string
 }
 
@@ -80,6 +83,30 @@ export interface MovimientoStock {
   usuario_id: string | null
 }
 
+export type CategoriaGasto = 'combustible' | 'servicios' | 'indumentaria' | 'impuestos' | 'otro'
+
+export interface Gasto {
+  id: string
+  fecha: string
+  categoria: CategoriaGasto
+  concepto: string
+  proveedor: string | null
+  monto: number
+  rama: Rama | null
+  notas: string | null
+  created_at: string
+  created_by: string | null
+}
+
+export interface PrecioProveedor {
+  id: string
+  proveedor_id: string
+  producto_id: string
+  precio: number
+  actualizado_en: string
+  created_at: string
+}
+
 export type RolPerfil = 'administrador' | 'empleado'
 
 export interface Perfil {
@@ -111,6 +138,12 @@ export interface Database {
         Update: Partial<MovimientoStock>
       }
       perfiles: { Row: Perfil; Insert: Partial<Perfil>; Update: Partial<Perfil> }
+      gastos: { Row: Gasto; Insert: Partial<Gasto>; Update: Partial<Gasto> }
+      precios_proveedor: {
+        Row: PrecioProveedor
+        Insert: Partial<PrecioProveedor>
+        Update: Partial<PrecioProveedor>
+      }
     }
   }
 }
