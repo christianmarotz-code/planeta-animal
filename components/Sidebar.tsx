@@ -14,13 +14,22 @@ const LINKS = [
   { href: '/productos', label: 'Productos' },
   { href: '/compras', label: 'Compras' },
   { href: '/stock', label: 'Stock' },
-  { href: '/reportes', label: 'Reportes' },
+  { href: '/reportes', label: 'Reportes', soloAdmin: true },
+  { href: '/usuarios', label: 'Usuarios', soloAdmin: true },
 ]
 
-function NavLinks({ pathname, onNavigate }: { pathname: string; onNavigate?: () => void }) {
+function NavLinks({
+  pathname,
+  esAdmin,
+  onNavigate,
+}: {
+  pathname: string
+  esAdmin: boolean
+  onNavigate?: () => void
+}) {
   return (
     <>
-      {LINKS.map((link) => {
+      {LINKS.filter((link) => !link.soloAdmin || esAdmin).map((link) => {
         const activo = pathname === link.href
         return (
           <Link
@@ -69,6 +78,7 @@ export function Sidebar({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const [perfil, setPerfil] = useState<Perfil | null>(null)
   const [menuAbierto, setMenuAbierto] = useState(false)
+  const esAdmin = perfil?.rol === 'administrador'
 
   useEffect(() => {
     obtenerOCrearPerfilActual()
@@ -84,7 +94,7 @@ export function Sidebar({ children }: { children: React.ReactNode }) {
           <Logo />
         </Link>
         <nav className="flex flex-1 flex-col gap-1">
-          <NavLinks pathname={pathname} />
+          <NavLinks pathname={pathname} esAdmin={esAdmin} />
         </nav>
         <PerfilYSalir perfil={perfil} />
       </aside>
@@ -133,7 +143,7 @@ export function Sidebar({ children }: { children: React.ReactNode }) {
             <Logo />
           </Link>
           <nav className="flex flex-1 flex-col gap-1">
-            <NavLinks pathname={pathname} onNavigate={() => setMenuAbierto(false)} />
+            <NavLinks pathname={pathname} esAdmin={esAdmin} onNavigate={() => setMenuAbierto(false)} />
           </nav>
           <PerfilYSalir perfil={perfil} onNavigate={() => setMenuAbierto(false)} />
         </aside>
