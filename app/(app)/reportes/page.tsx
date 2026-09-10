@@ -11,6 +11,7 @@ import {
   calcularGastoPorMes,
   calcularGastoPorDiaSemana,
 } from '@/lib/data/reportes'
+import { useEsAdministrador } from '@/lib/hooks/useEsAdministrador'
 import type { FacturaCompra, Proveedor, Producto } from '@/types/database'
 
 const NOMBRES_MES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
@@ -61,6 +62,7 @@ function GraficoBarras({
 }
 
 export default function ReportesPage() {
+  const esAdmin = useEsAdministrador()
   const [facturas, setFacturas] = useState<FacturaCompra[]>([])
   const [proveedores, setProveedores] = useState<Proveedor[]>([])
   const [productos, setProductos] = useState<Producto[]>([])
@@ -70,6 +72,15 @@ export default function ReportesPage() {
     listarProveedores().then(setProveedores)
     listarProductos().then(setProductos)
   }, [])
+
+  if (esAdmin === null) return <p className="p-8 text-sm text-ink-soft">Cargando…</p>
+  if (esAdmin === false) {
+    return (
+      <p className="p-8 text-sm text-negative">
+        Acceso restringido — contactá a un administrador.
+      </p>
+    )
+  }
 
   const gastoPorProveedor = calcularGastoPorProveedor(facturas, proveedores)
   const valorStock = calcularValorStock(productos)
