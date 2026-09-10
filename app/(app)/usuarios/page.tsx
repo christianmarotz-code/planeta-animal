@@ -26,6 +26,7 @@ export default function UsuariosPage() {
   function cargarUsuarios() {
     listarUsuarios()
       .then(setUsuarios)
+      .catch((err) => setError(err instanceof Error ? err.message : 'No se pudo cargar la lista de usuarios.'))
       .finally(() => setLoading(false))
   }
 

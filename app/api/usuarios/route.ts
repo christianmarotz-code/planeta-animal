@@ -64,7 +64,13 @@ export async function POST(request: Request) {
   const { error: errorPerfil } = await admin
     .from('perfiles')
     .insert({ id: invitado.user.id, nombre, avatar_url: null, rol } as never)
-  if (errorPerfil) return NextResponse.json({ error: errorPerfil.message }, { status: 500 })
+  if (errorPerfil) {
+    // Evitar una cuenta huérfana: el usuario ya recibió el mail de invitación
+    // pero no tiene perfil. Mejor esfuerzo — si el borrado también falla, el
+    // admin ya ve el error del insert original y puede reintentar la invitación.
+    await admin.auth.admin.deleteUser(invitado.user.id).catch(() => {})
+    return NextResponse.json({ error: errorPerfil.message }, { status: 500 })
+  }
 
   return NextResponse.json({ ok: true })
 }
