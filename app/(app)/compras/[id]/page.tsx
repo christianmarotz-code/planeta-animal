@@ -7,10 +7,12 @@ import { obtenerProveedor } from '@/lib/data/proveedores'
 import { listarProductos } from '@/lib/data/productos'
 import { calcularCostoRealUnitario } from '@/lib/calc/costoReal'
 import type { FacturaCompra, ItemFactura, Proveedor, Producto } from '@/types/database'
+import { useEsAdministrador } from '@/lib/hooks/useEsAdministrador'
 
 export default function DetalleFacturaPage() {
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
+  const esAdmin = useEsAdministrador()
   const [factura, setFactura] = useState<FacturaCompra | null>(null)
   const [items, setItems] = useState<ItemFactura[]>([])
   const [proveedor, setProveedor] = useState<Proveedor | null>(null)
@@ -67,15 +69,19 @@ export default function DetalleFacturaPage() {
               <th className="px-5 py-3 text-[11.5px] font-semibold uppercase tracking-[0.1em] text-ink-faint">
                 Cantidad
               </th>
-              <th className="px-5 py-3 text-[11.5px] font-semibold uppercase tracking-[0.1em] text-ink-faint">
-                Costo neto
-              </th>
-              <th className="px-5 py-3 text-[11.5px] font-semibold uppercase tracking-[0.1em] text-ink-faint">
-                Costo real (con imp.)
-              </th>
-              <th className="px-5 py-3 text-[11.5px] font-semibold uppercase tracking-[0.1em] text-ink-faint">
-                Subtotal
-              </th>
+              {esAdmin && (
+                <>
+                  <th className="px-5 py-3 text-[11.5px] font-semibold uppercase tracking-[0.1em] text-ink-faint">
+                    Costo neto
+                  </th>
+                  <th className="px-5 py-3 text-[11.5px] font-semibold uppercase tracking-[0.1em] text-ink-faint">
+                    Costo real (con imp.)
+                  </th>
+                  <th className="px-5 py-3 text-[11.5px] font-semibold uppercase tracking-[0.1em] text-ink-faint">
+                    Subtotal
+                  </th>
+                </>
+              )}
             </tr>
           </thead>
           <tbody>
@@ -95,45 +101,55 @@ export default function DetalleFacturaPage() {
                     {productos.find((p) => p.id === item.producto_id)?.nombre}
                   </td>
                   <td className="mono px-5 py-3 text-ink">{item.cantidad}</td>
-                  <td className="mono px-5 py-3 text-ink-soft">${item.costo_unitario.toLocaleString('es-AR')}</td>
-                  <td className="mono px-5 py-3 font-semibold text-ink">
-                    {costoReal !== null ? `$${costoReal.toLocaleString('es-AR')}` : '—'}
-                  </td>
-                  <td className="mono px-5 py-3 text-ink">${item.subtotal.toLocaleString('es-AR')}</td>
+                  {esAdmin && (
+                    <>
+                      <td className="mono px-5 py-3 text-ink-soft">
+                        ${item.costo_unitario.toLocaleString('es-AR')}
+                      </td>
+                      <td className="mono px-5 py-3 font-semibold text-ink">
+                        {costoReal !== null ? `$${costoReal.toLocaleString('es-AR')}` : '—'}
+                      </td>
+                      <td className="mono px-5 py-3 text-ink">${item.subtotal.toLocaleString('es-AR')}</td>
+                    </>
+                  )}
                 </tr>
               )
             })}
           </tbody>
         </table>
       </div>
-      {proveedor && (proveedor.aplica_iibb || proveedor.aplica_perc_iva || proveedor.descuento_pronto_pago > 0) && (
-        <p className="text-xs text-ink-faint rise">
-          Costo real = costo neto × (1 + IVA
-          {proveedor.aplica_iibb && ` + II.BB. ${proveedor.tasa_iibb}%`}
-          {proveedor.aplica_perc_iva && ` + Perc. IVA ${proveedor.tasa_perc_iva}%`}) ×{' '}
-          {proveedor.descuento_pronto_pago > 0
-            ? `(1 − ${proveedor.descuento_pronto_pago}% dto. pronto pago)`
-            : '1'}{' '}
-          — configurado en la ficha de {proveedor.nombre}.
-        </p>
-      )}
+      {esAdmin &&
+        proveedor &&
+        (proveedor.aplica_iibb || proveedor.aplica_perc_iva || proveedor.descuento_pronto_pago > 0) && (
+          <p className="text-xs text-ink-faint rise">
+            Costo real = costo neto × (1 + IVA
+            {proveedor.aplica_iibb && ` + II.BB. ${proveedor.tasa_iibb}%`}
+            {proveedor.aplica_perc_iva && ` + Perc. IVA ${proveedor.tasa_perc_iva}%`}) ×{' '}
+            {proveedor.descuento_pronto_pago > 0
+              ? `(1 − ${proveedor.descuento_pronto_pago}% dto. pronto pago)`
+              : '1'}{' '}
+            — configurado en la ficha de {proveedor.nombre}.
+          </p>
+        )}
 
-      <div className="shell ml-auto w-72 rise">
-        <div className="core flex flex-col gap-2 text-sm">
-          <div className="flex justify-between text-ink-soft">
-            <span>Subtotal</span>
-            <span className="mono">${factura.subtotal.toLocaleString('es-AR')}</span>
-          </div>
-          <div className="flex justify-between text-ink-soft">
-            <span>IVA</span>
-            <span className="mono">${factura.iva_total.toLocaleString('es-AR')}</span>
-          </div>
-          <div className="flex justify-between border-t border-line pt-2 font-semibold text-ink">
-            <span>Total</span>
-            <span className="mono">${factura.total.toLocaleString('es-AR')}</span>
+      {esAdmin && (
+        <div className="shell ml-auto w-72 rise">
+          <div className="core flex flex-col gap-2 text-sm">
+            <div className="flex justify-between text-ink-soft">
+              <span>Subtotal</span>
+              <span className="mono">${factura.subtotal.toLocaleString('es-AR')}</span>
+            </div>
+            <div className="flex justify-between text-ink-soft">
+              <span>IVA</span>
+              <span className="mono">${factura.iva_total.toLocaleString('es-AR')}</span>
+            </div>
+            <div className="flex justify-between border-t border-line pt-2 font-semibold text-ink">
+              <span>Total</span>
+              <span className="mono">${factura.total.toLocaleString('es-AR')}</span>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {factura.estado === 'cargada' && (
         <div className="rise">

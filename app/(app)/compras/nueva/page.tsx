@@ -8,6 +8,7 @@ import { registrarFacturaCompra, type NuevaFacturaItemInput } from '@/lib/data/f
 import { calcularTotalesFactura } from '@/lib/calc/factura'
 import { calcularCostoRealUnitario } from '@/lib/calc/costoReal'
 import type { Proveedor, Producto, TipoComprobante } from '@/types/database'
+import { useEsAdministrador } from '@/lib/hooks/useEsAdministrador'
 
 const TIPOS_COMPROBANTE: TipoComprobante[] = [
   'Factura A',
@@ -30,6 +31,7 @@ function emptyItem(): ItemDraft {
 }
 
 export default function NuevaFacturaPage() {
+  const esAdmin = useEsAdministrador()
   const router = useRouter()
   const [proveedores, setProveedores] = useState<Proveedor[]>([])
   const [productos, setProductos] = useState<Producto[]>([])
@@ -137,6 +139,15 @@ export default function NuevaFacturaPage() {
     } finally {
       setSaving(false)
     }
+  }
+
+  if (esAdmin === null) return <p className="p-8 text-sm text-ink-soft">Cargando…</p>
+  if (esAdmin === false) {
+    return (
+      <p className="p-8 text-sm text-negative">
+        Acceso restringido — contactá a un administrador.
+      </p>
+    )
   }
 
   return (

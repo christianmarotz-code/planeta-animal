@@ -5,8 +5,10 @@ import Link from 'next/link'
 import { listarFacturas } from '@/lib/data/facturas'
 import { listarProveedores } from '@/lib/data/proveedores'
 import type { FacturaCompra, Proveedor } from '@/types/database'
+import { useEsAdministrador } from '@/lib/hooks/useEsAdministrador'
 
 export default function ComprasPage() {
+  const esAdmin = useEsAdministrador()
   const [facturas, setFacturas] = useState<FacturaCompra[]>([])
   const [proveedores, setProveedores] = useState<Proveedor[]>([])
   const [proveedorId, setProveedorId] = useState('')
@@ -28,9 +30,11 @@ export default function ComprasPage() {
           </p>
           <h1 className="mt-1 text-[27px] text-ink">Compras</h1>
         </div>
-        <Link href="/compras/nueva" className="pill-btn">
-          + Nueva factura
-        </Link>
+        {esAdmin && (
+          <Link href="/compras/nueva" className="pill-btn">
+            + Nueva factura
+          </Link>
+        )}
       </div>
       <select
         value={proveedorId}
@@ -58,7 +62,9 @@ export default function ComprasPage() {
                 {f.tipo_comprobante} {f.numero_comprobante}
                 {f.estado === 'anulada' && <span className="chip down ml-2">ANULADA</span>}
               </span>
-              <span className="mono font-semibold text-ink">${f.total.toLocaleString('es-AR')}</span>
+              {esAdmin && (
+                <span className="mono font-semibold text-ink">${f.total.toLocaleString('es-AR')}</span>
+              )}
             </Link>
           )
         })}
