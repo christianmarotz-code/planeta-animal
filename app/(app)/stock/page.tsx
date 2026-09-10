@@ -3,10 +3,19 @@
 import { useEffect, useState } from 'react'
 import { listarProductos } from '@/lib/data/productos'
 import { ajustarStockManual } from '@/lib/data/stock'
-import type { Producto } from '@/types/database'
+import { listarMovimientosStock } from '@/lib/data/movimientos'
+import { useEsAdministrador } from '@/lib/hooks/useEsAdministrador'
+import type { Producto, MovimientoStock } from '@/types/database'
+
+const ETIQUETA_TIPO: Record<MovimientoStock['tipo'], string> = {
+  entrada_compra: 'Entrada por compra',
+  ajuste_manual: 'Ajuste manual',
+}
 
 export default function StockPage() {
+  const esAdmin = useEsAdministrador()
   const [productos, setProductos] = useState<Producto[]>([])
+  const [movimientos, setMovimientos] = useState<MovimientoStock[]>([])
   const [ajusteAbierto, setAjusteAbierto] = useState<string | null>(null)
   const [cantidad, setCantidad] = useState('')
   const [motivo, setMotivo] = useState('')
@@ -14,6 +23,7 @@ export default function StockPage() {
 
   function cargar() {
     listarProductos().then(setProductos)
+    listarMovimientosStock().then(setMovimientos)
   }
 
   useEffect(cargar, [])
@@ -54,15 +64,18 @@ export default function StockPage() {
               <th className="px-5 py-3 text-[11.5px] font-semibold uppercase tracking-[0.1em] text-ink-faint">
                 Stock mínimo
               </th>
-              <th className="px-5 py-3 text-[11.5px] font-semibold uppercase tracking-[0.1em] text-ink-faint">
-                Valor (costo × stock)
-              </th>
+              {esAdmin && (
+                <th className="px-5 py-3 text-[11.5px] font-semibold uppercase tracking-[0.1em] text-ink-faint">
+                  Valor (costo × stock)
+                </th>
+              )}
               <th />
             </tr>
           </thead>
           <tbody>
             {productos.map((p) => {
               const bajo = p.stock_actual <= p.stock_minimo
+              const columnas = esAdmin ? 5 : 4
               return (
                 <>
                   <tr key={p.id} className="border-b border-line transition last:border-0 hover:bg-surface-sunk">
@@ -79,9 +92,11 @@ export default function StockPage() {
                       )}
                     </td>
                     <td className="mono px-5 py-3 text-ink-soft">{p.stock_minimo}</td>
-                    <td className="mono px-5 py-3 text-ink">
-                      ${(p.stock_actual * p.costo_unitario_actual).toLocaleString('es-AR')}
-                    </td>
+                    {esAdmin && (
+                      <td className="mono px-5 py-3 text-ink">
+                        ${(p.stock_actual * p.costo_unitario_actual).toLocaleString('es-AR')}
+                      </td>
+                    )}
                     <td className="px-5 py-3">
                       <button
                         onClick={() => {
@@ -98,7 +113,7 @@ export default function StockPage() {
                   </tr>
                   {ajusteAbierto === p.id && (
                     <tr className="border-b border-line bg-surface-sunk">
-                      <td colSpan={5} className="px-5 py-4">
+                      <td colSpan={columnas} className="px-5 py-4">
                         <div className="flex flex-wrap items-end gap-3">
                           <label className="text-sm text-ink-soft">
                             Cantidad (+/- en {p.unidad_stock})
@@ -131,13 +146,42 @@ export default function StockPage() {
             })}
             {productos.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-5 py-6 text-sm text-ink-faint">
+                <td colSpan={esAdmin ? 5 : 4} className="px-5 py-6 text-sm text-ink-faint">
                   Sin productos aún.
                 </td>
               </tr>
             )}
           </tbody>
         </table>
+      </div>
+
+      <div className="shell rise">
+        <div className="core">
+          <p className="mb-3 text-[11.5px] font-semibold uppercase tracking-[0.14em] text-ink-faint">
+            Historial de movimientos
+          </p>
+          <ul className="divide-y divide-line">
+            {movimientos.map((m) => {
+              const producto = productos.find((p) => p.id === m.producto_id)
+              return (
+                <li key={m.id} className="flex items-center justify-between py-2.5 text-sm">
+                  <span className="text-ink">
+                    <span className="mono text-ink-faint">{m.fecha}</span> — {producto?.nombre ?? '—'} —{' '}
+                    {ETIQUETA_TIPO[m.tipo]}
+                    {m.motivo && <span className="text-ink-faint"> ({m.motivo})</span>}
+                  </span>
+                  <span className={`chip ${m.cantidad >= 0 ? 'up' : 'down'}`}>
+                    {m.cantidad >= 0 ? '+' : ''}
+                    {m.cantidad}
+                  </span>
+                </li>
+              )
+            })}
+            {movimientos.length === 0 && (
+              <li className="py-2.5 text-sm text-ink-faint">Sin movimientos aún.</li>
+            )}
+          </ul>
+        </div>
       </div>
     </div>
   )
