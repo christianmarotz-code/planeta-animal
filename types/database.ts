@@ -77,10 +77,13 @@ export interface MovimientoStock {
   usuario_id: string | null
 }
 
+export type RolPerfil = 'administrador' | 'empleado'
+
 export interface Perfil {
   id: string
   nombre: string
   avatar_url: string | null
+  rol: RolPerfil
   created_at: string
 }
 
