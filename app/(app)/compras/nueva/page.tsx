@@ -4,7 +4,9 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { listarProveedores } from '@/lib/data/proveedores'
 import { listarProductos, crearProducto } from '@/lib/data/productos'
-import { registrarFacturaCompra, type NuevaFacturaItemInput } from '@/lib/data/facturas'
+import { registrarFacturaCompra, subirFotoFactura, reconocerFactura, type NuevaFacturaItemInput } from '@/lib/data/facturas'
+import { emparejarProveedor, emparejarProducto } from '@/lib/data/facturaMatching'
+import { redimensionarImagen } from '@/lib/image/redimensionarImagen'
 import { calcularTotalesFactura } from '@/lib/calc/factura'
 import { calcularCostoRealUnitario } from '@/lib/calc/costoReal'
 import type { Proveedor, Producto, TipoComprobante } from '@/types/database'
@@ -43,6 +45,11 @@ export default function NuevaFacturaPage() {
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [creandoProductoIndices, setCreandoProductoIndices] = useState<Set<number>>(new Set())
+  const [fotoPreviewUrl, setFotoPreviewUrl] = useState<string | null>(null)
+  const [archivoAdjunto, setArchivoAdjunto] = useState<string | null>(null)
+  const [reconociendo, setReconociendo] = useState(false)
+  const [errorReconocimiento, setErrorReconocimiento] = useState<string | null>(null)
+  const [proveedorDetectadoTexto, setProveedorDetectadoTexto] = useState<string | null>(null)
 
   useEffect(() => {
     listarProveedores().then(setProveedores)
@@ -83,6 +90,65 @@ export default function NuevaFacturaPage() {
         next.delete(index)
         return next
       })
+    }
+  }
+
+  async function handleFotoSeleccionada(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setFotoPreviewUrl(URL.createObjectURL(file))
+    setErrorReconocimiento(null)
+    setProveedorDetectadoTexto(null)
+    setReconociendo(true)
+
+    try {
+      const fileRedimensionado = await redimensionarImagen(file)
+      const ruta = await subirFotoFactura(fileRedimensionado)
+      setArchivoAdjunto(ruta)
+
+      const resultado = await reconocerFactura(ruta)
+      if (!resultado.ok) {
+        setErrorReconocimiento(resultado.error)
+        return
+      }
+
+      const { factura: detectada } = resultado
+
+      if (detectada.proveedor_nombre || detectada.proveedor_cuit) {
+        const proveedorMatch = emparejarProveedor(
+          { nombre: detectada.proveedor_nombre, cuit: detectada.proveedor_cuit },
+          proveedores
+        )
+        if (proveedorMatch) {
+          setProveedorId(proveedorMatch.id)
+        } else {
+          setProveedorDetectadoTexto(detectada.proveedor_nombre ?? detectada.proveedor_cuit)
+        }
+      }
+
+      if (detectada.tipo_comprobante) setTipoComprobante(detectada.tipo_comprobante)
+      if (detectada.numero_comprobante) setNumeroComprobante(detectada.numero_comprobante)
+      if (detectada.fecha) setFecha(detectada.fecha)
+
+      if (detectada.items.length > 0) {
+        setItems(
+          detectada.items.map((item) => {
+            const productoMatch = emparejarProducto(item.descripcion, productos)
+            return {
+              producto_id: productoMatch?.id ?? '',
+              productoTexto: productoMatch?.nombre ?? item.descripcion,
+              cantidad: item.cantidad !== null ? String(item.cantidad) : '',
+              costo_unitario: item.costo_unitario !== null ? String(item.costo_unitario) : '',
+              alicuota_iva: item.alicuota_iva !== null ? String(item.alicuota_iva) : '21',
+            }
+          })
+        )
+      }
+    } catch (err) {
+      setErrorReconocimiento('No se pudo procesar la foto. Completá los datos a mano.')
+    } finally {
+      setReconociendo(false)
     }
   }
 
@@ -132,6 +198,7 @@ export default function NuevaFacturaPage() {
         subtotal: totalesFinales.subtotal,
         iva_total: totalesFinales.ivaTotal,
         total: totalesFinales.total,
+        archivo_adjunto: archivoAdjunto,
         items: itemsInput,
       })
       router.push(`/compras/${id}`)
@@ -158,6 +225,33 @@ export default function NuevaFacturaPage() {
           Gestión
         </p>
         <h1 className="mt-1 text-[27px] text-ink">Nueva factura de compra</h1>
+      </div>
+      <div className="card rise flex flex-col gap-3 p-5">
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-semibold text-ink">Cargar foto de factura (opcional)</p>
+          <label className="pill-btn ghost cursor-pointer">
+            📷 Elegir foto
+            <input type="file" accept="image/*" capture="environment" onChange={handleFotoSeleccionada} className="hidden" />
+          </label>
+        </div>
+        {fotoPreviewUrl && (
+          <div className="flex items-start gap-4">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={fotoPreviewUrl} alt="Foto de la factura" className="h-32 w-32 rounded-[var(--r-sm)] object-cover" />
+            <div className="flex flex-col gap-1 text-sm">
+              {reconociendo && <p className="text-ink-faint">Leyendo factura…</p>}
+              {errorReconocimiento && <p className="text-negative">{errorReconocimiento}</p>}
+              {proveedorDetectadoTexto && !reconociendo && (
+                <p className="text-ink-faint">
+                  Detectado: <span className="text-ink">{proveedorDetectadoTexto}</span> — no encontrado en proveedores, elegilo o creá uno nuevo.
+                </p>
+              )}
+              {!reconociendo && !errorReconocimiento && !proveedorDetectadoTexto && (
+                <p className="text-ink-faint">Revisá los datos precargados abajo antes de guardar.</p>
+              )}
+            </div>
+          </div>
+        )}
       </div>
       <form onSubmit={handleSubmit} className="flex flex-col gap-5 rise">
         <div className="flex flex-wrap gap-2">
