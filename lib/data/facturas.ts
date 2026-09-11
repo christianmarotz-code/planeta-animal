@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/client'
 import type { FacturaCompra, ItemFactura, TipoComprobante } from '@/types/database'
+import type { FacturaDetectada } from '@/lib/facturas/reconocimientoSchema'
 
 export interface NuevaFacturaItemInput {
   producto_id: string
@@ -68,4 +69,32 @@ export async function anularFactura(id: string): Promise<void> {
   const supabase = createClient()
   const { error } = await supabase.rpc('anular_factura_compra', { p_factura_id: id } as never)
   if (error) throw error
+}
+
+export async function subirFotoFactura(file: File): Promise<string> {
+  const supabase = createClient()
+  const extension = (file.name.split('.').pop() ?? 'jpg').toLowerCase()
+  const ruta = `${crypto.randomUUID()}.${extension}`
+
+  const { error } = await supabase.storage.from('facturas-adjuntos').upload(ruta, file)
+  if (error) throw error
+  return ruta
+}
+
+export async function reconocerFactura(
+  rutaArchivo: string
+): Promise<{ ok: true; factura: FacturaDetectada } | { ok: false; error: string }> {
+  const respuesta = await fetch('/api/facturas/reconocer', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ruta_archivo: rutaArchivo }),
+  })
+  if (!respuesta.ok) {
+    return { ok: false, error: 'No se pudo leer la factura automáticamente.' }
+  }
+  const datos = await respuesta.json()
+  if (!datos.ok) {
+    return { ok: false, error: datos.error ?? 'No se pudo leer la factura automáticamente.' }
+  }
+  return { ok: true, factura: datos.factura as FacturaDetectada }
 }
