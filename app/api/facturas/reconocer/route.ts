@@ -4,15 +4,15 @@ import { requerirAdministrador } from '@/lib/auth/requerirAdministrador'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sanearFacturaDetectada, type FacturaDetectada } from '@/lib/facturas/reconocimientoSchema'
 
+export const maxDuration = 60
+
 const SEGUNDOS_VALIDEZ_URL_FIRMADA = 300
 
 const TIPOS_MEDIA_SOPORTADOS = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'] as const
 type TipoMediaSoportado = (typeof TIPOS_MEDIA_SOPORTADOS)[number]
 
-function comoTipoMediaSoportado(valor: string): TipoMediaSoportado {
+function esTipoMediaSoportado(valor: string): valor is TipoMediaSoportado {
   return (TIPOS_MEDIA_SOPORTADOS as readonly string[]).includes(valor)
-    ? (valor as TipoMediaSoportado)
-    : 'image/jpeg'
 }
 
 const HERRAMIENTA_EXTRAER_FACTURA = {
@@ -74,12 +74,19 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: false, error: 'No se pudo descargar la imagen subida.' })
     }
     const bufferImagen = Buffer.from(await respuestaImagen.arrayBuffer())
-    const tipoMedia = comoTipoMediaSoportado(respuestaImagen.headers.get('content-type') ?? 'image/jpeg')
+    const tipoContenido = respuestaImagen.headers.get('content-type') ?? 'image/jpeg'
+    if (!esTipoMediaSoportado(tipoContenido)) {
+      return NextResponse.json({
+        ok: false,
+        error: 'Formato de imagen no soportado. Probá con una foto en JPEG o PNG.',
+      })
+    }
+    const tipoMedia = tipoContenido
 
-    const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+    const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY, timeout: 50_000 })
     const respuesta = await anthropic.messages.create({
       model: 'claude-sonnet-5',
-      max_tokens: 2048,
+      max_tokens: 8192,
       system:
         'Sos un asistente que lee facturas de compra argentinas (formato AFIP) a partir de una foto y ' +
         'extrae sus datos con la herramienta extraer_factura. Si un campo no se lee con claridad, devolvé ' +
@@ -99,6 +106,13 @@ export async function POST(request: Request) {
         },
       ],
     })
+
+    if (respuesta.stop_reason === 'max_tokens') {
+      return NextResponse.json({
+        ok: false,
+        error: 'La factura es muy larga para leerla automáticamente.',
+      })
+    }
 
     const usoHerramienta = respuesta.content.find((bloque) => bloque.type === 'tool_use')
     if (!usoHerramienta || usoHerramienta.type !== 'tool_use') {
