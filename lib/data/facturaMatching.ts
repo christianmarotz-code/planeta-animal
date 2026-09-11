@@ -1,5 +1,5 @@
 import type { Proveedor, Producto } from '@/types/database'
-import { normalizarTexto } from '../text/normalizar'
+import { normalizarTexto } from '@/lib/text/normalizar'
 
 export function emparejarProveedor(
   detectado: { nombre: string | null; cuit: string | null },
