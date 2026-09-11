@@ -56,6 +56,12 @@ export default function NuevaFacturaPage() {
     listarProductos().then(setProductos)
   }, [])
 
+  useEffect(() => {
+    return () => {
+      if (fotoPreviewUrl) URL.revokeObjectURL(fotoPreviewUrl)
+    }
+  }, [fotoPreviewUrl])
+
   function updateItem(index: number, patch: Partial<ItemDraft>) {
     setItems((prev) => prev.map((it, i) => (i === index ? { ...it, ...patch } : it)))
   }
@@ -100,6 +106,7 @@ export default function NuevaFacturaPage() {
     setFotoPreviewUrl(URL.createObjectURL(file))
     setErrorReconocimiento(null)
     setProveedorDetectadoTexto(null)
+    setArchivoAdjunto(null)
     setReconociendo(true)
 
     try {
@@ -152,13 +159,15 @@ export default function NuevaFacturaPage() {
     }
   }
 
-  const itemsParaCalculo = items
-    .filter((it) => it.cantidad && it.costo_unitario)
-    .map((it) => ({
-      cantidad: Number(it.cantidad),
-      costoUnitario: Number(it.costo_unitario),
-      alicuotaIva: Number(it.alicuota_iva),
-    }))
+  // Misma condición que la usada para determinar qué se guarda: ambos totales
+  // (pantalla y guardado) deben calcularse a partir del mismo conjunto de filas.
+  const itemsConDatos = items.filter((it) => it.cantidad && it.costo_unitario)
+  const itemsIncompletos = itemsConDatos.filter((it) => !it.producto_id)
+  const itemsParaCalculo = itemsConDatos.map((it) => ({
+    cantidad: Number(it.cantidad),
+    costoUnitario: Number(it.costo_unitario),
+    alicuotaIva: Number(it.alicuota_iva),
+  }))
   const totales = calcularTotalesFactura(itemsParaCalculo)
   const proveedorSeleccionado = proveedores.find((p) => p.id === proveedorId) ?? null
 
@@ -167,7 +176,10 @@ export default function NuevaFacturaPage() {
     setError(null)
 
     if (!proveedorId) return setError('Elegí un proveedor.')
-    const itemsValidos = items.filter((it) => it.producto_id && it.cantidad && it.costo_unitario)
+    if (itemsIncompletos.length > 0) {
+      return setError('Hay ítems sin producto asignado. Vinculalos o creá el producto antes de guardar.')
+    }
+    const itemsValidos = itemsConDatos
     if (itemsValidos.length === 0) return setError('Agregá al menos un ítem con producto, cantidad y costo.')
     for (const it of itemsValidos) {
       if (Number(it.cantidad) <= 0) return setError('Las cantidades deben ser mayores a 0.')
@@ -238,7 +250,7 @@ export default function NuevaFacturaPage() {
           <div className="flex items-start gap-4">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={fotoPreviewUrl} alt="Foto de la factura" className="h-32 w-32 rounded-[var(--r-sm)] object-cover" />
-            <div className="flex flex-col gap-1 text-sm">
+            <div className="flex flex-col gap-1 text-sm" aria-live="polite">
               {reconociendo && <p className="text-ink-faint">Leyendo factura…</p>}
               {errorReconocimiento && <p className="text-negative">{errorReconocimiento}</p>}
               {proveedorDetectadoTexto && !reconociendo && (
