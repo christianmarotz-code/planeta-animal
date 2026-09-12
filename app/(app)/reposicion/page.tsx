@@ -73,6 +73,10 @@ export default function ReposicionPage() {
           Gestión
         </p>
         <h1 className="mt-1 text-[27px] text-ink">Reposición sugerida</h1>
+        <p className="mt-2 text-xs text-ink-faint">
+          Los precios son los cargados en el comparador — verificá si tu proveedor los sube con o
+          sin IVA antes de confirmar la compra.
+        </p>
       </div>
 
       {sinDatos && (
