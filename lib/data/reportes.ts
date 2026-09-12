@@ -220,3 +220,33 @@ export function calcularGastoPorTrimestre(
   }
   return TRIMESTRES.map((trimestre) => ({ trimestre, total: totales.get(trimestre) ?? 0 }))
 }
+
+function semanaDelMes(diaDelMes: number): number {
+  return Math.min(5, Math.ceil(diaDelMes / 7))
+}
+
+export function calcularSemanaGanadoraPorMes(
+  facturas: FacturaCompra[],
+  anio: number
+): { mes: string; semana: number; total: number }[] {
+  const semanasPorMes = new Map<string, number[]>()
+  for (let mes = 0; mes < 12; mes++) {
+    semanasPorMes.set(`${anio}-${String(mes + 1).padStart(2, '0')}`, [0, 0, 0, 0, 0])
+  }
+  const mesesConFacturas = new Set<string>()
+  for (const f of facturas) {
+    if (f.estado === 'anulada') continue
+    const fecha = parseFechaLocal(f.fecha)
+    if (fecha.getFullYear() !== anio) continue
+    const clave = `${anio}-${String(fecha.getMonth() + 1).padStart(2, '0')}`
+    const semanas = semanasPorMes.get(clave)
+    if (!semanas) continue
+    semanas[semanaDelMes(fecha.getDate()) - 1] += f.total
+    mesesConFacturas.add(clave)
+  }
+  return Array.from(semanasPorMes.entries()).map(([mes, semanas]) => {
+    if (!mesesConFacturas.has(mes)) return { mes, semana: 0, total: 0 }
+    const total = Math.max(...semanas)
+    return { mes, semana: semanas.indexOf(total) + 1, total }
+  })
+}

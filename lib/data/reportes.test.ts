@@ -11,6 +11,7 @@ import {
   calcularComprobantesPorRama,
   anosConFacturas,
   calcularGastoPorTrimestre,
+  calcularSemanaGanadoraPorMes,
 } from './reportes'
 import type { FacturaCompra, Proveedor, Producto, ItemFactura, Rama } from '@/types/database'
 
@@ -405,5 +406,46 @@ describe('calcularGastoPorTrimestre', () => {
       { trimestre: 'Q3', total: 0 },
       { trimestre: 'Q4', total: 0 },
     ])
+  })
+})
+
+describe('calcularSemanaGanadoraPorMes', () => {
+  it('picks the week with the highest spend within a month that has data in several weeks', () => {
+    const facturas = [
+      factura('p1', 100, 'cargada', '2026-03-02'), // semana 1
+      factura('p1', 900, 'cargada', '2026-03-10'), // semana 2 (gana)
+      factura('p1', 300, 'cargada', '2026-03-11'), // semana 2 (suma con la anterior)
+      factura('p1', 500, 'cargada', '2026-03-20'), // semana 3
+    ]
+    const resultado = calcularSemanaGanadoraPorMes(facturas, 2026)
+    const marzo = resultado.find((r) => r.mes === '2026-03')
+    expect(marzo).toEqual({ mes: '2026-03', semana: 2, total: 1200 })
+  })
+
+  it('returns semana 0 for a month with no invoices', () => {
+    const resultado = calcularSemanaGanadoraPorMes([], 2026)
+    expect(resultado).toHaveLength(12)
+    expect(resultado.every((r) => r.semana === 0 && r.total === 0)).toBe(true)
+    expect(resultado.map((r) => r.mes)).toEqual([
+      '2026-01', '2026-02', '2026-03', '2026-04', '2026-05', '2026-06',
+      '2026-07', '2026-08', '2026-09', '2026-10', '2026-11', '2026-12',
+    ])
+  })
+
+  it('places days 29-31 in week 5', () => {
+    const facturas = [factura('p1', 700, 'cargada', '2026-08-30')]
+    const resultado = calcularSemanaGanadoraPorMes(facturas, 2026)
+    const agosto = resultado.find((r) => r.mes === '2026-08')
+    expect(agosto).toEqual({ mes: '2026-08', semana: 5, total: 700 })
+  })
+
+  it('excludes annulled invoices and invoices from other years', () => {
+    const facturas = [
+      factura('p1', 9999, 'anulada', '2026-05-05'),
+      factura('p1', 300, 'cargada', '2025-05-05'),
+    ]
+    const resultado = calcularSemanaGanadoraPorMes(facturas, 2026)
+    const mayo = resultado.find((r) => r.mes === '2026-05')
+    expect(mayo).toEqual({ mes: '2026-05', semana: 0, total: 0 })
   })
 })
