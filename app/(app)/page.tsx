@@ -10,6 +10,7 @@ import { listarUsuarios, type UsuarioConEmail } from '@/lib/data/usuarios'
 import {
   calcularValorStock,
   calcularGastoPorSemana,
+  calcularGastoPorMes,
   calcularCapitalEnRiesgoPorRama,
   calcularGastoPorProveedorPorRama,
   calcularComprobantesPorRama,
@@ -290,6 +291,8 @@ export default function DashboardPage() {
   const ultimasFacturas = [...facturas].sort((a, b) => (a.fecha < b.fecha ? 1 : -1)).slice(0, 5)
   const semanas = calcularGastoPorSemana(facturas, 8)
   const maxSemana = Math.max(1, ...semanas.map((s) => s.total))
+  const gastoSemanaActual = calcularGastoPorSemana(facturas, 1)[0]?.total ?? 0
+  const gastoMesActual = calcularGastoPorMes(facturas, 1)[0]?.total ?? 0
 
   return (
     <div className="app-bg dashboard-shell relative isolate min-h-screen overflow-hidden">
@@ -317,6 +320,19 @@ export default function DashboardPage() {
                 eyebrow="Productos bajo mínimo"
                 value={String(productosStockBajo.length)}
                 href="/stock"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+              <StatShell
+                eyebrow="Gastado esta semana"
+                value={`$${gastoSemanaActual.toLocaleString('es-AR')}`}
+                href="/reportes"
+              />
+              <StatShell
+                eyebrow="Gastado este mes"
+                value={`$${gastoMesActual.toLocaleString('es-AR')}`}
+                href="/reportes"
               />
             </div>
 
