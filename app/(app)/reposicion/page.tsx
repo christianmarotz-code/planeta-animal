@@ -26,12 +26,16 @@ export default function ReposicionPage() {
   const router = useRouter()
   const [datos, setDatos] = useState<ReposicionSugerida | null>(null)
   const [cantidades, setCantidades] = useState<Record<string, string>>({})
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    listarReposicionSugerida().then(setDatos)
+    listarReposicionSugerida()
+      .then(setDatos)
+      .catch(() => setDatos({ paquetes: [], sinPrecio: [] }))
+      .finally(() => setLoading(false))
   }, [])
 
-  if (esAdmin === null || datos === null) {
+  if (esAdmin === null || loading || datos === null) {
     return (
       <SkeletonPage>
         <SkeletonTable filas={6} columnas={4} />

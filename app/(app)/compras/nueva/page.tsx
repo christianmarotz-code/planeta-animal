@@ -52,14 +52,6 @@ export default function NuevaFacturaPage() {
   const [errorReconocimiento, setErrorReconocimiento] = useState<string | null>(null)
   const [proveedorDetectadoTexto, setProveedorDetectadoTexto] = useState<string | null>(null)
 
-  useEffect(() => {
-    Promise.all([listarProveedores(), listarProductos()]).then(([proveedoresData, productosData]) => {
-      setProveedores(proveedoresData)
-      setProductos(productosData)
-      aplicarBorradorReposicion(productosData)
-    })
-  }, [])
-
   function aplicarBorradorReposicion(productosData: Producto[]) {
     const crudo = sessionStorage.getItem(REPOSICION_DRAFT_KEY)
     if (!crudo) return
@@ -83,6 +75,14 @@ export default function NuevaFacturaPage() {
       // Borrador corrupto o de una versión anterior del código — se ignora.
     }
   }
+
+  useEffect(() => {
+    Promise.all([listarProveedores(), listarProductos()]).then(([proveedoresData, productosData]) => {
+      setProveedores(proveedoresData)
+      setProductos(productosData)
+      aplicarBorradorReposicion(productosData)
+    })
+  }, [])
 
   useEffect(() => {
     return () => {
