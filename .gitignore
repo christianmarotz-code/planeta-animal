@@ -47,6 +47,9 @@ next-env.d.ts
 # subagent-driven-development workspace (ledger, briefs, reports)
 .superpowers/
 
+# local git worktrees for isolated feature work
+/.worktrees/
+
 # raw brand source files (the assets actually used ship from public/branding)
 /Branding/
 
