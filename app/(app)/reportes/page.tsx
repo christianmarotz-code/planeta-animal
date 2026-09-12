@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { listarFacturas } from '@/lib/data/facturas'
+import { listarFacturas, listarItemsFactura } from '@/lib/data/facturas'
 import { listarProveedores } from '@/lib/data/proveedores'
 import { listarProductos } from '@/lib/data/productos'
 import {
@@ -10,10 +10,14 @@ import {
   calcularGastoPorSemana,
   calcularGastoPorMes,
   calcularGastoPorDiaSemana,
+  anosConFacturas,
+  calcularGastoPorTrimestre,
+  calcularSemanaGanadoraPorMes,
+  calcularProductosMasComprados,
 } from '@/lib/data/reportes'
 import { useEsAdministrador } from '@/lib/hooks/useEsAdministrador'
 import { SkeletonPage, SkeletonStatCards, SkeletonTable } from '@/components/Skeleton'
-import type { FacturaCompra, Proveedor, Producto } from '@/types/database'
+import type { FacturaCompra, Proveedor, Producto, ItemFactura } from '@/types/database'
 
 const NOMBRES_MES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
 const ABREV_DIA: Record<string, string> = {
@@ -67,11 +71,14 @@ export default function ReportesPage() {
   const [facturas, setFacturas] = useState<FacturaCompra[]>([])
   const [proveedores, setProveedores] = useState<Proveedor[]>([])
   const [productos, setProductos] = useState<Producto[]>([])
+  const [items, setItems] = useState<ItemFactura[]>([])
+  const [anioSeleccionado, setAnioSeleccionado] = useState<number | null>(null)
 
   useEffect(() => {
     listarFacturas().then(setFacturas)
     listarProveedores().then(setProveedores)
     listarProductos().then(setProductos)
+    listarItemsFactura().then(setItems)
   }, [])
 
   if (esAdmin === null) {
@@ -106,6 +113,19 @@ export default function ReportesPage() {
     etiqueta: ABREV_DIA[d.dia],
     total: d.total,
   }))
+
+  const anios = anosConFacturas(facturas)
+  const anioActivo = anioSeleccionado ?? anios[0] ?? new Date().getFullYear()
+  const opcionesAnio = anios.length > 0 ? anios : [anioActivo]
+
+  const datosPorTrimestre = calcularGastoPorTrimestre(facturas, anioActivo).map((t) => ({
+    etiqueta: t.trimestre,
+    total: t.total,
+  }))
+  const semanaGanadoraPorMes = calcularSemanaGanadoraPorMes(facturas, anioActivo)
+  const productosRanking = calcularProductosMasComprados(items, facturas, productos, anioActivo)
+  const masComprados = productosRanking.slice(0, 10)
+  const menosComprados = productosRanking.slice(-10)
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-5 p-5 sm:p-8">
@@ -172,6 +192,101 @@ export default function ReportesPage() {
       <GraficoBarras titulo="Gasto por mes" subtitulo="últimos 12 meses" datos={datosPorMes} />
       <GraficoBarras titulo="Gasto por semana" subtitulo="últimas 12 semanas" datos={datosPorSemana} />
       <GraficoBarras titulo="Gasto por día de la semana" subtitulo="últimos 12 meses" datos={datosPorDiaSemana} />
+
+      <div className="flex items-center justify-between rise">
+        <p className="text-[11.5px] font-semibold uppercase tracking-[0.14em] text-ink-faint">
+          Análisis anual
+        </p>
+        <select
+          value={anioActivo}
+          onChange={(e) => setAnioSeleccionado(Number(e.target.value))}
+          className="rounded-[var(--r-sm)] border border-line bg-surface p-2 text-sm text-ink outline-none focus:border-accent"
+        >
+          {opcionesAnio.map((a) => (
+            <option key={a} value={a}>
+              {a}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <GraficoBarras titulo="Gasto por trimestre" subtitulo={String(anioActivo)} datos={datosPorTrimestre} />
+
+      <div className="shell rise overflow-x-auto">
+        <div className="core">
+          <p className="mb-3 text-[11.5px] font-semibold uppercase tracking-[0.14em] text-ink-faint">
+            Semana que más gastó, por mes
+          </p>
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b-2 border-line-strong text-left">
+                <th className="px-3 py-2 text-[11.5px] font-semibold uppercase tracking-[0.1em] text-ink-faint">
+                  Mes
+                </th>
+                <th className="px-3 py-2 text-[11.5px] font-semibold uppercase tracking-[0.1em] text-ink-faint">
+                  Semana ganadora
+                </th>
+                <th className="px-3 py-2 text-[11.5px] font-semibold uppercase tracking-[0.1em] text-ink-faint">
+                  Total
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {semanaGanadoraPorMes.map((s) => (
+                <tr key={s.mes} className="border-b border-line last:border-0">
+                  <td className="px-3 py-2 text-ink">{NOMBRES_MES[Number(s.mes.slice(5, 7)) - 1]}</td>
+                  <td className="mono px-3 py-2 text-ink-soft">
+                    {s.semana === 0 ? '—' : `Semana ${s.semana}`}
+                  </td>
+                  <td className="mono px-3 py-2 text-ink">
+                    {s.semana === 0 ? '—' : `$${s.total.toLocaleString('es-AR')}`}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+        <div className="shell rise">
+          <div className="core">
+            <p className="mb-3 text-[11.5px] font-semibold uppercase tracking-[0.14em] text-ink-faint">
+              Productos más comprados
+            </p>
+            <ul className="divide-y divide-line">
+              {masComprados.map((p, i) => (
+                <li key={`${p.producto}-${i}`} className="flex items-center justify-between py-2.5 text-sm">
+                  <span className="text-ink">{p.producto}</span>
+                  <span className="mono font-semibold text-ink">{p.cantidad}</span>
+                </li>
+              ))}
+              {masComprados.length === 0 && (
+                <li className="py-2.5 text-sm text-ink-faint">Sin compras en {anioActivo}.</li>
+              )}
+            </ul>
+          </div>
+        </div>
+
+        <div className="shell rise">
+          <div className="core">
+            <p className="mb-3 text-[11.5px] font-semibold uppercase tracking-[0.14em] text-ink-faint">
+              Productos menos comprados
+            </p>
+            <ul className="divide-y divide-line">
+              {menosComprados.map((p, i) => (
+                <li key={`${p.producto}-${i}`} className="flex items-center justify-between py-2.5 text-sm">
+                  <span className="text-ink">{p.producto}</span>
+                  <span className="mono text-ink-soft">{p.cantidad}</span>
+                </li>
+              ))}
+              {menosComprados.length === 0 && (
+                <li className="py-2.5 text-sm text-ink-faint">Sin compras en {anioActivo}.</li>
+              )}
+            </ul>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
