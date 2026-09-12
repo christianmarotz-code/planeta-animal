@@ -9,6 +9,7 @@ import {
   calcularCapitalEnRiesgoPorRama,
   calcularGastoPorProveedorPorRama,
   calcularComprobantesPorRama,
+  anosConFacturas,
 } from './reportes'
 import type { FacturaCompra, Proveedor, Producto, ItemFactura, Rama } from '@/types/database'
 
@@ -350,5 +351,20 @@ describe('calcularComprobantesPorRama', () => {
       { tipo: 'Factura B', total: 200, cantidad: 1 },
       { tipo: 'Factura A', total: 100, cantidad: 2 },
     ])
+  })
+})
+
+describe('anosConFacturas', () => {
+  it('returns distinct years present in the invoices, descending', () => {
+    const facturas = [
+      factura('p1', 100, 'cargada', '2025-03-01'),
+      factura('p1', 200, 'cargada', '2026-01-15'),
+      factura('p1', 300, 'cargada', '2025-11-20'),
+    ]
+    expect(anosConFacturas(facturas)).toEqual([2026, 2025])
+  })
+
+  it('returns an empty array when there are no invoices', () => {
+    expect(anosConFacturas([])).toEqual([])
   })
 })

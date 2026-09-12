@@ -193,3 +193,8 @@ export function calcularGastoPorDiaSemana(
     total: totalesPorIndiceJs[indiceJs],
   }))
 }
+
+export function anosConFacturas(facturas: FacturaCompra[]): number[] {
+  const anios = new Set(facturas.map((f) => parseFechaLocal(f.fecha).getFullYear()))
+  return Array.from(anios).sort((a, b) => b - a)
+}
