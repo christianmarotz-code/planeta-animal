@@ -10,6 +10,7 @@ import {
   calcularGastoPorProveedorPorRama,
   calcularComprobantesPorRama,
   anosConFacturas,
+  calcularGastoPorTrimestre,
 } from './reportes'
 import type { FacturaCompra, Proveedor, Producto, ItemFactura, Rama } from '@/types/database'
 
@@ -366,5 +367,43 @@ describe('anosConFacturas', () => {
 
   it('returns an empty array when there are no invoices', () => {
     expect(anosConFacturas([])).toEqual([])
+  })
+})
+
+describe('calcularGastoPorTrimestre', () => {
+  it('sums non-annulled invoice totals into the 4 calendar quarters of the given year', () => {
+    const facturas = [
+      factura('p1', 100, 'cargada', '2026-01-10'), // Q1
+      factura('p1', 200, 'cargada', '2026-03-31'), // Q1 (límite)
+      factura('p1', 300, 'cargada', '2026-04-01'), // Q2 (límite)
+      factura('p1', 400, 'cargada', '2026-07-15'), // Q3
+      factura('p1', 500, 'cargada', '2026-12-25'), // Q4
+      factura('p1', 9999, 'anulada', '2026-01-10'), // excluida
+    ]
+    expect(calcularGastoPorTrimestre(facturas, 2026)).toEqual([
+      { trimestre: 'Q1', total: 300 },
+      { trimestre: 'Q2', total: 300 },
+      { trimestre: 'Q3', total: 400 },
+      { trimestre: 'Q4', total: 500 },
+    ])
+  })
+
+  it('excludes invoices from other years', () => {
+    const facturas = [factura('p1', 1000, 'cargada', '2025-02-01')]
+    expect(calcularGastoPorTrimestre(facturas, 2026)).toEqual([
+      { trimestre: 'Q1', total: 0 },
+      { trimestre: 'Q2', total: 0 },
+      { trimestre: 'Q3', total: 0 },
+      { trimestre: 'Q4', total: 0 },
+    ])
+  })
+
+  it('returns all quarters at zero when there are no invoices', () => {
+    expect(calcularGastoPorTrimestre([], 2026)).toEqual([
+      { trimestre: 'Q1', total: 0 },
+      { trimestre: 'Q2', total: 0 },
+      { trimestre: 'Q3', total: 0 },
+      { trimestre: 'Q4', total: 0 },
+    ])
   })
 })

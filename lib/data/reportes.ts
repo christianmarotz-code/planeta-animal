@@ -198,3 +198,25 @@ export function anosConFacturas(facturas: FacturaCompra[]): number[] {
   const anios = new Set(facturas.map((f) => parseFechaLocal(f.fecha).getFullYear()))
   return Array.from(anios).sort((a, b) => b - a)
 }
+
+type Trimestre = 'Q1' | 'Q2' | 'Q3' | 'Q4'
+const TRIMESTRES: Trimestre[] = ['Q1', 'Q2', 'Q3', 'Q4']
+
+function trimestreDeMes(mesIndiceCero: number): Trimestre {
+  return TRIMESTRES[Math.floor(mesIndiceCero / 3)]
+}
+
+export function calcularGastoPorTrimestre(
+  facturas: FacturaCompra[],
+  anio: number
+): { trimestre: Trimestre; total: number }[] {
+  const totales = new Map<Trimestre, number>(TRIMESTRES.map((t) => [t, 0]))
+  for (const f of facturas) {
+    if (f.estado === 'anulada') continue
+    const fecha = parseFechaLocal(f.fecha)
+    if (fecha.getFullYear() !== anio) continue
+    const trimestre = trimestreDeMes(fecha.getMonth())
+    totales.set(trimestre, (totales.get(trimestre) ?? 0) + f.total)
+  }
+  return TRIMESTRES.map((trimestre) => ({ trimestre, total: totales.get(trimestre) ?? 0 }))
+}
