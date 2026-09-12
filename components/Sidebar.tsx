@@ -57,6 +57,15 @@ function IconComparador() {
     </svg>
   )
 }
+function IconReposicion() {
+  return (
+    <svg viewBox="0 0 20 20" fill="none" className="h-[18px] w-[18px]" stroke="currentColor" strokeWidth="1.6">
+      <path d="M3.5 6.5 10 3l6.5 3.5v4a6.5 6.5 0 0 1-.3 2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M3.5 6.5 10 10l6.5-3.5M10 10v7l-6.5-3.5v-7" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M14.5 12.5h4M16.5 10.5v4" strokeLinecap="round" />
+    </svg>
+  )
+}
 function IconGastos() {
   return (
     <svg viewBox="0 0 20 20" fill="none" className="h-[18px] w-[18px]" stroke="currentColor" strokeWidth="1.6">
@@ -98,6 +107,7 @@ const GRUPOS = [
       { href: '/compras', label: 'Compras', Icono: IconCompras },
       { href: '/stock', label: 'Stock', Icono: IconStock },
       { href: '/comparador', label: 'Comparador', Icono: IconComparador, soloAdmin: true },
+      { href: '/reposicion', label: 'Reposición', Icono: IconReposicion, soloAdmin: true },
     ],
   },
   {
