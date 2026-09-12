@@ -142,6 +142,17 @@ describe('inicioSemana', () => {
   it('returns the same date for a Monday', () => {
     expect(inicioSemana(new Date('2026-09-07T12:00:00'))).toBe('2026-09-07')
   })
+
+  it('does not shift the week bucket for a late-evening reference time in a negative UTC offset', () => {
+    const tzOriginal = process.env.TZ
+    process.env.TZ = 'America/Argentina/Buenos_Aires'
+    try {
+      const hoy = new Date(2026, 8, 9, 23, 30) // miércoles 9 de sept. 2026, 23:30 hora local
+      expect(inicioSemana(hoy)).toBe('2026-09-07')
+    } finally {
+      process.env.TZ = tzOriginal
+    }
+  })
 })
 
 describe('calcularGastoPorSemana', () => {

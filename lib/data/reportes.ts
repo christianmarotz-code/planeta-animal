@@ -109,7 +109,7 @@ export function inicioSemana(fecha: Date): string {
   const dia = d.getDay()
   const diff = d.getDate() - dia + (dia === 0 ? -6 : 1)
   d.setDate(diff)
-  return d.toISOString().slice(0, 10)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
 // facturas.fecha llega como 'YYYY-MM-DD'; parsearla con `new Date(string)` la

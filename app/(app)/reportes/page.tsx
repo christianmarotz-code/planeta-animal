@@ -125,7 +125,7 @@ export default function ReportesPage() {
   const semanaGanadoraPorMes = calcularSemanaGanadoraPorMes(facturas, anioActivo)
   const productosRanking = calcularProductosMasComprados(items, facturas, productos, anioActivo)
   const masComprados = productosRanking.slice(0, 10)
-  const menosComprados = productosRanking.slice(-10)
+  const menosComprados = productosRanking.slice(Math.max(10, productosRanking.length - 10)).reverse()
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-5 p-5 sm:p-8">
