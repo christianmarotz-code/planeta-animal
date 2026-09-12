@@ -309,7 +309,7 @@ export default function NuevaFacturaPage() {
 
         <table className="card w-full border-collapse text-sm">
           <thead>
-            <tr className="border-b border-line text-left">
+            <tr className="border-b-2 border-line-strong text-left">
               <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-faint">Producto</th>
               <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-faint">Cantidad</th>
               <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-faint">Costo unitario</th>

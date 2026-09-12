@@ -55,7 +55,7 @@ export default function ComprasPage() {
             <Link
               key={f.id}
               href={`/compras/${f.id}`}
-              className="flex items-center justify-between px-5 py-3.5 text-sm transition hover:bg-surface-sunk"
+              className="flex items-center justify-between px-5 py-3.5 text-sm transition hover:bg-accent/5"
             >
               <span className="text-ink">
                 <span className="mono text-ink-faint">{f.fecha}</span> — {proveedor?.nombre ?? '—'} —{' '}

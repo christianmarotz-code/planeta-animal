@@ -2,32 +2,33 @@
 @import "tailwindcss";
 
 :root {
-  /* ---- neutrals ---- */
-  --page: #EEEDF2;
-  --frame: #F7F6FA;
-  --surface: #FFFFFF;
-  --surface-sunk: #EFEEF4;
-  --ink: #1D1B1F;
-  --ink-soft: #6C6A73;
-  --ink-faint: #A6A4AE;
-  --line: #E6E5EC;
-  --line-strong: #D6D4DE;
+  /* ---- neutrals (dark glass theme) ---- */
+  --page: #0a0a0c;
+  --frame: #1c1c1f;
+  --surface: rgba(24, 17, 10, 0.55);
+  --surface-sunk: rgba(0, 0, 0, 0.28);
+  --ink: #ffffff;
+  --ink-soft: rgba(255, 255, 255, 0.72);
+  --ink-faint: rgba(255, 255, 255, 0.52);
+  --line: rgba(255, 255, 255, 0.16);
+  --line-strong: rgba(255, 255, 255, 0.28);
 
   /* ---- brand accent: Planeta Animal ---- */
   --accent: #f5a623;
   --accent-ink: #231f20;
   --accent-soft: #fdf0d9;
 
-  /* ---- semantic status colors ---- */
-  --positive: #3E8E4B;
-  --positive-soft: #E1F0E3;
-  --negative: #C6553F;
-  --negative-soft: #F5E1DD;
+  /* ---- semantic status colors (brightened for dark glass) ---- */
+  --positive: #8bf0ac;
+  --positive-soft: rgba(10, 36, 18, 0.75);
+  --negative: #ffab8f;
+  --negative-soft: rgba(46, 16, 10, 0.75);
 
   /* ---- elevation ---- */
   --shadow-frame: 0 30px 70px -30px rgba(24, 20, 25, 0.28), 0 2px 6px rgba(24, 20, 25, 0.05);
   --shadow-card: 0 1px 2px rgba(20, 18, 20, 0.04), 0 10px 22px -14px rgba(20, 18, 20, 0.14);
   --shadow-inset: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  --shadow-inset-dark: inset 0 1px 2px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.06);
 
   /* ---- radius scale ---- */
   --r-pill: 999px;
@@ -49,7 +50,7 @@
   --dur-med: .45s;
   --dur-slow: .6s;
 
-  color-scheme: light;
+  color-scheme: dark;
 }
 
 @theme inline {
@@ -92,6 +93,14 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Vibrant brand gradient behind the whole app shell */
+.app-bg {
+  background:
+    radial-gradient(ellipse 900px 520px at 50% -10%, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0) 60%),
+    linear-gradient(165deg, #08080a 0%, #1c1c1f 55%, #29292e 100%);
+  background-attachment: fixed;
+}
+
 h1, h2, h3 {
   font-family: var(--font-display);
   font-weight: 600;
@@ -103,26 +112,83 @@ h1, h2, h3 {
   font-variant-numeric: tabular-nums;
 }
 
-/* Double-bezel card: outer shell + inner core */
-.shell {
-  background: var(--surface-sunk);
-  border: 1px solid var(--line);
-  border-radius: var(--r-xl);
-  padding: 6px;
+/* Liquid glass card — used everywhere: dashboard, lists, forms, login */
+.dashboard-shell,
+.dashboard-shell h1,
+.dashboard-shell h2,
+.dashboard-shell h3 {
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  letter-spacing: -0.01em;
 }
-.core {
-  background: var(--surface);
-  border-radius: calc(var(--r-xl) - 5px);
-  box-shadow: var(--shadow-card), var(--shadow-inset);
+
+.shell,
+.glass-shell {
+  position: relative;
+  border-radius: var(--r-xl);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: linear-gradient(165deg, rgba(28, 28, 31, 0.62) 0%, rgba(20, 20, 23, 0.48) 100%);
+  backdrop-filter: blur(26px) saturate(160%);
+  -webkit-backdrop-filter: blur(26px) saturate(160%);
+  box-shadow:
+    0 24px 60px -24px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+  color: #fff;
+  transition: transform var(--dur-med) var(--ease), box-shadow var(--dur-med) var(--ease), border-color var(--dur-med) var(--ease);
+}
+.shell:hover,
+.glass-shell:hover {
+  transform: translateY(-4px);
+  border-color: rgba(255, 255, 255, 0.32);
+  box-shadow:
+    0 32px 74px -22px rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.24),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+.shell::before,
+.glass-shell::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0) 45%);
+  pointer-events: none;
+}
+.core,
+.glass-core {
+  position: relative;
+  z-index: 1;
   padding: var(--sp-5);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+}
+
+/* Status chips on glass — dark base so text stays legible over any background */
+.chip.chip-on-glass.up {
+  background: rgba(10, 36, 18, 0.75);
+  color: #8bf0ac;
+  text-shadow: none;
+}
+.chip.chip-on-glass.down {
+  background: rgba(46, 16, 10, 0.75);
+  color: #ffab8f;
+  text-shadow: none;
 }
 
 /* Single-layer card for denser content (tables, forms) */
 .card {
+  position: relative;
+  overflow: hidden;
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--r-lg);
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
   box-shadow: var(--shadow-card), var(--shadow-inset);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+  transition: border-color var(--dur-med) var(--ease), box-shadow var(--dur-med) var(--ease);
+}
+.card:hover {
+  border-color: var(--line-strong);
 }
 
 /* Pills / buttons */
@@ -138,8 +204,8 @@ h1, h2, h3 {
   color: var(--accent-ink);
   border: none;
   cursor: pointer;
-  box-shadow: var(--shadow-card);
-  transition: transform var(--dur-med) var(--ease), filter var(--dur-fast) var(--ease);
+  box-shadow: var(--shadow-card), var(--shadow-inset);
+  transition: transform var(--dur-med) var(--ease), filter var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease);
 }
 .pill-btn:hover {
   transform: translateY(-1px);
@@ -147,6 +213,7 @@ h1, h2, h3 {
 }
 .pill-btn:active {
   transform: scale(0.98);
+  box-shadow: var(--shadow-inset-dark);
 }
 .pill-btn.ghost {
   background: var(--surface);
@@ -156,12 +223,15 @@ h1, h2, h3 {
 .pill-btn.dark {
   background: var(--accent-ink);
   color: var(--accent-soft);
+  box-shadow: var(--shadow-card), var(--shadow-inset-dark);
 }
 
 /* Status chips */
 .chip {
   display: inline-flex;
   align-items: center;
+  flex-shrink: 0;
+  white-space: nowrap;
   gap: 4px;
   font-size: 12.5px;
   font-weight: 700;

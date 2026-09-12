@@ -62,7 +62,7 @@ export default function DetalleFacturaPage() {
       <div className="card rise overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-line text-left">
+            <tr className="border-b-2 border-line-strong text-left">
               <th className="px-5 py-3 text-[11.5px] font-semibold uppercase tracking-[0.1em] text-ink-faint">
                 Producto
               </th>

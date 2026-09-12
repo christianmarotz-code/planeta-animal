@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { listarProductos } from '@/lib/data/productos'
 import type { Producto } from '@/types/database'
 import { useEsAdministrador } from '@/lib/hooks/useEsAdministrador'
+import { SkeletonTable } from '@/components/Skeleton'
 
 export default function ProductosPage() {
   const esAdmin = useEsAdministrador()
@@ -79,12 +80,12 @@ export default function ProductosPage() {
         </label>
       </div>
       {loading ? (
-        <p className="text-sm text-ink-soft">Cargando…</p>
+        <SkeletonTable filas={8} columnas={esAdmin ? 4 : 3} />
       ) : (
         <div className="card rise overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-line text-left">
+              <tr className="border-b-2 border-line-strong text-left">
                 <th className="px-5 py-3 text-[11.5px] font-semibold uppercase tracking-[0.1em] text-ink-faint">
                   Nombre
                 </th>
@@ -116,7 +117,7 @@ export default function ProductosPage() {
                         </td>
                       </tr>
                     )}
-                    <tr className="border-b border-line transition last:border-0 hover:bg-surface-sunk">
+                    <tr className="border-b border-line transition last:border-0 hover:bg-accent/5">
                       <td className="px-5 py-3">
                         <Link href={`/productos/${p.id}`} className="font-medium text-ink hover:text-accent">
                           {p.nombre}

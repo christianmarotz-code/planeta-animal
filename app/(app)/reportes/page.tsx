@@ -12,6 +12,7 @@ import {
   calcularGastoPorDiaSemana,
 } from '@/lib/data/reportes'
 import { useEsAdministrador } from '@/lib/hooks/useEsAdministrador'
+import { SkeletonPage, SkeletonStatCards, SkeletonTable } from '@/components/Skeleton'
 import type { FacturaCompra, Proveedor, Producto } from '@/types/database'
 
 const NOMBRES_MES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
@@ -73,7 +74,14 @@ export default function ReportesPage() {
     listarProductos().then(setProductos)
   }, [])
 
-  if (esAdmin === null) return <p className="p-8 text-sm text-ink-soft">Cargando…</p>
+  if (esAdmin === null) {
+    return (
+      <SkeletonPage>
+        <SkeletonStatCards cantidad={1} />
+        <SkeletonTable filas={6} columnas={2} />
+      </SkeletonPage>
+    )
+  }
   if (esAdmin === false) {
     return (
       <p className="p-8 text-sm text-negative">

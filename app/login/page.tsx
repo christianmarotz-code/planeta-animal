@@ -25,7 +25,7 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="flex min-h-[100dvh] items-center justify-center bg-page px-4">
+    <main className="app-bg dashboard-shell flex min-h-[100dvh] items-center justify-center px-4">
       <div className="shell w-full max-w-sm rise">
         <div className="core">
           <div className="mb-7 flex flex-col items-center gap-4">

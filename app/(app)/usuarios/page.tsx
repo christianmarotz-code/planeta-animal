@@ -8,6 +8,7 @@ import {
   type UsuarioConEmail,
 } from '@/lib/data/usuarios'
 import { obtenerOCrearPerfilActual } from '@/lib/data/perfiles'
+import { SkeletonPage, SkeletonList } from '@/components/Skeleton'
 import type { Perfil, RolPerfil } from '@/types/database'
 
 const INPUT_CLASS =
@@ -65,7 +66,13 @@ export default function UsuariosPage() {
     }
   }
 
-  if (!perfilActual) return <p className="p-8 text-sm text-ink-soft">Cargando…</p>
+  if (!perfilActual) {
+    return (
+      <SkeletonPage>
+        <SkeletonList filas={2} />
+      </SkeletonPage>
+    )
+  }
 
   if (perfilActual.rol !== 'administrador') {
     return (
@@ -118,7 +125,7 @@ export default function UsuariosPage() {
       </div>
 
       {loading ? (
-        <p className="text-sm text-ink-soft">Cargando…</p>
+        <SkeletonList filas={3} />
       ) : (
         <div className="card rise divide-y divide-line">
           {usuarios.map((u) => (

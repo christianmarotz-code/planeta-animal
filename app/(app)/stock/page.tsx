@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import { listarProductos } from '@/lib/data/productos'
 import { ajustarStockManual } from '@/lib/data/stock'
 import { listarMovimientosStock } from '@/lib/data/movimientos'
@@ -54,7 +54,7 @@ export default function StockPage() {
       <div className="card rise overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-line text-left">
+            <tr className="border-b-2 border-line-strong text-left">
               <th className="px-5 py-3 text-[11.5px] font-semibold uppercase tracking-[0.1em] text-ink-faint">
                 Producto
               </th>
@@ -77,8 +77,8 @@ export default function StockPage() {
               const bajo = p.stock_actual <= p.stock_minimo
               const columnas = esAdmin ? 5 : 4
               return (
-                <>
-                  <tr key={p.id} className="border-b border-line transition last:border-0 hover:bg-surface-sunk">
+                <Fragment key={p.id}>
+                  <tr className="border-b border-line transition last:border-0 hover:bg-accent/5">
                     <td className="px-5 py-3 text-ink">{p.nombre}</td>
                     <td className="px-5 py-3">
                       {bajo ? (
@@ -141,7 +141,7 @@ export default function StockPage() {
                       </td>
                     </tr>
                   )}
-                </>
+                </Fragment>
               )
             })}
             {productos.length === 0 && (

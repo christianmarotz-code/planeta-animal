@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { listarComparador, type FilaComparador } from '@/lib/data/preciosProveedor'
+import { SkeletonTable } from '@/components/Skeleton'
 
 export default function ComparadorPage() {
   const [filas, setFilas] = useState<FilaComparador[]>([])
@@ -55,7 +56,7 @@ export default function ComparadorPage() {
       />
 
       {loading ? (
-        <p className="text-sm text-ink-soft">Cargando…</p>
+        <SkeletonTable filas={6} columnas={4} />
       ) : filas.length === 0 ? (
         <div className="card rise p-6 text-sm text-ink-faint">
           Todavía no importaste ninguna lista de precios.{' '}
@@ -68,7 +69,7 @@ export default function ComparadorPage() {
         <div className="card rise overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-line text-left">
+              <tr className="border-b-2 border-line-strong text-left">
                 <th className="px-5 py-3 text-[11.5px] font-semibold uppercase tracking-[0.1em] text-ink-faint">
                   Producto
                 </th>
@@ -87,7 +88,7 @@ export default function ComparadorPage() {
             </thead>
             <tbody>
               {filtradas.map((fila) => (
-                <tr key={fila.producto.id} className="border-b border-line transition last:border-0 hover:bg-surface-sunk">
+                <tr key={fila.producto.id} className="border-b border-line transition last:border-0 hover:bg-accent/5">
                   <td className="px-5 py-3 font-medium text-ink">{fila.producto.nombre}</td>
                   <td className="px-5 py-3">
                     {fila.mejor && (

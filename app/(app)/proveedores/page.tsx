@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { listarProveedores } from '@/lib/data/proveedores'
 import type { Proveedor } from '@/types/database'
+import { SkeletonList } from '@/components/Skeleton'
 
 export default function ProveedoresPage() {
   const [proveedores, setProveedores] = useState<Proveedor[]>([])
@@ -29,14 +30,14 @@ export default function ProveedoresPage() {
         </Link>
       </div>
       {loading ? (
-        <p className="text-sm text-ink-soft">Cargando…</p>
+        <SkeletonList filas={8} />
       ) : (
         <div className="card rise divide-y divide-line">
           {proveedores.map((p) => (
             <Link
               key={p.id}
               href={`/proveedores/${p.id}`}
-              className="flex items-center justify-between px-5 py-3.5 text-sm transition hover:bg-surface-sunk"
+              className="flex items-center justify-between px-5 py-3.5 text-sm transition hover:bg-accent/5"
             >
               <span className="font-medium text-ink">{p.nombre}</span>
               {p.cuit && <span className="mono text-xs text-ink-faint">CUIT {p.cuit}</span>}

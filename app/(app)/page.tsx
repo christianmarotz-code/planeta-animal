@@ -16,6 +16,8 @@ import {
   RAMAS,
 } from '@/lib/data/reportes'
 import { obtenerOCrearPerfilActual } from '@/lib/data/perfiles'
+import { HeroStatCard } from '@/components/HeroStatCard'
+import { SkeletonPage, SkeletonStatCards, SkeletonTable } from '@/components/Skeleton'
 import type { FacturaCompra, Proveedor, Producto, Perfil, ItemFactura, MovimientoStock, Rama } from '@/types/database'
 
 const NOMBRE_RAMA: Record<Rama, string> = { clinica: 'Clínica', petshop: 'Petshop' }
@@ -28,31 +30,41 @@ function StatShell({
   eyebrow,
   value,
   delta,
+  href,
   children,
 }: {
   eyebrow: string
   value: string
   delta?: { texto: string; positivo: boolean }
+  href?: string
   children?: React.ReactNode
 }) {
-  return (
-    <div className="shell rise">
-      <div className="core flex h-full flex-col justify-between gap-4">
-        <div className="flex items-start justify-between">
-          <p className="text-[11.5px] font-semibold uppercase tracking-[0.14em] text-ink-faint">
-            {eyebrow}
-          </p>
-          {delta && (
-            <span className={`chip ${delta.positivo ? 'up' : 'down'}`}>
-              {delta.positivo ? '↑' : '↓'} {delta.texto}
-            </span>
-          )}
-        </div>
-        <p className="mono text-[27px] font-medium leading-none text-ink">{value}</p>
-        {children}
+  const contenido = (
+    <div className="glass-core flex h-full flex-col justify-between gap-4">
+      <div className="flex items-start justify-between gap-3">
+        <p className="line-clamp-2 min-w-0 flex-1 text-[11.5px] font-semibold uppercase tracking-[0.14em] text-white/60 transition-colors group-hover:text-accent">
+          {eyebrow}
+        </p>
+        {delta && (
+          <span className={`chip chip-on-glass ${delta.positivo ? 'up' : 'down'}`}>
+            {delta.positivo ? '↑' : '↓'} {delta.texto}
+          </span>
+        )}
       </div>
+      <p className="mono text-[27px] font-medium leading-none text-white">{value}</p>
+      {children}
     </div>
   )
+
+  if (href) {
+    return (
+      <Link href={href} className="glass-shell group rise block no-underline">
+        {contenido}
+      </Link>
+    )
+  }
+
+  return <div className="glass-shell rise">{contenido}</div>
 }
 
 function SeccionRama({
@@ -88,74 +100,115 @@ function SeccionRama({
     .slice(0, 5)
 
   return (
-    <div className="shell rise">
-      <div className="core flex flex-col gap-5">
-        <p className="text-[11.5px] font-semibold uppercase tracking-[0.14em] text-ink-faint">
+    <div className="glass-shell rise">
+      <div className="glass-core flex flex-col gap-5">
+        <p className="text-[11.5px] font-semibold uppercase tracking-[0.14em] text-white/60">
           {NOMBRE_RAMA[rama]}
         </p>
 
-        <div className="flex items-start justify-between">
-          <p className="text-xs text-ink-faint">Capital en riesgo (stock bajo mínimo)</p>
-          <span className="chip down">{capital.cantidad} prod.</span>
-        </div>
-        <p className="mono -mt-3 text-xl font-medium text-ink">
-          ${capital.valor.toLocaleString('es-AR')}
-        </p>
+        <Link
+          href="/stock"
+          className="group -mx-1 flex flex-col gap-1 rounded-2xl px-1 py-1 no-underline transition-colors hover:bg-white/5"
+        >
+          <div className="flex items-start justify-between">
+            <p className="text-xs text-white/60 transition-colors group-hover:text-accent">
+              Capital en riesgo (stock bajo mínimo)
+            </p>
+            <span className="chip chip-on-glass down">{capital.cantidad} prod.</span>
+          </div>
+          <p className="mono text-xl font-medium text-white">
+            ${capital.valor.toLocaleString('es-AR')}
+          </p>
+        </Link>
 
         <div>
-          <p className="mb-2 text-xs text-ink-faint">Top proveedores (30 días, neto)</p>
-          <ul className="divide-y divide-line">
-            {topProveedores.map((p) => (
-              <li key={p.proveedor} className="flex items-center justify-between py-2 text-sm">
-                <span className="text-ink">{p.proveedor}</span>
-                <span className="mono text-ink-soft">${p.total.toLocaleString('es-AR')}</span>
-              </li>
-            ))}
+          <p className="mb-2 text-xs text-white/60">Top proveedores (30 días, neto)</p>
+          <ul className="divide-y divide-white/10">
+            {topProveedores.map((p) => {
+              const proveedor = proveedores.find((pr) => pr.nombre === p.proveedor)
+              const fila = (
+                <div className="flex items-center justify-between py-2 text-sm">
+                  <span className="text-white">{p.proveedor}</span>
+                  <span className="mono text-white/70">${p.total.toLocaleString('es-AR')}</span>
+                </div>
+              )
+              return (
+                <li key={p.proveedor}>
+                  {proveedor ? (
+                    <Link
+                      href={`/proveedores/${proveedor.id}`}
+                      className="-mx-1 block rounded-lg px-1 no-underline transition-colors hover:bg-white/5"
+                    >
+                      {fila}
+                    </Link>
+                  ) : (
+                    fila
+                  )}
+                </li>
+              )
+            })}
             {topProveedores.length === 0 && (
-              <li className="py-2 text-sm text-ink-faint">Sin compras en los últimos 30 días.</li>
+              <li className="py-2 text-sm text-white/60">Sin compras en los últimos 30 días.</li>
             )}
           </ul>
         </div>
 
         <div>
-          <p className="mb-2 text-xs text-ink-faint">Comprobantes (30 días)</p>
-          <ul className="divide-y divide-line">
+          <p className="mb-2 text-xs text-white/60">Comprobantes (30 días)</p>
+          <ul className="divide-y divide-white/10">
             {comprobantes.map((c) => (
               <li key={c.tipo} className="flex items-center justify-between py-2 text-sm">
-                <span className="text-ink">
-                  {c.tipo} <span className="text-ink-faint">({c.cantidad})</span>
+                <span className="text-white">
+                  {c.tipo} <span className="text-white/60">({c.cantidad})</span>
                 </span>
-                <span className="mono text-ink-soft">${c.total.toLocaleString('es-AR')}</span>
+                <span className="mono text-white/70">${c.total.toLocaleString('es-AR')}</span>
               </li>
             ))}
             {comprobantes.length === 0 && (
-              <li className="py-2 text-sm text-ink-faint">Sin comprobantes en los últimos 30 días.</li>
+              <li className="py-2 text-sm text-white/60">Sin comprobantes en los últimos 30 días.</li>
             )}
           </ul>
         </div>
 
         <div>
-          <p className="mb-2 text-xs text-ink-faint">Actividad reciente</p>
-          <ul className="divide-y divide-line">
-            {actividad.map((m) => (
-              <li key={m.id} className="py-2 text-sm">
-                <div className="flex items-center justify-between">
-                  <span className="text-ink">{productosPorId.get(m.producto_id)?.nombre ?? '—'}</span>
-                  <span className="mono text-ink-soft">
-                    {m.tipo === 'ajuste_manual' && m.cantidad > 0 ? '+' : ''}
-                    {m.cantidad}
-                  </span>
-                </div>
-                <p className="mono text-[11px] text-ink-faint">
-                  {NOMBRE_TIPO_MOVIMIENTO[m.tipo]}
-                  {m.usuario_id && usuariosPorId.get(m.usuario_id) ? ` · ${usuariosPorId.get(m.usuario_id)}` : ''}
-                  {' · '}
-                  {new Date(m.fecha).toLocaleDateString('es-AR')}
-                </p>
-              </li>
-            ))}
+          <p className="mb-2 text-xs text-white/60">Actividad reciente</p>
+          <ul className="divide-y divide-white/10">
+            {actividad.map((m) => {
+              const producto = productosPorId.get(m.producto_id)
+              const contenido = (
+                <>
+                  <div className="flex items-center justify-between">
+                    <span className="text-white">{producto?.nombre ?? '—'}</span>
+                    <span className="mono text-white/70">
+                      {m.tipo === 'ajuste_manual' && m.cantidad > 0 ? '+' : ''}
+                      {m.cantidad}
+                    </span>
+                  </div>
+                  <p className="mono text-[11px] text-white/50">
+                    {NOMBRE_TIPO_MOVIMIENTO[m.tipo]}
+                    {m.usuario_id && usuariosPorId.get(m.usuario_id) ? ` · ${usuariosPorId.get(m.usuario_id)}` : ''}
+                    {' · '}
+                    {new Date(m.fecha).toLocaleDateString('es-AR')}
+                  </p>
+                </>
+              )
+              return (
+                <li key={m.id} className="py-2 text-sm">
+                  {producto ? (
+                    <Link
+                      href={`/productos/${producto.id}`}
+                      className="-mx-1 block rounded-lg px-1 no-underline transition-colors hover:bg-white/5"
+                    >
+                      {contenido}
+                    </Link>
+                  ) : (
+                    contenido
+                  )}
+                </li>
+              )
+            })}
             {actividad.length === 0 && (
-              <li className="py-2 text-sm text-ink-faint">Sin movimientos recientes.</li>
+              <li className="py-2 text-sm text-white/60">Sin movimientos recientes.</li>
             )}
           </ul>
         </div>
@@ -205,7 +258,14 @@ export default function DashboardPage() {
   }, [])
 
   if (loading) {
-    return <p className="text-sm text-ink-soft">Cargando…</p>
+    return (
+      <div className="app-bg dashboard-shell relative isolate min-h-screen overflow-hidden">
+        <SkeletonPage>
+          <SkeletonStatCards cantidad={3} />
+          <SkeletonTable filas={5} columnas={2} />
+        </SkeletonPage>
+      </div>
+    )
   }
 
   const esAdmin = perfil?.rol === 'administrador'
@@ -232,137 +292,181 @@ export default function DashboardPage() {
   const maxSemana = Math.max(1, ...semanas.map((s) => s.total))
 
   return (
-    <div className="mx-auto flex max-w-6xl flex-col gap-5 p-5 sm:p-8">
-      <div className="rise">
-        <p className="text-[11.5px] font-semibold uppercase tracking-[0.14em] text-ink-faint">
-          Panel general
-        </p>
-        <h1 className="mt-1 text-[27px] text-ink">
-          {perfil?.nombre ? `Bienvenido, ${perfil.nombre}` : 'Bienvenido'}
-        </h1>
-        {perfilError && <p className="text-xs text-negative">No se pudo cargar tu perfil.</p>}
-      </div>
+    <div className="app-bg dashboard-shell relative isolate min-h-screen overflow-hidden">
+      <div className="relative z-10 mx-auto flex max-w-6xl flex-col gap-5 p-5 sm:p-8">
+        <div className="rise">
+          <p className="text-[11.5px] font-semibold uppercase tracking-[0.14em] text-white/60">
+            Panel general
+          </p>
+          <h1 className="mt-1 text-[27px] font-semibold text-white">
+            {perfil?.nombre ? `Bienvenido, ${perfil.nombre}` : 'Bienvenido'}
+          </h1>
+          {perfilError && <p className="text-xs text-[#ffb4a3]">No se pudo cargar tu perfil.</p>}
+        </div>
 
-      {esAdmin && (
-        <>
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
-            <StatShell eyebrow="Valor total del stock" value={`$${valorStock.toLocaleString('es-AR')}`} />
-            <StatShell
-              eyebrow="Gasto en compras (30 días)"
-              value={`$${gastoUltimos30.toLocaleString('es-AR')}`}
-              delta={
-                variacionGasto === null
-                  ? undefined
-                  : { texto: `${Math.abs(variacionGasto).toFixed(0)}%`, positivo: variacionGasto <= 0 }
-              }
-            />
-            <StatShell eyebrow="Facturas cargadas" value={String(facturas.length)} />
-          </div>
+        {esAdmin && (
+          <>
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
+              <StatShell
+                eyebrow="Valor total del stock"
+                value={`$${valorStock.toLocaleString('es-AR')}`}
+                href="/stock"
+              />
+              <StatShell eyebrow="Facturas cargadas" value={String(facturas.length)} href="/compras" />
+              <StatShell
+                eyebrow="Productos bajo mínimo"
+                value={String(productosStockBajo.length)}
+                href="/stock"
+              />
+            </div>
 
-          <div className="shell rise">
-            <div className="core">
-              <div className="mb-6 flex items-center justify-between">
-                <p className="text-[11.5px] font-semibold uppercase tracking-[0.14em] text-ink-faint">
-                  Gasto por semana
-                </p>
-                <span className="mono text-xs text-ink-faint">últimas 8 semanas</span>
-              </div>
-              <div className="flex h-36 items-end gap-3">
-                {semanas.map((s) => (
-                  <div key={s.semana} className="flex flex-1 flex-col items-center gap-2">
-                    <div
-                      className="w-full rounded-t-[8px] bg-accent transition-[height] duration-500"
-                      style={{ height: `${Math.max(4, (s.total / maxSemana) * 100)}%` }}
-                      title={`$${s.total.toLocaleString('es-AR')}`}
+            <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.4fr)]">
+              <HeroStatCard
+                href="/compras"
+                eyebrow="Gasto en compras"
+                value={`$${gastoUltimos30.toLocaleString('es-AR')}`}
+                gaugeValue={
+                  gastoPrevios30 > 0 ? Math.min(100, (gastoUltimos30 / gastoPrevios30) * 100) : 100
+                }
+                gaugeTone={variacionGasto !== null && variacionGasto > 0 ? 'negative' : 'positive'}
+                comparacion={
+                  variacionGasto === null
+                    ? 'Últimos 30 días — sin datos para comparar'
+                    : `Últimos 30 días · ${variacionGasto <= 0 ? '↓' : '↑'} ${Math.abs(variacionGasto).toFixed(0)}% vs. anterior`
+                }
+              />
+
+              <div className="grid grid-cols-1 gap-5">
+                {RAMAS.map((rama) => {
+                  const capital = calcularCapitalEnRiesgoPorRama(productos)[rama]
+                  return (
+                    <StatShell
+                      key={rama}
+                      eyebrow={`En riesgo · ${NOMBRE_RAMA[rama]}`}
+                      value={`$${capital.valor.toLocaleString('es-AR')}`}
+                      delta={{ texto: `${capital.cantidad} prod.`, positivo: capital.cantidad === 0 }}
+                      href="/stock"
                     />
-                    <span className="mono text-[10px] text-ink-faint">
-                      {new Date(s.semana).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' })}
-                    </span>
+                  )
+                })}
+              </div>
+
+              <Link href="/reportes" className="glass-shell group rise block no-underline">
+                <div className="glass-core">
+                  <div className="mb-6 flex items-center justify-between">
+                    <p className="text-[11.5px] font-semibold uppercase tracking-[0.14em] text-white/60 transition-colors group-hover:text-accent">
+                      Gasto por semana
+                    </p>
+                    <span className="mono text-xs text-white/50">últimas 8 semanas</span>
                   </div>
+                  <div className="flex h-36 items-end gap-3">
+                    {semanas.map((s) => (
+                      <div key={s.semana} className="flex flex-1 flex-col items-center gap-2">
+                        <div
+                          className="w-full rounded-t-[8px] bg-accent transition-[height] duration-500"
+                          style={{ height: `${Math.max(4, (s.total / maxSemana) * 100)}%` }}
+                          title={`$${s.total.toLocaleString('es-AR')}`}
+                        />
+                        <span className="mono text-[10px] text-white/50">
+                          {new Date(s.semana).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' })}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </Link>
+            </div>
+
+            <div>
+              <p className="mb-3 text-[11.5px] font-semibold uppercase tracking-[0.14em] text-white/60">
+                Por rama de negocio
+              </p>
+              <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                {RAMAS.map((rama) => (
+                  <SeccionRama
+                    key={rama}
+                    rama={rama}
+                    productos={productos}
+                    facturasUltimos30={facturasUltimos30}
+                    items={items}
+                    proveedores={proveedores}
+                    movimientos={movimientos}
+                    usuarios={usuarios}
+                  />
                 ))}
               </div>
             </div>
-          </div>
+          </>
+        )}
 
-          <div>
-            <p className="mb-3 text-[11.5px] font-semibold uppercase tracking-[0.14em] text-ink-faint">
-              Por rama de negocio
-            </p>
-            <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-              {RAMAS.map((rama) => (
-                <SeccionRama
-                  key={rama}
-                  rama={rama}
-                  productos={productos}
-                  facturasUltimos30={facturasUltimos30}
-                  items={items}
-                  proveedores={proveedores}
-                  movimientos={movimientos}
-                  usuarios={usuarios}
-                />
-              ))}
-            </div>
-          </div>
-        </>
-      )}
-
-      <div className="shell rise">
-        <div className="core">
-          <div className="mb-3 flex items-center justify-between">
-            <p className="text-[11.5px] font-semibold uppercase tracking-[0.14em] text-ink-faint">
-              Stock bajo
-            </p>
-            <Link href="/stock" className="text-xs font-semibold text-accent hover:underline">
-              Ver todo
-            </Link>
-          </div>
-          <ul className="divide-y divide-line">
-            {productosStockBajo.slice(0, 6).map((p) => (
-              <li key={p.id} className="flex items-center justify-between py-2.5 text-sm">
-                <span className="text-ink">{p.nombre}</span>
-                <span className="chip down">
-                  {p.stock_actual} {p.unidad_stock}
-                </span>
-              </li>
-            ))}
-            {productosStockBajo.length === 0 && (
-              <li className="py-2.5 text-sm text-ink-faint">Ningún producto está bajo el mínimo.</li>
-            )}
-          </ul>
-        </div>
-      </div>
-
-      {esAdmin && (
-        <div className="shell rise">
-          <div className="core">
+        <div className="glass-shell rise">
+          <div className="glass-core">
             <div className="mb-3 flex items-center justify-between">
-              <p className="text-[11.5px] font-semibold uppercase tracking-[0.14em] text-ink-faint">
-                Últimas facturas
+              <p className="text-[11.5px] font-semibold uppercase tracking-[0.14em] text-white/60">
+                Stock bajo
               </p>
-              <Link href="/compras" className="text-xs font-semibold text-accent hover:underline">
+              <Link href="/stock" className="text-xs font-semibold text-accent hover:underline">
                 Ver todo
               </Link>
             </div>
-            <ul className="divide-y divide-line">
-              {ultimasFacturas.map((f) => {
-                const proveedor = proveedores.find((p) => p.id === f.proveedor_id)
-                return (
-                  <li key={f.id} className="flex items-center justify-between py-2.5 text-sm">
-                    <span className="text-ink">
-                      <span className="mono text-ink-faint">{f.fecha}</span> — {proveedor?.nombre ?? '—'}
-                      {f.estado === 'anulada' && <span className="chip down ml-2">ANULADA</span>}
+            <ul className="divide-y divide-white/10">
+              {productosStockBajo.slice(0, 6).map((p) => (
+                <li key={p.id}>
+                  <Link
+                    href={`/productos/${p.id}`}
+                    className="-mx-1 flex items-center justify-between rounded-lg px-1 py-2.5 text-sm no-underline transition-colors hover:bg-white/5"
+                  >
+                    <span className="text-white">{p.nombre}</span>
+                    <span className="chip chip-on-glass down">
+                      {p.stock_actual} {p.unidad_stock}
                     </span>
-                    <span className="mono font-semibold text-ink">${f.total.toLocaleString('es-AR')}</span>
-                  </li>
-                )
-              })}
-              {ultimasFacturas.length === 0 && (
-                <li className="py-2.5 text-sm text-ink-faint">Sin facturas aún.</li>
+                  </Link>
+                </li>
+              ))}
+              {productosStockBajo.length === 0 && (
+                <li className="py-2.5 text-sm text-white/60">Ningún producto está bajo el mínimo.</li>
               )}
             </ul>
           </div>
         </div>
-      )}
+
+        {esAdmin && (
+          <div className="glass-shell rise">
+            <div className="glass-core">
+              <div className="mb-3 flex items-center justify-between">
+                <p className="text-[11.5px] font-semibold uppercase tracking-[0.14em] text-white/60">
+                  Últimas facturas
+                </p>
+                <Link href="/compras" className="text-xs font-semibold text-accent hover:underline">
+                  Ver todo
+                </Link>
+              </div>
+              <ul className="divide-y divide-white/10">
+                {ultimasFacturas.map((f) => {
+                  const proveedor = proveedores.find((p) => p.id === f.proveedor_id)
+                  return (
+                    <li key={f.id}>
+                      <Link
+                        href={`/compras/${f.id}`}
+                        className="-mx-1 flex items-center justify-between rounded-lg px-1 py-2.5 text-sm no-underline transition-colors hover:bg-white/5"
+                      >
+                        <span className="text-white">
+                          <span className="mono text-white/50">{f.fecha}</span> — {proveedor?.nombre ?? '—'}
+                          {f.estado === 'anulada' && <span className="chip chip-on-glass down ml-2">ANULADA</span>}
+                        </span>
+                        <span className="mono font-semibold text-white">${f.total.toLocaleString('es-AR')}</span>
+                      </Link>
+                    </li>
+                  )
+                })}
+                {ultimasFacturas.length === 0 && (
+                  <li className="py-2.5 text-sm text-white/60">Sin facturas aún.</li>
+                )}
+              </ul>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   )
 }

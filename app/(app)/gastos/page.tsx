@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { listarGastos } from '@/lib/data/gastos'
 import type { Gasto, CategoriaGasto } from '@/types/database'
 import { useEsAdministrador } from '@/lib/hooks/useEsAdministrador'
+import { SkeletonPage, SkeletonList } from '@/components/Skeleton'
 
 const NOMBRE_CATEGORIA: Record<CategoriaGasto, string> = {
   combustible: 'Combustible',
@@ -25,7 +26,13 @@ export default function GastosPage() {
     }
   }, [categoria, esAdmin])
 
-  if (esAdmin === null) return <p className="p-8 text-sm text-ink-soft">Cargando…</p>
+  if (esAdmin === null) {
+    return (
+      <SkeletonPage>
+        <SkeletonList filas={8} />
+      </SkeletonPage>
+    )
+  }
   if (esAdmin === false) {
     return (
       <p className="p-8 text-sm text-negative">
