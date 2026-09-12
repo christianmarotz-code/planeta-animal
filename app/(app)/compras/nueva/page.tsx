@@ -11,6 +11,7 @@ import { calcularTotalesFactura } from '@/lib/calc/factura'
 import { calcularCostoRealUnitario } from '@/lib/calc/costoReal'
 import type { Proveedor, Producto, TipoComprobante } from '@/types/database'
 import { useEsAdministrador } from '@/lib/hooks/useEsAdministrador'
+import { REPOSICION_DRAFT_KEY, type BorradorReposicion } from '@/lib/data/reposicion'
 
 const TIPOS_COMPROBANTE: TipoComprobante[] = [
   'Factura A',
@@ -52,9 +53,36 @@ export default function NuevaFacturaPage() {
   const [proveedorDetectadoTexto, setProveedorDetectadoTexto] = useState<string | null>(null)
 
   useEffect(() => {
-    listarProveedores().then(setProveedores)
-    listarProductos().then(setProductos)
+    Promise.all([listarProveedores(), listarProductos()]).then(([proveedoresData, productosData]) => {
+      setProveedores(proveedoresData)
+      setProductos(productosData)
+      aplicarBorradorReposicion(productosData)
+    })
   }, [])
+
+  function aplicarBorradorReposicion(productosData: Producto[]) {
+    const crudo = sessionStorage.getItem(REPOSICION_DRAFT_KEY)
+    if (!crudo) return
+    sessionStorage.removeItem(REPOSICION_DRAFT_KEY)
+    try {
+      const borrador: BorradorReposicion = JSON.parse(crudo)
+      setProveedorId(borrador.proveedorId)
+      setItems(
+        borrador.items.map((item) => {
+          const producto = productosData.find((p) => p.id === item.productoId)
+          return {
+            producto_id: item.productoId,
+            productoTexto: producto?.nombre ?? '',
+            cantidad: String(item.cantidad),
+            costo_unitario: String(item.costoUnitario),
+            alicuota_iva: String(item.alicuotaIva),
+          }
+        })
+      )
+    } catch {
+      // Borrador corrupto o de una versión anterior del código — se ignora.
+    }
+  }
 
   useEffect(() => {
     return () => {
