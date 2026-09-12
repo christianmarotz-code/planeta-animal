@@ -12,6 +12,7 @@ import {
   anosConFacturas,
   calcularGastoPorTrimestre,
   calcularSemanaGanadoraPorMes,
+  calcularProductosMasComprados,
 } from './reportes'
 import type { FacturaCompra, Proveedor, Producto, ItemFactura, Rama } from '@/types/database'
 
@@ -104,13 +105,13 @@ function itemFactura(
   facturaId: string,
   productoId: string,
   subtotal: number,
-  id = crypto.randomUUID()
+  opciones?: { id?: string; cantidad?: number }
 ): ItemFactura {
   return {
-    id,
+    id: opciones?.id ?? crypto.randomUUID(),
     factura_id: facturaId,
     producto_id: productoId,
-    cantidad: 1,
+    cantidad: opciones?.cantidad ?? 1,
     costo_unitario: subtotal,
     alicuota_iva: 21,
     subtotal,
@@ -447,5 +448,52 @@ describe('calcularSemanaGanadoraPorMes', () => {
     const resultado = calcularSemanaGanadoraPorMes(facturas, 2026)
     const mayo = resultado.find((r) => r.mes === '2026-05')
     expect(mayo).toEqual({ mes: '2026-05', semana: 0, total: 0 })
+  })
+})
+
+describe('calcularProductosMasComprados', () => {
+  it('sums item quantities per product for the given year, sorted descending', () => {
+    const productoA = producto(0, 0, { id: 'prod-a' })
+    const productoB = producto(0, 0, { id: 'prod-b' })
+    const productos = [
+      { ...productoA, nombre: 'Producto A' },
+      { ...productoB, nombre: 'Producto B' },
+    ]
+    const facturaA = factura('p1', 100, 'cargada', '2026-02-01')
+    const items = [
+      itemFactura(facturaA.id, 'prod-a', 50, { cantidad: 3 }),
+      itemFactura(facturaA.id, 'prod-a', 50, { cantidad: 2 }),
+      itemFactura(facturaA.id, 'prod-b', 100, { cantidad: 1 }),
+    ]
+    const resultado = calcularProductosMasComprados(items, [facturaA], productos, 2026)
+    expect(resultado).toEqual([
+      { producto: 'Producto A', cantidad: 5 },
+      { producto: 'Producto B', cantidad: 1 },
+    ])
+  })
+
+  it('excludes annulled invoices and invoices from other years', () => {
+    const productos = [producto(0, 0, { id: 'prod-a' })]
+    const facturaAnulada = factura('p1', 100, 'anulada', '2026-02-01')
+    const facturaOtroAnio = factura('p1', 100, 'cargada', '2025-02-01')
+    const items = [
+      itemFactura(facturaAnulada.id, 'prod-a', 50, { cantidad: 10 }),
+      itemFactura(facturaOtroAnio.id, 'prod-a', 50, { cantidad: 10 }),
+    ]
+    const resultado = calcularProductosMasComprados(
+      items,
+      [facturaAnulada, facturaOtroAnio],
+      productos,
+      2026
+    )
+    expect(resultado).toEqual([])
+  })
+
+  it('omits products with no purchases that year instead of listing them at 0', () => {
+    const productos = [producto(0, 0, { id: 'prod-a' }), producto(0, 0, { id: 'prod-sin-compras' })]
+    const facturaA = factura('p1', 100, 'cargada', '2026-02-01')
+    const items = [itemFactura(facturaA.id, 'prod-a', 100, { cantidad: 4 })]
+    const resultado = calcularProductosMasComprados(items, [facturaA], productos, 2026)
+    expect(resultado).toEqual([{ producto: 'x', cantidad: 4 }])
   })
 })

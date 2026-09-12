@@ -250,3 +250,26 @@ export function calcularSemanaGanadoraPorMes(
     return { mes, semana: semanas.indexOf(total) + 1, total }
   })
 }
+
+export function calcularProductosMasComprados(
+  items: ItemFactura[],
+  facturas: FacturaCompra[],
+  productos: Producto[],
+  anio: number
+): { producto: string; cantidad: number }[] {
+  const productoPorId = new Map(productos.map((p) => [p.id, p]))
+  const cantidadPorProducto = new Map<string, number>()
+  for (const { item, factura } of enriquecerItems(items, facturas, productos)) {
+    if (parseFechaLocal(factura.fecha).getFullYear() !== anio) continue
+    cantidadPorProducto.set(
+      item.producto_id,
+      (cantidadPorProducto.get(item.producto_id) ?? 0) + item.cantidad
+    )
+  }
+  return Array.from(cantidadPorProducto.entries())
+    .map(([productoId, cantidad]) => ({
+      producto: productoPorId.get(productoId)?.nombre ?? 'Desconocido',
+      cantidad,
+    }))
+    .sort((a, b) => b.cantidad - a.cantidad)
+}
