@@ -11,9 +11,14 @@ export default function ProductosPage() {
   const [productos, setProductos] = useState<Producto[]>([])
   const [soloStockBajo, setSoloStockBajo] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [soloStockBajoCargado, setSoloStockBajoCargado] = useState(soloStockBajo)
+
+  if (soloStockBajoCargado !== soloStockBajo) {
+    setSoloStockBajoCargado(soloStockBajo)
+    setLoading(true)
+  }
 
   useEffect(() => {
-    setLoading(true)
     listarProductos({ soloStockBajo })
       .then(setProductos)
       .finally(() => setLoading(false))
