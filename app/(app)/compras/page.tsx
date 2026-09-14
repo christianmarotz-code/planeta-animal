@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { listarFacturas } from '@/lib/data/facturas'
 import { listarProveedores } from '@/lib/data/proveedores'
@@ -12,6 +12,7 @@ export default function ComprasPage() {
   const [facturas, setFacturas] = useState<FacturaCompra[]>([])
   const [proveedores, setProveedores] = useState<Proveedor[]>([])
   const [proveedorId, setProveedorId] = useState('')
+  const [busqueda, setBusqueda] = useState('')
 
   useEffect(() => {
     listarProveedores().then(setProveedores)
@@ -20,6 +21,18 @@ export default function ComprasPage() {
   useEffect(() => {
     listarFacturas({ proveedorId: proveedorId || undefined }).then(setFacturas)
   }, [proveedorId])
+
+  const facturasFiltradas = useMemo(() => {
+    const term = busqueda.trim().toLowerCase()
+    if (!term) return facturas
+    return facturas.filter((f) => {
+      const proveedor = proveedores.find((p) => p.id === f.proveedor_id)
+      return (
+        f.numero_comprobante.toLowerCase().includes(term) ||
+        proveedor?.nombre.toLowerCase().includes(term)
+      )
+    })
+  }, [facturas, proveedores, busqueda])
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-5 p-5 sm:p-8">
@@ -36,20 +49,29 @@ export default function ComprasPage() {
           </Link>
         )}
       </div>
-      <select
-        value={proveedorId}
-        onChange={(e) => setProveedorId(e.target.value)}
-        className="rise w-fit rounded-[var(--r-sm)] border border-line bg-surface p-2.5 text-sm text-ink outline-none transition focus:border-accent"
-      >
-        <option value="">Todos los proveedores</option>
-        {proveedores.map((p) => (
-          <option key={p.id} value={p.id}>
-            {p.nombre}
-          </option>
-        ))}
-      </select>
+      <div className="flex flex-wrap items-center gap-3 rise">
+        <input
+          type="text"
+          placeholder="Buscar por proveedor o N° de comprobante…"
+          value={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)}
+          className="w-full max-w-xs rounded-[var(--r-sm)] border border-line bg-surface-sunk p-2.5 text-sm text-ink outline-none transition focus:border-accent"
+        />
+        <select
+          value={proveedorId}
+          onChange={(e) => setProveedorId(e.target.value)}
+          className="w-fit rounded-[var(--r-sm)] border border-line bg-surface p-2.5 text-sm text-ink outline-none transition focus:border-accent"
+        >
+          <option value="">Todos los proveedores</option>
+          {proveedores.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.nombre}
+            </option>
+          ))}
+        </select>
+      </div>
       <div className="card rise divide-y divide-line">
-        {facturas.map((f) => {
+        {facturasFiltradas.map((f) => {
           const proveedor = proveedores.find((p) => p.id === f.proveedor_id)
           return (
             <Link
@@ -68,8 +90,10 @@ export default function ComprasPage() {
             </Link>
           )
         })}
-        {facturas.length === 0 && (
-          <p className="px-5 py-6 text-sm text-ink-faint">Sin facturas aún.</p>
+        {facturasFiltradas.length === 0 && (
+          <p className="px-5 py-6 text-sm text-ink-faint">
+            {facturas.length === 0 ? 'Sin facturas aún.' : 'Sin facturas que coincidan con la búsqueda.'}
+          </p>
         )}
       </div>
     </div>

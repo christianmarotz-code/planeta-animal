@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { listarGastos } from '@/lib/data/gastos'
 import type { Gasto, CategoriaGasto } from '@/types/database'
@@ -19,12 +19,21 @@ export default function GastosPage() {
   const esAdmin = useEsAdministrador()
   const [gastos, setGastos] = useState<Gasto[]>([])
   const [categoria, setCategoria] = useState<CategoriaGasto | ''>('')
+  const [busqueda, setBusqueda] = useState('')
 
   useEffect(() => {
     if (esAdmin) {
       listarGastos({ categoria: categoria || undefined }).then(setGastos)
     }
   }, [categoria, esAdmin])
+
+  const gastosFiltrados = useMemo(() => {
+    const term = busqueda.trim().toLowerCase()
+    if (!term) return gastos
+    return gastos.filter(
+      (g) => g.concepto.toLowerCase().includes(term) || g.proveedor?.toLowerCase().includes(term)
+    )
+  }, [gastos, busqueda])
 
   if (esAdmin === null) {
     return (
@@ -41,7 +50,7 @@ export default function GastosPage() {
     )
   }
 
-  const total = gastos.reduce((acc, g) => acc + g.monto, 0)
+  const total = gastosFiltrados.reduce((acc, g) => acc + g.monto, 0)
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-5 p-5 sm:p-8">
@@ -58,25 +67,34 @@ export default function GastosPage() {
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3 rise">
-        <select
-          value={categoria}
-          onChange={(e) => setCategoria(e.target.value as CategoriaGasto | '')}
-          className="w-fit rounded-[var(--r-sm)] border border-line bg-surface p-2.5 text-sm text-ink outline-none transition focus:border-accent"
-        >
-          <option value="">Todas las categorías</option>
-          {(Object.keys(NOMBRE_CATEGORIA) as CategoriaGasto[]).map((c) => (
-            <option key={c} value={c}>
-              {NOMBRE_CATEGORIA[c]}
-            </option>
-          ))}
-        </select>
+        <div className="flex flex-wrap items-center gap-3">
+          <input
+            type="text"
+            placeholder="Buscar por concepto o proveedor…"
+            value={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
+            className="w-full max-w-xs rounded-[var(--r-sm)] border border-line bg-surface-sunk p-2.5 text-sm text-ink outline-none transition focus:border-accent"
+          />
+          <select
+            value={categoria}
+            onChange={(e) => setCategoria(e.target.value as CategoriaGasto | '')}
+            className="w-fit rounded-[var(--r-sm)] border border-line bg-surface p-2.5 text-sm text-ink outline-none transition focus:border-accent"
+          >
+            <option value="">Todas las categorías</option>
+            {(Object.keys(NOMBRE_CATEGORIA) as CategoriaGasto[]).map((c) => (
+              <option key={c} value={c}>
+                {NOMBRE_CATEGORIA[c]}
+              </option>
+            ))}
+          </select>
+        </div>
         <p className="text-sm text-ink-soft">
           Total: <span className="mono font-semibold text-ink">${total.toLocaleString('es-AR')}</span>
         </p>
       </div>
 
       <div className="card rise divide-y divide-line">
-        {gastos.map((g) => (
+        {gastosFiltrados.map((g) => (
           <div key={g.id} className="flex items-center justify-between px-5 py-3.5 text-sm">
             <span className="text-ink">
               <span className="mono text-ink-faint">{g.fecha}</span> — {g.concepto}
@@ -86,7 +104,11 @@ export default function GastosPage() {
             <span className="mono font-semibold text-ink">${g.monto.toLocaleString('es-AR')}</span>
           </div>
         ))}
-        {gastos.length === 0 && <p className="px-5 py-6 text-sm text-ink-faint">Sin gastos aún.</p>}
+        {gastosFiltrados.length === 0 && (
+          <p className="px-5 py-6 text-sm text-ink-faint">
+            {gastos.length === 0 ? 'Sin gastos aún.' : 'Sin gastos que coincidan con la búsqueda.'}
+          </p>
+        )}
       </div>
     </div>
   )

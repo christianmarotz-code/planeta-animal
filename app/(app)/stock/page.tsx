@@ -1,6 +1,6 @@
 'use client'
 
-import { Fragment, useEffect, useState } from 'react'
+import { Fragment, useEffect, useMemo, useState } from 'react'
 import { listarProductos } from '@/lib/data/productos'
 import { ajustarStockManual } from '@/lib/data/stock'
 import { listarMovimientosStock } from '@/lib/data/movimientos'
@@ -20,6 +20,13 @@ export default function StockPage() {
   const [cantidad, setCantidad] = useState('')
   const [motivo, setMotivo] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [busqueda, setBusqueda] = useState('')
+
+  const productosFiltrados = useMemo(() => {
+    const term = busqueda.trim().toLowerCase()
+    if (!term) return productos
+    return productos.filter((p) => p.nombre.toLowerCase().includes(term))
+  }, [productos, busqueda])
 
   function cargar() {
     listarProductos().then(setProductos)
@@ -51,6 +58,13 @@ export default function StockPage() {
         </p>
         <h1 className="mt-1 text-[27px] text-ink">Stock</h1>
       </div>
+      <input
+        type="text"
+        placeholder="Buscar por nombre…"
+        value={busqueda}
+        onChange={(e) => setBusqueda(e.target.value)}
+        className="rise w-full max-w-xs rounded-[var(--r-sm)] border border-line bg-surface-sunk p-2.5 text-sm text-ink outline-none transition focus:border-accent"
+      />
       <div className="card rise overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
@@ -73,7 +87,7 @@ export default function StockPage() {
             </tr>
           </thead>
           <tbody>
-            {productos.map((p) => {
+            {productosFiltrados.map((p) => {
               const bajo = p.stock_actual <= p.stock_minimo
               const columnas = esAdmin ? 5 : 4
               return (
@@ -144,10 +158,10 @@ export default function StockPage() {
                 </Fragment>
               )
             })}
-            {productos.length === 0 && (
+            {productosFiltrados.length === 0 && (
               <tr>
                 <td colSpan={esAdmin ? 5 : 4} className="px-5 py-6 text-sm text-ink-faint">
-                  Sin productos aún.
+                  {productos.length === 0 ? 'Sin productos aún.' : 'Sin productos que coincidan con la búsqueda.'}
                 </td>
               </tr>
             )}
