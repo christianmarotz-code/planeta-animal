@@ -45,7 +45,7 @@ export default function StockPage() {
       setCantidad('')
       setMotivo('')
       cargar()
-    } catch (err) {
+    } catch {
       setError('No se pudo ajustar el stock. Intentá de nuevo.')
     }
   }

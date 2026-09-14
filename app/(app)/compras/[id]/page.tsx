@@ -40,7 +40,7 @@ export default function DetalleFacturaPage() {
       router.refresh()
       const { factura: actualizada } = await obtenerFacturaConItems(id)
       setFactura(actualizada)
-    } catch (err) {
+    } catch {
       setError('No se pudo anular la factura. Intentá de nuevo.')
     } finally {
       setAnulando(false)

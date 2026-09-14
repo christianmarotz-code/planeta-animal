@@ -57,7 +57,7 @@ export default function PerfilPage() {
       setNombre(actualizado.nombre)
       setArchivoSeleccionado(null)
       setPreviewUrl(null)
-    } catch (err) {
+    } catch {
       setError('No se pudo guardar. Intentá de nuevo.')
     } finally {
       setSaving(false)

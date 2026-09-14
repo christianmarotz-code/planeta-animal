@@ -57,7 +57,7 @@ export function ProveedorForm({
     setSaving(true)
     try {
       await onSubmit(values)
-    } catch (err) {
+    } catch {
       setError('No se pudo guardar. Intentá de nuevo.')
     } finally {
       setSaving(false)

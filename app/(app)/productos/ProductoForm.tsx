@@ -49,7 +49,7 @@ export function ProductoForm({
     setSaving(true)
     try {
       await onSubmit({ ...values, rama: values.rama })
-    } catch (err) {
+    } catch {
       setError('No se pudo guardar. Intentá de nuevo.')
     } finally {
       setSaving(false)

@@ -180,7 +180,7 @@ export default function NuevaFacturaPage() {
           })
         )
       }
-    } catch (err) {
+    } catch {
       setErrorReconocimiento('No se pudo procesar la foto. Completá los datos a mano.')
     } finally {
       setReconociendo(false)
@@ -242,7 +242,7 @@ export default function NuevaFacturaPage() {
         items: itemsInput,
       })
       router.push(`/compras/${id}`)
-    } catch (err) {
+    } catch {
       setError('No se pudo guardar la factura. Intentá de nuevo.')
     } finally {
       setSaving(false)
