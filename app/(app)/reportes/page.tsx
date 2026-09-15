@@ -214,20 +214,31 @@ export default function ReportesPage() {
       <GraficoBarras titulo="Gasto por día de la semana" subtitulo="últimos 12 meses" datos={datosPorDiaSemana} />
 
       {datosLavadoPorSemana.length > 0 && (
-        <div className="rise">
-          <h2 className="mb-2 text-sm font-semibold text-ink">Lavados por semana</h2>
-          <div className="flex h-32 items-end gap-1">
-            {datosLavadoPorSemana.map((d) => {
-              const maximo = Math.max(...datosLavadoPorSemana.map((x) => x.cantidadTotal), 1)
-              return (
-                <div
-                  key={d.semana}
-                  title={`${d.semana}: ${d.cantidadTotal} animales (${d.vecesVendido} ventas)`}
-                  className="flex-1 rounded-t bg-accent"
-                  style={{ height: `${Math.max(4, (d.cantidadTotal / maximo) * 100)}%` }}
-                />
-              )
-            })}
+        <div className="shell rise">
+          <div className="core">
+            <div className="mb-6 flex items-center justify-between">
+              <p className="text-[11.5px] font-semibold uppercase tracking-[0.14em] text-ink-faint">
+                Lavados por semana
+              </p>
+              <span className="mono text-xs text-ink-faint">últimas 12 semanas</span>
+            </div>
+            <div className="flex h-36 items-end gap-3">
+              {datosLavadoPorSemana.map((d) => {
+                const maximo = Math.max(...datosLavadoPorSemana.map((x) => x.cantidadTotal), 1)
+                return (
+                  <div key={d.semana} className="flex flex-1 flex-col items-center gap-2">
+                    <div
+                      className="w-full rounded-t-[8px] bg-accent transition-[height] duration-500"
+                      style={{ height: `${Math.max(4, (d.cantidadTotal / maximo) * 100)}%` }}
+                      title={`${d.cantidadTotal} animales (${d.vecesVendido} ventas)`}
+                    />
+                    <span className="mono text-[10px] text-ink-faint">
+                      {new Date(d.semana).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' })}
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
           </div>
         </div>
       )}
