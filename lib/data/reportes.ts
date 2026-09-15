@@ -1,4 +1,16 @@
-import type { FacturaCompra, Proveedor, Producto, ItemFactura, Rama, TipoComprobante } from '@/types/database'
+import type {
+  FacturaCompra,
+  Proveedor,
+  Producto,
+  ItemFactura,
+  Rama,
+  TipoComprobante,
+  Venta,
+  ItemVenta,
+  Servicio,
+  Gasto,
+  MedioPago,
+} from '@/types/database'
 
 export function calcularGastoPorProveedor(
   facturas: FacturaCompra[],
@@ -272,4 +284,167 @@ export function calcularProductosMasComprados(
       cantidad,
     }))
     .sort((a, b) => b.cantidad - a.cantidad)
+}
+
+export function calcularIngresoPorSemana(
+  ventas: Venta[],
+  semanas: number,
+  hoy: Date = new Date()
+): { semana: string; total: number }[] {
+  const etiquetas: string[] = []
+  const totales = new Map<string, number>()
+  for (let i = semanas - 1; i >= 0; i--) {
+    const d = new Date(hoy)
+    d.setDate(d.getDate() - i * 7)
+    const clave = inicioSemana(d)
+    etiquetas.push(clave)
+    totales.set(clave, 0)
+  }
+  for (const v of ventas) {
+    if (v.estado === 'anulada') continue
+    const clave = inicioSemana(parseFechaLocal(v.fecha))
+    if (totales.has(clave)) totales.set(clave, (totales.get(clave) ?? 0) + v.total)
+  }
+  return etiquetas.map((clave) => ({ semana: clave, total: totales.get(clave) ?? 0 }))
+}
+
+export function calcularIngresoPorMes(
+  ventas: Venta[],
+  meses: number,
+  hoy: Date = new Date()
+): { mes: string; total: number }[] {
+  const etiquetas: string[] = []
+  const totales = new Map<string, number>()
+  for (let i = meses - 1; i >= 0; i--) {
+    const d = new Date(hoy.getFullYear(), hoy.getMonth() - i, 1)
+    const clave = claveMes(d)
+    etiquetas.push(clave)
+    totales.set(clave, 0)
+  }
+  for (const v of ventas) {
+    if (v.estado === 'anulada') continue
+    const clave = claveMes(parseFechaLocal(v.fecha))
+    if (totales.has(clave)) totales.set(clave, (totales.get(clave) ?? 0) + v.total)
+  }
+  return etiquetas.map((clave) => ({ mes: clave, total: totales.get(clave) ?? 0 }))
+}
+
+export function calcularVentasPorMedioPago(
+  ventas: Venta[]
+): { medioPago: MedioPago; total: number }[] {
+  const totales = new Map<MedioPago, number>()
+  for (const v of ventas) {
+    if (v.estado === 'anulada') continue
+    totales.set(v.medio_pago, (totales.get(v.medio_pago) ?? 0) + v.total)
+  }
+  return Array.from(totales.entries()).map(([medioPago, total]) => ({ medioPago, total }))
+}
+
+export function calcularRentabilidadPorRama(
+  ventas: Venta[],
+  itemsVenta: ItemVenta[],
+  productos: Producto[],
+  servicios: Servicio[],
+  gastos: Gasto[]
+): Record<Rama, { ingreso: number; costoMercaderia: number; gasto: number; neto: number }> {
+  const resultado: Record<Rama, { ingreso: number; costoMercaderia: number; gasto: number; neto: number }> = {
+    clinica: { ingreso: 0, costoMercaderia: 0, gasto: 0, neto: 0 },
+    petshop: { ingreso: 0, costoMercaderia: 0, gasto: 0, neto: 0 },
+  }
+  const ventasValidasIds = new Set(
+    ventas.filter((v) => v.estado !== 'anulada').map((v) => v.id)
+  )
+  const productoRama = new Map(productos.map((p) => [p.id, p.rama]))
+  const servicioRama = new Map(servicios.map((s) => [s.id, s.rama]))
+
+  for (const item of itemsVenta) {
+    if (!ventasValidasIds.has(item.venta_id)) continue
+    const rama =
+      item.tipo === 'producto'
+        ? productoRama.get(item.producto_id ?? '')
+        : servicioRama.get(item.servicio_id ?? '')
+    if (rama !== 'clinica' && rama !== 'petshop') continue
+    resultado[rama].ingreso += item.subtotal
+    if (item.tipo === 'producto') {
+      resultado[rama].costoMercaderia += item.cantidad * (item.costo_unitario_snapshot ?? 0)
+    }
+  }
+
+  for (const g of gastos) {
+    if (g.rama !== 'clinica' && g.rama !== 'petshop') continue
+    resultado[g.rama].gasto += g.monto
+  }
+
+  for (const rama of RAMAS) {
+    resultado[rama].neto = resultado[rama].ingreso - resultado[rama].costoMercaderia - resultado[rama].gasto
+  }
+
+  return resultado
+}
+
+export function calcularFrecuenciaServicioPorSemana(
+  ventas: Venta[],
+  itemsVenta: ItemVenta[],
+  servicioId: string,
+  semanas: number,
+  hoy: Date = new Date()
+): { semana: string; vecesVendido: number; cantidadTotal: number }[] {
+  const etiquetas: string[] = []
+  const conteos = new Map<string, { vecesVendido: number; cantidadTotal: number }>()
+  for (let i = semanas - 1; i >= 0; i--) {
+    const d = new Date(hoy)
+    d.setDate(d.getDate() - i * 7)
+    const clave = inicioSemana(d)
+    etiquetas.push(clave)
+    conteos.set(clave, { vecesVendido: 0, cantidadTotal: 0 })
+  }
+  const ventaPorId = new Map(ventas.map((v) => [v.id, v]))
+  for (const item of itemsVenta) {
+    if (item.tipo !== 'servicio' || item.servicio_id !== servicioId) continue
+    const venta = ventaPorId.get(item.venta_id)
+    if (!venta || venta.estado === 'anulada') continue
+    const clave = inicioSemana(parseFechaLocal(venta.fecha))
+    const actual = conteos.get(clave)
+    if (actual) {
+      actual.vecesVendido += 1
+      actual.cantidadTotal += item.cantidad
+    }
+  }
+  return etiquetas.map((clave) => ({
+    semana: clave,
+    ...(conteos.get(clave) ?? { vecesVendido: 0, cantidadTotal: 0 }),
+  }))
+}
+
+export function calcularFrecuenciaServicioPorMes(
+  ventas: Venta[],
+  itemsVenta: ItemVenta[],
+  servicioId: string,
+  meses: number,
+  hoy: Date = new Date()
+): { mes: string; vecesVendido: number; cantidadTotal: number }[] {
+  const etiquetas: string[] = []
+  const conteos = new Map<string, { vecesVendido: number; cantidadTotal: number }>()
+  for (let i = meses - 1; i >= 0; i--) {
+    const d = new Date(hoy.getFullYear(), hoy.getMonth() - i, 1)
+    const clave = claveMes(d)
+    etiquetas.push(clave)
+    conteos.set(clave, { vecesVendido: 0, cantidadTotal: 0 })
+  }
+  const ventaPorId = new Map(ventas.map((v) => [v.id, v]))
+  for (const item of itemsVenta) {
+    if (item.tipo !== 'servicio' || item.servicio_id !== servicioId) continue
+    const venta = ventaPorId.get(item.venta_id)
+    if (!venta || venta.estado === 'anulada') continue
+    const clave = claveMes(parseFechaLocal(venta.fecha))
+    const actual = conteos.get(clave)
+    if (actual) {
+      actual.vecesVendido += 1
+      actual.cantidadTotal += item.cantidad
+    }
+  }
+  return etiquetas.map((clave) => ({
+    mes: clave,
+    ...(conteos.get(clave) ?? { vecesVendido: 0, cantidadTotal: 0 }),
+  }))
 }

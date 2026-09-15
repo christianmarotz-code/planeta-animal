@@ -13,8 +13,24 @@ import {
   calcularGastoPorTrimestre,
   calcularSemanaGanadoraPorMes,
   calcularProductosMasComprados,
+  calcularIngresoPorSemana,
+  calcularIngresoPorMes,
+  calcularVentasPorMedioPago,
+  calcularRentabilidadPorRama,
+  calcularFrecuenciaServicioPorSemana,
+  calcularFrecuenciaServicioPorMes,
 } from './reportes'
-import type { FacturaCompra, Proveedor, Producto, ItemFactura, Rama } from '@/types/database'
+import type {
+  FacturaCompra,
+  Proveedor,
+  Producto,
+  ItemFactura,
+  Rama,
+  Venta,
+  ItemVenta,
+  Servicio,
+  Gasto,
+} from '@/types/database'
 
 function proveedor(id: string, nombre: string): Proveedor {
   return {
@@ -506,5 +522,203 @@ describe('calcularProductosMasComprados', () => {
     const items = [itemFactura(facturaA.id, 'prod-a', 100, { cantidad: 4 })]
     const resultado = calcularProductosMasComprados(items, [facturaA], productos, 2026)
     expect(resultado).toEqual([{ producto: 'x', cantidad: 4 }])
+  })
+})
+
+function venta(id: string, fecha: string, total: number, opts?: Partial<Venta>): Venta {
+  return {
+    id,
+    cliente_id: null,
+    fecha,
+    medio_pago: 'efectivo',
+    subtotal: total,
+    iva_total: 0,
+    total,
+    estado: 'confirmada',
+    notas: null,
+    created_at: fecha,
+    created_by: null,
+    ...opts,
+  }
+}
+
+function itemVentaProducto(
+  ventaId: string,
+  productoId: string,
+  cantidad: number,
+  precioUnitario: number,
+  costoUnitarioSnapshot: number
+): ItemVenta {
+  return {
+    id: `${ventaId}-${productoId}`,
+    venta_id: ventaId,
+    tipo: 'producto',
+    producto_id: productoId,
+    servicio_id: null,
+    cantidad,
+    precio_unitario: precioUnitario,
+    costo_unitario_snapshot: costoUnitarioSnapshot,
+    subtotal: cantidad * precioUnitario,
+  }
+}
+
+function itemVentaServicio(
+  ventaId: string,
+  servicioId: string,
+  cantidad: number,
+  precioUnitario: number
+): ItemVenta {
+  return {
+    id: `${ventaId}-${servicioId}`,
+    venta_id: ventaId,
+    tipo: 'servicio',
+    producto_id: null,
+    servicio_id: servicioId,
+    cantidad,
+    precio_unitario: precioUnitario,
+    costo_unitario_snapshot: null,
+    subtotal: cantidad * precioUnitario,
+  }
+}
+
+function productoVenta(id: string, rama: Rama): Producto {
+  return {
+    id,
+    nombre: id,
+    categoria: null,
+    rama,
+    unidad_compra: 'unidad',
+    unidad_stock: 'unidad',
+    factor_conversion: 1,
+    stock_actual: 0,
+    stock_minimo: 0,
+    costo_unitario_actual: 0,
+    precio_venta: 0,
+    alicuota_iva: 21,
+    activo: true,
+    codigo: null,
+    codigo_barras: null,
+    created_at: '',
+  }
+}
+
+function servicio(id: string, rama: Rama): Servicio {
+  return { id, nombre: id, categoria: null, rama, precio: 0, activo: true, created_at: '' }
+}
+
+function gasto(rama: Rama, monto: number): Gasto {
+  return {
+    id: `${rama}-${monto}`,
+    fecha: '2026-01-01',
+    categoria: 'otro',
+    concepto: 'test',
+    proveedor: null,
+    monto,
+    rama,
+    notas: null,
+    created_at: '',
+    created_by: null,
+  }
+}
+
+describe('calcularIngresoPorSemana', () => {
+  it('groups sale totals into the current week bucket, excluding anuladas', () => {
+    const hoy = new Date(2026, 8, 15) // martes 15/09/2026
+    const ventas = [
+      venta('v1', '2026-09-15', 1000),
+      venta('v2', '2026-09-14', 500),
+      venta('v3', '2026-09-14', 999999, { estado: 'anulada' }),
+    ]
+    const resultado = calcularIngresoPorSemana(ventas, 1, hoy)
+    expect(resultado).toHaveLength(1)
+    expect(resultado[0].total).toBe(1500)
+  })
+})
+
+describe('calcularIngresoPorMes', () => {
+  it('groups sale totals by month', () => {
+    const hoy = new Date(2026, 8, 15)
+    const ventas = [venta('v1', '2026-09-01', 2000), venta('v2', '2026-08-15', 3000)]
+    const resultado = calcularIngresoPorMes(ventas, 2, hoy)
+    expect(resultado).toEqual([
+      { mes: '2026-08', total: 3000 },
+      { mes: '2026-09', total: 2000 },
+    ])
+  })
+})
+
+describe('calcularVentasPorMedioPago', () => {
+  it('sums totals per payment method, excluding anuladas', () => {
+    const ventas = [
+      venta('v1', '2026-09-01', 1000, { medio_pago: 'efectivo' }),
+      venta('v2', '2026-09-02', 2000, { medio_pago: 'tarjeta' }),
+      venta('v3', '2026-09-03', 500, { medio_pago: 'efectivo' }),
+      venta('v4', '2026-09-04', 999, { medio_pago: 'efectivo', estado: 'anulada' }),
+    ]
+    const resultado = calcularVentasPorMedioPago(ventas)
+    expect(resultado).toContainEqual({ medioPago: 'efectivo', total: 1500 })
+    expect(resultado).toContainEqual({ medioPago: 'tarjeta', total: 2000 })
+  })
+})
+
+describe('calcularRentabilidadPorRama', () => {
+  it('nets income minus cost of goods sold minus gasto, per rama', () => {
+    const ventas = [venta('v1', '2026-09-01', 6000)]
+    const items = [
+      itemVentaProducto('v1', 'p1', 3, 1000, 600), // petshop: ingreso 3000, costo 1800
+      itemVentaServicio('v1', 's1', 1, 3000), // clinica: ingreso 3000, sin costo
+    ]
+    const productos = [productoVenta('p1', 'petshop')]
+    const servicios = [servicio('s1', 'clinica')]
+    const gastos = [gasto('petshop', 500), gasto('clinica', 200)]
+
+    const resultado = calcularRentabilidadPorRama(ventas, items, productos, servicios, gastos)
+
+    expect(resultado.petshop).toEqual({ ingreso: 3000, costoMercaderia: 1800, gasto: 500, neto: 700 })
+    expect(resultado.clinica).toEqual({ ingreso: 3000, costoMercaderia: 0, gasto: 200, neto: 2800 })
+  })
+
+  it('ignores items belonging to an anulada venta', () => {
+    const ventas = [venta('v1', '2026-09-01', 3000, { estado: 'anulada' })]
+    const items = [itemVentaProducto('v1', 'p1', 3, 1000, 600)]
+    const productos = [productoVenta('p1', 'petshop')]
+    const resultado = calcularRentabilidadPorRama(ventas, items, productos, [], [])
+    expect(resultado.petshop.ingreso).toBe(0)
+  })
+})
+
+describe('calcularFrecuenciaServicioPorSemana', () => {
+  it('counts occurrences and total units of a service per week', () => {
+    const hoy = new Date(2026, 8, 15) // semana del 14/09/2026
+    const ventas = [venta('v1', '2026-09-15', 5000), venta('v2', '2026-09-14', 5000)]
+    const items = [
+      itemVentaServicio('v1', 'lavado', 1, 5000),
+      itemVentaServicio('v2', 'lavado', 2, 2500),
+    ]
+    const resultado = calcularFrecuenciaServicioPorSemana(ventas, items, 'lavado', 1, hoy)
+    expect(resultado).toHaveLength(1)
+    expect(resultado[0].vecesVendido).toBe(2)
+    expect(resultado[0].cantidadTotal).toBe(3)
+  })
+})
+
+describe('calcularFrecuenciaServicioPorMes', () => {
+  it('counts a service across separate months, excluding anuladas', () => {
+    const hoy = new Date(2026, 8, 15)
+    const ventas = [
+      venta('v1', '2026-09-05', 5000),
+      venta('v2', '2026-08-10', 5000),
+      venta('v3', '2026-08-20', 5000, { estado: 'anulada' }),
+    ]
+    const items = [
+      itemVentaServicio('v1', 'lavado', 1, 5000),
+      itemVentaServicio('v2', 'lavado', 1, 5000),
+      itemVentaServicio('v3', 'lavado', 1, 5000),
+    ]
+    const resultado = calcularFrecuenciaServicioPorMes(ventas, items, 'lavado', 2, hoy)
+    expect(resultado).toEqual([
+      { mes: '2026-08', vecesVendido: 1, cantidadTotal: 1 },
+      { mes: '2026-09', vecesVendido: 1, cantidadTotal: 1 },
+    ])
   })
 })
