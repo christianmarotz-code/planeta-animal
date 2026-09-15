@@ -58,6 +58,13 @@ export async function obtenerVentaConItems(
   return { venta: venta as Venta, items: (items ?? []) as ItemVenta[] }
 }
 
+export async function listarItemsVenta(): Promise<ItemVenta[]> {
+  const supabase = createClient()
+  const { data, error } = await supabase.from('items_venta').select('*')
+  if (error) throw error
+  return data as ItemVenta[]
+}
+
 export async function anularVenta(id: string): Promise<void> {
   const supabase = createClient()
   const { error } = await supabase.rpc('anular_venta', { p_venta_id: id } as never)

@@ -79,9 +79,13 @@ create policy "servicios_borrar_admin" on servicios
 
 create policy "clientes_lectura" on clientes
   for select to authenticated using (true);
-create policy "clientes_insertar_admin" on clientes
+-- Excepción al criterio de arriba: el alta de clientes la hace cualquier
+-- usuario logueado, porque /ventas/nueva permite dar de alta un cliente
+-- ocasional sin salir del flujo de venta y esa pantalla no está restringida a
+-- administradores. Editar o borrar un cliente sí sigue siendo admin-only.
+create policy "clientes_insertar_autenticado" on clientes
   for insert to authenticated
-  with check (exists (select 1 from perfiles where id = auth.uid() and rol = 'administrador'));
+  with check (true);
 create policy "clientes_actualizar_admin" on clientes
   for update to authenticated
   using (exists (select 1 from perfiles where id = auth.uid() and rol = 'administrador'))

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { listarFacturas, listarItemsFactura } from '@/lib/data/facturas'
 import { listarProveedores } from '@/lib/data/proveedores'
 import { listarProductos } from '@/lib/data/productos'
-import { listarVentas, obtenerVentaConItems } from '@/lib/data/ventas'
+import { listarVentas, listarItemsVenta } from '@/lib/data/ventas'
 import { listarServicios } from '@/lib/data/servicios'
 import {
   calcularGastoPorProveedor,
@@ -87,14 +87,8 @@ export default function ReportesPage() {
     listarItemsFactura().then(setItems)
     listarVentas().then(setVentas)
     listarServicios().then(setServicios)
+    listarItemsVenta().then(setItemsVenta)
   }, [])
-
-  useEffect(() => {
-    if (ventas.length === 0) return
-    Promise.all(ventas.map((v) => obtenerVentaConItems(v.id))).then((resultados) => {
-      setItemsVenta(resultados.flatMap((r) => r.items))
-    })
-  }, [ventas])
 
   if (esAdmin === null) {
     return (
