@@ -94,14 +94,18 @@ export default function NuevaVentaPage() {
 
   async function handleAgregarCliente() {
     if (!nuevoClienteNombre.trim()) return
-    const cliente = await crearCliente({
-      nombre: nuevoClienteNombre.trim(),
-      telefono: null,
-      email: null,
-    })
-    setClientes((prev) => [...prev, cliente].sort((a, b) => a.nombre.localeCompare(b.nombre)))
-    setClienteId(cliente.id)
-    setNuevoClienteNombre('')
+    try {
+      const cliente = await crearCliente({
+        nombre: nuevoClienteNombre.trim(),
+        telefono: null,
+        email: null,
+      })
+      setClientes((prev) => [...prev, cliente].sort((a, b) => a.nombre.localeCompare(b.nombre)))
+      setClienteId(cliente.id)
+      setNuevoClienteNombre('')
+    } catch {
+      setError('No se pudo agregar el cliente. Intentá de nuevo.')
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
