@@ -7,6 +7,7 @@ import { listarProveedores } from '@/lib/data/proveedores'
 import { listarProductos } from '@/lib/data/productos'
 import { listarMovimientosStock } from '@/lib/data/movimientos'
 import { listarUsuarios, type UsuarioConEmail } from '@/lib/data/usuarios'
+import { listarVentas } from '@/lib/data/ventas'
 import {
   calcularValorStock,
   calcularGastoPorSemana,
@@ -14,12 +15,22 @@ import {
   calcularCapitalEnRiesgoPorRama,
   calcularGastoPorProveedorPorRama,
   calcularComprobantesPorRama,
+  calcularIngresoPorSemana,
   RAMAS,
 } from '@/lib/data/reportes'
 import { obtenerOCrearPerfilActual } from '@/lib/data/perfiles'
 import { HeroStatCard } from '@/components/HeroStatCard'
 import { SkeletonPage, SkeletonStatCards, SkeletonTable } from '@/components/Skeleton'
-import type { FacturaCompra, Proveedor, Producto, Perfil, ItemFactura, MovimientoStock, Rama } from '@/types/database'
+import type {
+  FacturaCompra,
+  Proveedor,
+  Producto,
+  Perfil,
+  ItemFactura,
+  MovimientoStock,
+  Rama,
+  Venta,
+} from '@/types/database'
 
 const NOMBRE_RAMA: Record<Rama, string> = { clinica: 'Clínica', petshop: 'Petshop' }
 const NOMBRE_TIPO_MOVIMIENTO: Record<MovimientoStock['tipo'], string> = {
@@ -226,6 +237,7 @@ export default function DashboardPage() {
   const [items, setItems] = useState<ItemFactura[]>([])
   const [movimientos, setMovimientos] = useState<MovimientoStock[]>([])
   const [usuarios, setUsuarios] = useState<UsuarioConEmail[]>([])
+  const [ventas, setVentas] = useState<Venta[]>([])
   const [perfil, setPerfil] = useState<Perfil | null>(null)
   const [perfilError, setPerfilError] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -246,6 +258,7 @@ export default function DashboardPage() {
         setMovimientos(mv)
       })
       .finally(() => setLoading(false))
+    listarVentas().then(setVentas)
   }, [])
 
   useEffect(() => {
@@ -294,6 +307,9 @@ export default function DashboardPage() {
   const maxSemana = Math.max(1, ...semanas.map((s) => s.total))
   const gastoSemanaActual = calcularGastoPorSemana(facturas, 1)[0]?.total ?? 0
   const gastoMesActual = calcularGastoPorMes(facturas, 1)[0]?.total ?? 0
+  const ingresoSemanal = calcularIngresoPorSemana(ventas, 1)[0]?.total ?? 0
+  const gastoSemanal = calcularGastoPorSemana(facturas, 1)[0]?.total ?? 0
+  const netoSemanal = ingresoSemanal - gastoSemanal
 
   return (
     <div className="app-bg dashboard-shell relative isolate min-h-screen overflow-hidden">
@@ -334,6 +350,12 @@ export default function DashboardPage() {
                 eyebrow="Gastado este mes"
                 value={`$${gastoMesActual.toLocaleString('es-AR')}`}
                 href="/reportes"
+              />
+              <StatShell eyebrow="Ingreso semanal" value={`$${ingresoSemanal.toLocaleString('es-AR')}`} />
+              <StatShell
+                eyebrow="Neto semanal"
+                value={`$${netoSemanal.toLocaleString('es-AR')}`}
+                delta={{ texto: netoSemanal >= 0 ? 'positivo' : 'negativo', positivo: netoSemanal >= 0 }}
               />
             </div>
 

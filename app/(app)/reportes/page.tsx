@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react'
 import { listarFacturas, listarItemsFactura } from '@/lib/data/facturas'
 import { listarProveedores } from '@/lib/data/proveedores'
 import { listarProductos } from '@/lib/data/productos'
+import { listarVentas, obtenerVentaConItems } from '@/lib/data/ventas'
+import { listarServicios } from '@/lib/data/servicios'
 import {
   calcularGastoPorProveedor,
   calcularValorStock,
@@ -14,10 +16,11 @@ import {
   calcularGastoPorTrimestre,
   calcularSemanaGanadoraPorMes,
   calcularProductosMasComprados,
+  calcularFrecuenciaServicioPorSemana,
 } from '@/lib/data/reportes'
 import { useEsAdministrador } from '@/lib/hooks/useEsAdministrador'
 import { SkeletonPage, SkeletonStatCards, SkeletonTable } from '@/components/Skeleton'
-import type { FacturaCompra, Proveedor, Producto, ItemFactura } from '@/types/database'
+import type { FacturaCompra, Proveedor, Producto, ItemFactura, Venta, Servicio, ItemVenta } from '@/types/database'
 
 const NOMBRES_MES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
 const ABREV_DIA: Record<string, string> = {
@@ -72,6 +75,9 @@ export default function ReportesPage() {
   const [proveedores, setProveedores] = useState<Proveedor[]>([])
   const [productos, setProductos] = useState<Producto[]>([])
   const [items, setItems] = useState<ItemFactura[]>([])
+  const [ventas, setVentas] = useState<Venta[]>([])
+  const [servicios, setServicios] = useState<Servicio[]>([])
+  const [itemsVenta, setItemsVenta] = useState<ItemVenta[]>([])
   const [anioSeleccionado, setAnioSeleccionado] = useState<number | null>(null)
 
   useEffect(() => {
@@ -79,7 +85,16 @@ export default function ReportesPage() {
     listarProveedores().then(setProveedores)
     listarProductos().then(setProductos)
     listarItemsFactura().then(setItems)
+    listarVentas().then(setVentas)
+    listarServicios().then(setServicios)
   }, [])
+
+  useEffect(() => {
+    if (ventas.length === 0) return
+    Promise.all(ventas.map((v) => obtenerVentaConItems(v.id))).then((resultados) => {
+      setItemsVenta(resultados.flatMap((r) => r.items))
+    })
+  }, [ventas])
 
   if (esAdmin === null) {
     return (
@@ -113,6 +128,11 @@ export default function ReportesPage() {
     etiqueta: ABREV_DIA[d.dia],
     total: d.total,
   }))
+
+  const lavado = servicios.find((s) => s.nombre.toLowerCase() === 'lavado')
+  const datosLavadoPorSemana = lavado
+    ? calcularFrecuenciaServicioPorSemana(ventas, itemsVenta, lavado.id, 12)
+    : []
 
   const anios = anosConFacturas(facturas)
   const anioActivo = anioSeleccionado ?? anios[0] ?? new Date().getFullYear()
@@ -192,6 +212,25 @@ export default function ReportesPage() {
       <GraficoBarras titulo="Gasto por mes" subtitulo="últimos 12 meses" datos={datosPorMes} />
       <GraficoBarras titulo="Gasto por semana" subtitulo="últimas 12 semanas" datos={datosPorSemana} />
       <GraficoBarras titulo="Gasto por día de la semana" subtitulo="últimos 12 meses" datos={datosPorDiaSemana} />
+
+      {datosLavadoPorSemana.length > 0 && (
+        <div className="rise">
+          <h2 className="mb-2 text-sm font-semibold text-ink">Lavados por semana</h2>
+          <div className="flex h-32 items-end gap-1">
+            {datosLavadoPorSemana.map((d) => {
+              const maximo = Math.max(...datosLavadoPorSemana.map((x) => x.cantidadTotal), 1)
+              return (
+                <div
+                  key={d.semana}
+                  title={`${d.semana}: ${d.cantidadTotal} animales (${d.vecesVendido} ventas)`}
+                  className="flex-1 rounded-t bg-accent"
+                  style={{ height: `${Math.max(4, (d.cantidadTotal / maximo) * 100)}%` }}
+                />
+              )
+            })}
+          </div>
+        </div>
+      )}
 
       <div className="flex items-center justify-between rise">
         <p className="text-[11.5px] font-semibold uppercase tracking-[0.14em] text-ink-faint">

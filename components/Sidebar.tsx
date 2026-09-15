@@ -49,6 +49,23 @@ function IconStock() {
     </svg>
   )
 }
+function IconVentas() {
+  return (
+    <svg viewBox="0 0 20 20" fill="none" className="h-[18px] w-[18px]" stroke="currentColor" strokeWidth="1.6">
+      <circle cx="8" cy="16" r="1" />
+      <circle cx="14" cy="16" r="1" />
+      <path d="M2.5 3.5h2l1.6 9.4a1.5 1.5 0 0 0 1.5 1.3h6.6a1.5 1.5 0 0 0 1.5-1.2l1.3-6.5H5.3" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+function IconServicios() {
+  return (
+    <svg viewBox="0 0 20 20" fill="none" className="h-[18px] w-[18px]" stroke="currentColor" strokeWidth="1.6">
+      <path d="M10 3v3M10 14v3M3 10h3M14 10h3" strokeLinecap="round" />
+      <circle cx="10" cy="10" r="3.2" />
+    </svg>
+  )
+}
 function IconComparador() {
   return (
     <svg viewBox="0 0 20 20" fill="none" className="h-[18px] w-[18px]" stroke="currentColor" strokeWidth="1.6">
@@ -99,12 +116,14 @@ const GRUPOS = [
       { href: '/', label: 'Inicio', Icono: IconInicio },
       { href: '/proveedores', label: 'Proveedores', Icono: IconProveedores },
       { href: '/productos', label: 'Productos', Icono: IconProductos },
+      { href: '/servicios', label: 'Servicios', Icono: IconServicios },
     ],
   },
   {
     titulo: 'Operación',
     links: [
       { href: '/compras', label: 'Compras', Icono: IconCompras },
+      { href: '/ventas', label: 'Ventas', Icono: IconVentas },
       { href: '/stock', label: 'Stock', Icono: IconStock },
       { href: '/comparador', label: 'Comparador', Icono: IconComparador, soloAdmin: true },
       { href: '/reposicion', label: 'Reposición', Icono: IconReposicion, soloAdmin: true },
