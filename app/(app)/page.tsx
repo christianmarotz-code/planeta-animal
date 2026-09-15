@@ -25,6 +25,7 @@ const NOMBRE_RAMA: Record<Rama, string> = { clinica: 'Clínica', petshop: 'Petsh
 const NOMBRE_TIPO_MOVIMIENTO: Record<MovimientoStock['tipo'], string> = {
   entrada_compra: 'Entrada por compra',
   ajuste_manual: 'Ajuste manual',
+  salida_venta: 'Salida por venta',
 }
 
 function StatShell({

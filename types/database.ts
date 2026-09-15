@@ -70,7 +70,7 @@ export interface ItemFactura {
   subtotal: number
 }
 
-export type TipoMovimientoStock = 'entrada_compra' | 'ajuste_manual'
+export type TipoMovimientoStock = 'entrada_compra' | 'ajuste_manual' | 'salida_venta'
 
 export interface MovimientoStock {
   id: string
@@ -79,6 +79,7 @@ export interface MovimientoStock {
   cantidad: number
   fecha: string
   factura_id: string | null
+  venta_id: string | null
   motivo: string | null
   usuario_id: string | null
 }
@@ -117,6 +118,54 @@ export interface Perfil {
   created_at: string
 }
 
+export type MedioPago = 'efectivo' | 'tarjeta' | 'transferencia'
+export type EstadoVenta = 'confirmada' | 'anulada'
+export type TipoItemVenta = 'producto' | 'servicio'
+
+export interface Servicio {
+  id: string
+  nombre: string
+  categoria: string | null
+  rama: Rama | null
+  precio: number
+  activo: boolean
+  created_at: string
+}
+
+export interface Cliente {
+  id: string
+  nombre: string
+  telefono: string | null
+  email: string | null
+  created_at: string
+}
+
+export interface Venta {
+  id: string
+  cliente_id: string | null
+  fecha: string
+  medio_pago: MedioPago
+  subtotal: number
+  iva_total: number
+  total: number
+  estado: EstadoVenta
+  notas: string | null
+  created_at: string
+  created_by: string | null
+}
+
+export interface ItemVenta {
+  id: string
+  venta_id: string
+  tipo: TipoItemVenta
+  producto_id: string | null
+  servicio_id: string | null
+  cantidad: number
+  precio_unitario: number
+  costo_unitario_snapshot: number | null
+  subtotal: number
+}
+
 export interface Database {
   public: {
     Tables: {
@@ -144,6 +193,10 @@ export interface Database {
         Insert: Partial<PrecioProveedor>
         Update: Partial<PrecioProveedor>
       }
+      servicios: { Row: Servicio; Insert: Partial<Servicio>; Update: Partial<Servicio> }
+      clientes: { Row: Cliente; Insert: Partial<Cliente>; Update: Partial<Cliente> }
+      ventas: { Row: Venta; Insert: Partial<Venta>; Update: Partial<Venta> }
+      items_venta: { Row: ItemVenta; Insert: Partial<ItemVenta>; Update: Partial<ItemVenta> }
     }
   }
 }

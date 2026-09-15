@@ -10,6 +10,7 @@ import type { Producto, MovimientoStock } from '@/types/database'
 const ETIQUETA_TIPO: Record<MovimientoStock['tipo'], string> = {
   entrada_compra: 'Entrada por compra',
   ajuste_manual: 'Ajuste manual',
+  salida_venta: 'Salida por venta',
 }
 
 export default function StockPage() {
