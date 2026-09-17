@@ -1,0 +1,445 @@
+<title>Rediseño Planeta Animal</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700&family=Manrope:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap');
+
+  :root {
+    --bg: #faf7f2;
+    --surface: #ffffff;
+    --surface-sunk: #f1ece3;
+    --ink: #211c16;
+    --ink-soft: #6e655a;
+    --ink-faint: #a79c8c;
+    --line: #e6dfd3;
+    --line-strong: #d3c9b8;
+    --accent: #f5a623;
+    --accent-soft: #fdf0d9;
+    --good: #3e7d4d;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #15120e;
+      --surface: #1e1a15;
+      --surface-sunk: #262019;
+      --ink: #f5f1ea;
+      --ink-soft: #c9c0b2;
+      --ink-faint: #8b8074;
+      --line: #33291d;
+      --line-strong: #47392a;
+      --accent-soft: #3a2c10;
+      --good: #7fd699;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #15120e;
+    --surface: #1e1a15;
+    --surface-sunk: #262019;
+    --ink: #f5f1ea;
+    --ink-soft: #c9c0b2;
+    --ink-faint: #8b8074;
+    --line: #33291d;
+    --line-strong: #47392a;
+    --accent-soft: #3a2c10;
+    --good: #7fd699;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Manrope', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap {
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 56px 24px 96px;
+  }
+  h1, h2 { font-family: 'Outfit', system-ui, sans-serif; text-wrap: balance; margin: 0; }
+  .eyebrow {
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    font-size: 11.5px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  /* ---- header ---- */
+  header {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding-bottom: 40px;
+    border-bottom: 1px solid var(--line);
+  }
+  header .top-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .paw {
+    width: 30px; height: 30px; flex-shrink: 0;
+  }
+  header h1 { font-size: clamp(28px, 5vw, 38px); font-weight: 700; letter-spacing: -0.01em; }
+  header .lede {
+    font-size: 16px;
+    line-height: 1.6;
+    color: var(--ink-soft);
+    max-width: 56ch;
+  }
+  .meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 20px;
+    font-size: 13px;
+    color: var(--ink-faint);
+  }
+  .meta-row b { color: var(--ink-soft); font-weight: 600; }
+  .status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    border-radius: 999px;
+    background: var(--accent-soft);
+    color: #8a5b0a;
+    font-size: 12.5px;
+    font-weight: 700;
+    width: fit-content;
+  }
+  .status-pill i {
+    width: 7px; height: 7px; border-radius: 50%; background: var(--accent);
+  }
+
+  /* ---- sections ---- */
+  section.entry {
+    padding: 40px 0;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  section.entry:last-of-type { border-bottom: none; }
+  .entry h2 { font-size: 22px; font-weight: 600; margin-top: 6px; }
+  .entry p { font-size: 15px; line-height: 1.7; color: var(--ink-soft); max-width: 60ch; }
+  .entry p + p { margin-top: -4px; }
+
+  .demo {
+    margin-top: 6px;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 18px 40px -22px rgba(30, 20, 5, 0.35);
+    border: 1px solid var(--line-strong);
+  }
+
+  /* ================= mockup: fixed dark tokens, independent of page theme ================= */
+  .mockup {
+    --m-panel: rgba(28, 28, 31, 0.72);
+    --m-panel2: rgba(20, 20, 23, 0.55);
+    --m-line: rgba(255,255,255,0.16);
+    --m-ink: #ffffff;
+    --m-ink-soft: rgba(255,255,255,0.62);
+    --m-ink-faint: rgba(255,255,255,0.42);
+    --m-accent: #f5a623;
+    --m-accent-ink: #231f20;
+    font-family: 'Manrope', sans-serif;
+    color: var(--m-ink);
+  }
+
+  /* --- before / after swatches --- */
+  .swatch-row { display: grid; grid-template-columns: 1fr 1fr; }
+  .swatch {
+    padding: 22px 20px;
+    min-height: 108px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .swatch.before { background: linear-gradient(165deg, #231f20 0%, #f5a623 100%); }
+  .swatch.after { background: linear-gradient(165deg, #08080a 0%, #1c1c1f 55%, #29292e 100%); }
+  .swatch label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10.5px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.7);
+  }
+  .swatch .glass-chip {
+    align-self: flex-start;
+    padding: 7px 12px;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 600;
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.22);
+    backdrop-filter: blur(6px);
+    color: #fff;
+  }
+
+  /* --- sidebar logo mockup --- */
+  .mockup.sidebar {
+    background: var(--m-accent-ink);
+    padding: 26px 20px 30px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+  .mockup.sidebar span { font-size: 11px; color: var(--m-ink-faint); }
+
+  /* --- interactive stat cards mockup --- */
+  .mockup.cards {
+    background: linear-gradient(165deg, #0c0c0e 0%, #1e1e22 100%);
+    padding: 22px;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  .m-card {
+    position: relative;
+    border-radius: 14px;
+    border: 1px solid var(--m-line);
+    background: linear-gradient(165deg, var(--m-panel) 0%, var(--m-panel2) 100%);
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    text-decoration: none;
+    transition: transform .3s cubic-bezier(.32,.72,0,1), border-color .3s, box-shadow .3s;
+    cursor: pointer;
+  }
+  .m-card:hover {
+    transform: translateY(-3px);
+    border-color: rgba(255,255,255,0.32);
+    box-shadow: 0 20px 40px -18px rgba(0,0,0,0.6);
+  }
+  .m-card .m-label {
+    font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--m-ink-faint);
+    transition: color .3s;
+  }
+  .m-card:hover .m-label { color: var(--m-accent); }
+  .m-card .m-value { font-family: 'IBM Plex Mono', monospace; font-size: 18px; font-weight: 600; }
+  .m-card .m-goto {
+    position: absolute; top: 12px; right: 12px;
+    font-size: 11px; color: var(--m-ink-faint); opacity: 0; transition: opacity .3s;
+  }
+  .m-card:hover .m-goto { opacity: 1; color: var(--m-accent); }
+
+  /* --- back button mockup --- */
+  .mockup.nav {
+    background: linear-gradient(165deg, #0c0c0e 0%, #1e1e22 100%);
+    padding: 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .m-back {
+    align-self: flex-start;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 13px;
+    border-radius: 999px;
+    border: 1px solid var(--m-line);
+    background: rgba(255,255,255,0.05);
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--m-ink-soft);
+  }
+  .m-crumb { font-size: 11px; color: var(--m-ink-faint); }
+  .m-crumb b { color: var(--m-ink-soft); }
+
+  /* --- table mockup --- */
+  .mockup.table {
+    background: linear-gradient(165deg, #0c0c0e 0%, #1e1e22 100%);
+    padding: 18px;
+  }
+  .m-table { width: 100%; border-collapse: collapse; font-size: 12.5px; color: inherit; }
+  .m-table thead tr { border-bottom: 2px solid var(--m-line); }
+  .m-table th {
+    text-align: left; padding: 8px 10px;
+    font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--m-ink-faint);
+  }
+  .m-table td { padding: 9px 10px; border-bottom: 1px solid rgba(255,255,255,0.08); color: inherit; }
+  .m-table tr:last-child td { border-bottom: none; }
+  .m-table tbody tr { transition: background .2s; }
+  .m-table tbody tr:hover { background: rgba(245,166,35,0.08); }
+  .m-table tbody tr:hover td:first-child { color: var(--m-accent); }
+  .m-chip {
+    display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 700;
+    background: rgba(46,16,10,0.6); color: #ffab8f;
+  }
+
+  /* --- skeleton mockup --- */
+  .mockup.skeleton {
+    background: linear-gradient(165deg, #0c0c0e 0%, #1e1e22 100%);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .sk-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 4px; }
+  .sk-bar { height: 12px; border-radius: 6px; background: rgba(255,255,255,0.09); animation: pulse 1.6s ease-in-out infinite; }
+  @keyframes pulse { 0%,100% { opacity: .55; } 50% { opacity: 1; } }
+
+  footer.close {
+    padding-top: 44px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  footer.close p { font-size: 15px; line-height: 1.7; color: var(--ink-soft); max-width: 58ch; }
+  footer.close .sign { font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--ink-faint); margin-top: 8px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .sk-bar { animation: none; }
+    .m-card { transition: none; }
+  }
+</style>
+
+<div class="wrap">
+
+  <header>
+    <div class="top-row">
+      <svg class="paw" viewBox="0 0 60 60" fill="none">
+        <circle cx="30" cy="30" r="29" fill="#231F20"/>
+        <ellipse cx="30" cy="38" rx="11" ry="9" fill="#fff"/>
+        <ellipse cx="19" cy="24" rx="5" ry="6.5" fill="#fff"/>
+        <ellipse cx="30" cy="19" rx="5" ry="6.5" fill="#fff"/>
+        <ellipse cx="41" cy="24" rx="5" ry="6.5" fill="#fff"/>
+      </svg>
+      <span class="status-pill"><i></i>Listo para revisar</span>
+    </div>
+    <p class="eyebrow">Panel de gestión — Review de diseño</p>
+    <h1>Qué cambió en el sistema</h1>
+    <p class="lede">
+      Christian, esto es un resumen de los ajustes de diseño que se hicieron sobre el panel de gestión
+      (compras, stock, proveedores, reportes). Cada sección de acá abajo tiene una mini muestra interactiva —
+      pasale el mouse por encima para sentir cómo responde en la app real.
+    </p>
+    <div class="meta-row">
+      <span><b>Producto:</b> Planeta Animal — Panel de gestión</span>
+      <span><b>Alcance:</b> todo el sistema</span>
+      <span><b>Pendiente de tu parte:</b> avisar qué cambiar</span>
+    </div>
+  </header>
+
+  <section class="entry">
+    <p class="eyebrow">01 · Identidad visual</p>
+    <h2>De fondo naranja plano a vidrio sobre base neutra</h2>
+    <p>
+      El fondo dejó de ser un degradé naranja/marrón sólido detrás de todo. Ahora es una base gris grafito
+      oscura, estilo Apple, con las tarjetas en efecto "vidrio esmerilado" (blur + transparencia) flotando arriba.
+      El naranja de la marca no desapareció — quedó reservado para lo importante: botones, alertas y la sección activa.
+    </p>
+    <div class="demo swatch-row mockup">
+      <div class="swatch before">
+        <label>Antes</label>
+        <span class="glass-chip">Fondo sólido naranja</span>
+      </div>
+      <div class="swatch after">
+        <label>Ahora</label>
+        <span class="glass-chip">Base neutra + vidrio</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="entry">
+    <p class="eyebrow">02 · Barra lateral</p>
+    <h2>El logo respira</h2>
+    <p>
+      Antes vivía metido en una placa blanca chica, en una esquina. Ahora está centrado, más grande,
+      y sin ninguna caja gris de fondo — flota directo sobre la barra oscura.
+    </p>
+    <div class="demo mockup sidebar">
+      <svg viewBox="0 0 250 142" width="120" height="68">
+        <ellipse cx="125" cy="71" rx="122" ry="68" fill="#231F20"/>
+        <ellipse cx="90" cy="90" rx="30" ry="24" fill="#fff"/>
+        <ellipse cx="58" cy="58" rx="13" ry="17" fill="#fff"/>
+        <ellipse cx="90" cy="42" rx="13" ry="17" fill="#fff"/>
+        <ellipse cx="122" cy="58" rx="13" ry="17" fill="#fff"/>
+        <rect x="120" y="60" width="95" height="40" rx="6" fill="#f5a623"/>
+        <text x="167" y="76" font-family="Manrope, sans-serif" font-size="14" font-weight="700" fill="#231F20" text-anchor="middle">planeta</text>
+        <text x="167" y="92" font-family="Manrope, sans-serif" font-size="14" font-weight="700" fill="#231F20" text-anchor="middle">animal</text>
+      </svg>
+      <span>Panel de gestión</span>
+    </div>
+  </section>
+
+  <section class="entry">
+    <p class="eyebrow">03 · Interactividad</p>
+    <h2>Las tarjetas del inicio ahora te llevan directo</h2>
+    <p>
+      Cada tarjeta del panel principal responde al mouse (se levanta y se ilumina) y, si la tocás, te lleva
+      directo a esa sección — ya no hace falta ir a buscarla en la barra de la izquierda.
+    </p>
+    <div class="demo mockup cards">
+      <div class="m-card">
+        <span class="m-goto">Ir a Compras →</span>
+        <span class="m-label">Facturas cargadas</span>
+        <span class="m-value">41</span>
+      </div>
+      <div class="m-card">
+        <span class="m-goto">Ir a Stock →</span>
+        <span class="m-label">Productos bajo mínimo</span>
+        <span class="m-value">1.161</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="entry">
+    <p class="eyebrow">04 · Navegación</p>
+    <h2>Un botón para volver, sin dar la vuelta larga</h2>
+    <p>
+      Entrás a un producto, una factura o un proveedor puntual y arriba de todo aparece
+      "Volver" — te devuelve a la lista anterior sin tener que ir de nuevo a la barra lateral.
+    </p>
+    <div class="demo mockup nav">
+      <span class="m-back">‹ Volver</span>
+      <span class="m-crumb">Gestión · <b>Editar producto</b> — Alicate corta uñas chico</span>
+    </div>
+  </section>
+
+  <section class="entry">
+    <p class="eyebrow">05 · Tablas y carga</p>
+    <h2>Listas más prolijas, cargas menos vacías</h2>
+    <p>
+      Los encabezados de Stock, Productos y Compras tienen ahora una línea más marcada, y cada fila se
+      resalta en naranja suave al pasar el mouse. Mientras los datos todavía están cargando, en vez de un
+      cartel de "Cargando…" se ve una vista previa animada de cómo va a quedar.
+    </p>
+    <div class="demo mockup table">
+      <table class="m-table">
+        <thead>
+          <tr><th>Producto</th><th>Stock actual</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Shampoo Avena + Aloe 250ml</td><td><span class="m-chip">0 unidad</span></td></tr>
+          <tr><td>Cidar Perros 12,1kg</td><td>13 unidad</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="demo mockup skeleton">
+      <div class="sk-row"><span class="sk-bar" style="width:38%"></span><span class="sk-bar" style="width:16%"></span></div>
+      <div class="sk-row"><span class="sk-bar" style="width:52%"></span><span class="sk-bar" style="width:16%"></span></div>
+      <div class="sk-row"><span class="sk-bar" style="width:30%"></span><span class="sk-bar" style="width:16%"></span></div>
+    </div>
+  </section>
+
+  <footer class="close">
+    <p class="eyebrow">Siguiente paso</p>
+    <p>
+      Todo esto ya está corriendo en el sistema. Fijate con calma y contame qué te gusta, qué cambiarías,
+      o si hay alguna sección puntual que prefieras que quede como estaba antes.
+    </p>
+    <p class="sign">— Preparado con Claude Code para Ignacio</p>
+  </footer>
+
+</div>
