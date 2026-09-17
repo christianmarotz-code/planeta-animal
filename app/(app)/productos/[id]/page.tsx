@@ -17,7 +17,14 @@ export default function EditarProductoPage() {
     obtenerProducto(id).then(setProducto)
   }, [id])
 
-  if (!producto) return <p className="p-8 text-sm text-ink-soft">Cargando…</p>
+  if (esAdmin === null || !producto) return <p className="p-8 text-sm text-ink-soft">Cargando…</p>
+  if (esAdmin === false) {
+    return (
+      <p className="p-8 text-sm text-negative">
+        Acceso restringido — contactá a un administrador.
+      </p>
+    )
+  }
 
   return (
     <div className="mx-auto flex max-w-md flex-col gap-3 p-5 sm:p-8 rise">
