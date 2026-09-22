@@ -54,6 +54,7 @@ export default function ImportarPreciosPage() {
   const [headers, setHeaders] = useState<string[]>([])
   const [columnas, setColumnas] = useState<ColumnasDetectadas>({ codigo: null, nombre: null, precio: null })
   const [importando, setImportando] = useState(false)
+  const [leyendoPdf, setLeyendoPdf] = useState(false)
   const [resultado, setResultado] = useState<ResultadoImportacion | null>(null)
   const [error, setError] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -67,6 +68,30 @@ export default function ImportarPreciosPage() {
     if (!archivo) return
     setError(null)
     setResultado(null)
+
+    const esPdf = archivo.type === 'application/pdf' || archivo.name.toLowerCase().endsWith('.pdf')
+    if (esPdf) {
+      setLeyendoPdf(true)
+      try {
+        const formData = new FormData()
+        formData.append('archivo', archivo)
+        const res = await fetch('/api/comparador/leer-pdf', { method: 'POST', body: formData })
+        const data = await res.json()
+        if (!data.ok) {
+          setError(data.error ?? 'No se pudo leer el PDF.')
+          return
+        }
+        setHeaders(data.headers)
+        setFilas(data.filas)
+        setColumnas(detectarColumnas(data.headers))
+      } catch {
+        setError('No se pudo leer el PDF. Probá de nuevo.')
+      } finally {
+        setLeyendoPdf(false)
+      }
+      return
+    }
+
     const texto = await archivo.text()
     const filasParseadas = parsearCSV(texto)
     if (filasParseadas.length < 2) {
@@ -129,8 +154,8 @@ export default function ImportarPreciosPage() {
         </p>
         <h1 className="mt-1 text-[27px] text-ink">Importar lista de precios</h1>
         <p className="mt-1 text-sm text-ink-faint">
-          Subí el Excel/CSV que descargaste del portal del mayorista (o la planilla que armaste con sus precios).
-          El sistema cruza cada fila con tu catálogo por código o por nombre.
+          Subí el Excel/CSV o el PDF de la lista de precios que te mandó el proveedor. El sistema cruza cada
+          fila con tu catálogo por código o por nombre.
         </p>
         <Link href="/comparador" className="mt-2 inline-block text-sm text-accent hover:underline">
           ← Ver comparador
@@ -151,17 +176,20 @@ export default function ImportarPreciosPage() {
         </label>
 
         <label className="flex flex-col gap-1 text-sm text-ink-soft">
-          Archivo (CSV)
+          Archivo (CSV o PDF)
           <input
             ref={inputRef}
             type="file"
-            accept=".csv,text/csv"
+            accept=".csv,text/csv,.pdf,application/pdf"
             onChange={handleArchivo}
-            className="rounded-[var(--r-sm)] border border-line bg-surface-sunk p-2.5 text-sm text-ink outline-none transition focus:border-accent"
+            disabled={leyendoPdf}
+            className="rounded-[var(--r-sm)] border border-line bg-surface-sunk p-2.5 text-sm text-ink outline-none transition focus:border-accent disabled:opacity-50"
           />
         </label>
+        {leyendoPdf && <p className="text-sm text-ink-faint">Leyendo el PDF… puede tardar unos segundos si tiene muchas páginas.</p>}
         <p className="text-xs text-ink-faint">
-          Si el archivo viene en Excel (.xlsx), abrilo y guardalo como &quot;CSV&quot; antes de subirlo.
+          Si el archivo viene en Excel (.xlsx), abrilo y guardalo como &quot;CSV&quot; antes de subirlo. Con PDF, el
+          sistema detecta automáticamente las columnas de código, descripción y precio a partir de la tabla.
         </p>
 
         {headers.length > 0 && (

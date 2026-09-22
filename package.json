@@ -13,7 +13,9 @@
     "@anthropic-ai/sdk": "^0.125.0",
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.116.0",
+    "heic-to": "^1.5.2",
     "next": "16.3.4",
+    "pdfjs-dist": "^6.3.289",
     "react": "19.2.8",
     "react-dom": "19.2.8"
   },

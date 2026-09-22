@@ -107,6 +107,10 @@ export async function POST(request: Request) {
       ],
     })
 
+    console.log(
+      `[facturas/reconocer] tokens entrada=${respuesta.usage.input_tokens} salida=${respuesta.usage.output_tokens}`
+    )
+
     if (respuesta.stop_reason === 'max_tokens') {
       return NextResponse.json({
         ok: false,

@@ -65,6 +65,15 @@ export async function obtenerFacturaConItems(
   return { factura, items: items ?? [] }
 }
 
+export async function editarFacturaCompra(id: string, input: NuevaFacturaInput): Promise<void> {
+  const supabase = createClient()
+  const { error } = await supabase.rpc('editar_factura_compra', {
+    p_factura_id: id,
+    payload: input,
+  } as never)
+  if (error) throw error
+}
+
 export async function anularFactura(id: string): Promise<void> {
   const supabase = createClient()
   const { error } = await supabase.rpc('anular_factura_compra', { p_factura_id: id } as never)

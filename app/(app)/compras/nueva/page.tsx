@@ -12,26 +12,7 @@ import { calcularCostoRealUnitario } from '@/lib/calc/costoReal'
 import type { Proveedor, Producto, TipoComprobante } from '@/types/database'
 import { useEsAdministrador } from '@/lib/hooks/useEsAdministrador'
 import { REPOSICION_DRAFT_KEY, type BorradorReposicion } from '@/lib/data/reposicion'
-
-const TIPOS_COMPROBANTE: TipoComprobante[] = [
-  'Factura A',
-  'Factura B',
-  'Factura C',
-  'Remito',
-  'Nota de Credito',
-]
-
-interface ItemDraft {
-  producto_id: string
-  productoTexto: string
-  cantidad: string
-  costo_unitario: string
-  alicuota_iva: string
-}
-
-function emptyItem(): ItemDraft {
-  return { producto_id: '', productoTexto: '', cantidad: '', costo_unitario: '', alicuota_iva: '21' }
-}
+import { TIPOS_COMPROBANTE, itemDraftVacio, validarBorradorFactura, type ItemDraft } from '@/lib/facturas/itemDraft'
 
 export default function NuevaFacturaPage() {
   const esAdmin = useEsAdministrador()
@@ -42,7 +23,7 @@ export default function NuevaFacturaPage() {
   const [numeroComprobante, setNumeroComprobante] = useState('')
   const [tipoComprobante, setTipoComprobante] = useState<TipoComprobante>('Factura A')
   const [fecha, setFecha] = useState(() => new Date().toISOString().slice(0, 10))
-  const [items, setItems] = useState<ItemDraft[]>([emptyItem()])
+  const [items, setItems] = useState<ItemDraft[]>([itemDraftVacio()])
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [creandoProductoIndices, setCreandoProductoIndices] = useState<Set<number>>(new Set())
@@ -95,7 +76,7 @@ export default function NuevaFacturaPage() {
   }
 
   function addItem() {
-    setItems((prev) => [...prev, emptyItem()])
+    setItems((prev) => [...prev, itemDraftVacio()])
   }
 
   function removeItem(index: number) {
@@ -137,11 +118,24 @@ export default function NuevaFacturaPage() {
     setArchivoAdjunto(null)
     setReconociendo(true)
 
+    // Resize/conversión y subida en un try separado del de reconocimiento: si
+    // esto falla (p. ej. el decoder HEIC de heic-to no soporta un HEIC puntual)
+    // la foto nunca se adjunta, que es un problema distinto y más serio que
+    // "la IA no pudo leerla" (ahí la foto ya quedó subida). Mensajes separados
+    // para que el usuario sepa si tiene que reintentar la foto o solo completar
+    // los datos a mano.
+    let ruta: string
     try {
       const fileRedimensionado = await redimensionarImagen(file)
-      const ruta = await subirFotoFactura(fileRedimensionado)
+      ruta = await subirFotoFactura(fileRedimensionado)
       setArchivoAdjunto(ruta)
+    } catch {
+      setErrorReconocimiento('No se pudo subir la foto. Completá los datos a mano.')
+      setReconociendo(false)
+      return
+    }
 
+    try {
       const resultado = await reconocerFactura(ruta)
       if (!resultado.ok) {
         setErrorReconocimiento(resultado.error)
@@ -181,7 +175,7 @@ export default function NuevaFacturaPage() {
         )
       }
     } catch {
-      setErrorReconocimiento('No se pudo procesar la foto. Completá los datos a mano.')
+      setErrorReconocimiento('No se pudo leer la foto automáticamente. Completá los datos a mano.')
     } finally {
       setReconociendo(false)
     }
@@ -190,7 +184,6 @@ export default function NuevaFacturaPage() {
   // Misma condición que la usada para determinar qué se guarda: ambos totales
   // (pantalla y guardado) deben calcularse a partir del mismo conjunto de filas.
   const itemsConDatos = items.filter((it) => it.cantidad && it.costo_unitario)
-  const itemsIncompletos = itemsConDatos.filter((it) => !it.producto_id)
   const itemsParaCalculo = itemsConDatos.map((it) => ({
     cantidad: Number(it.cantidad),
     costoUnitario: Number(it.costo_unitario),
@@ -203,17 +196,15 @@ export default function NuevaFacturaPage() {
     e.preventDefault()
     setError(null)
 
-    if (!proveedorId) return setError('Elegí un proveedor.')
-    if (itemsIncompletos.length > 0) {
-      return setError('Hay ítems sin producto asignado. Vinculalos o creá el producto antes de guardar.')
-    }
-    const itemsValidos = itemsConDatos
-    if (itemsValidos.length === 0) return setError('Agregá al menos un ítem con producto, cantidad y costo.')
-    for (const it of itemsValidos) {
-      if (Number(it.cantidad) <= 0) return setError('Las cantidades deben ser mayores a 0.')
-      if (Number(it.costo_unitario) <= 0) return setError('Los costos deben ser mayores a 0.')
-    }
+    const errorValidacion = validarBorradorFactura({
+      proveedorId,
+      numeroComprobante,
+      fecha,
+      itemsConDatos,
+    })
+    if (errorValidacion) return setError(errorValidacion)
 
+    const itemsValidos = itemsConDatos
     const itemsInput: NuevaFacturaItemInput[] = itemsValidos.map((it) => ({
       producto_id: it.producto_id,
       cantidad: Number(it.cantidad),
