@@ -17,10 +17,17 @@ export interface ItemDraft {
   cantidad: string
   costo_unitario: string
   alicuota_iva: string
+  // % de descuento sobre el costo de lista (solo carga manual de compras).
+  descuento?: string
 }
 
 export function itemDraftVacio(): ItemDraft {
-  return { producto_id: '', productoTexto: '', cantidad: '', costo_unitario: '', alicuota_iva: '21' }
+  return { producto_id: '', productoTexto: '', cantidad: '', costo_unitario: '', alicuota_iva: '21', descuento: '' }
+}
+
+// Costo unitario ya con el descuento aplicado, redondeado a centavos como en la factura.
+export function costoConDescuento(costoLista: number, descuentoPct: number): number {
+  return Math.round(costoLista * (1 - descuentoPct / 100) * 100) / 100
 }
 
 /**

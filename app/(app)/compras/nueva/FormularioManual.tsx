@@ -10,7 +10,7 @@ import { calcularCostoRealUnitario } from '@/lib/calc/costoReal'
 import type { Proveedor, Producto, TipoComprobante } from '@/types/database'
 import { useEsAdministrador } from '@/lib/hooks/useEsAdministrador'
 import { REPOSICION_DRAFT_KEY, type BorradorReposicion } from '@/lib/data/reposicion'
-import { TIPOS_COMPROBANTE, itemDraftVacio, validarBorradorFactura, type ItemDraft } from '@/lib/facturas/itemDraft'
+import { TIPOS_COMPROBANTE, itemDraftVacio, validarBorradorFactura, costoConDescuento, type ItemDraft } from '@/lib/facturas/itemDraft'
 
 export function FormularioManual() {
   const esAdmin = useEsAdministrador()
@@ -21,6 +21,7 @@ export function FormularioManual() {
   const [numeroComprobante, setNumeroComprobante] = useState('')
   const [tipoComprobante, setTipoComprobante] = useState<TipoComprobante>('Factura A')
   const [fecha, setFecha] = useState(() => new Date().toISOString().slice(0, 10))
+  const [percepcionArba, setPercepcionArba] = useState('')
   const [items, setItems] = useState<ItemDraft[]>([itemDraftVacio()])
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
@@ -100,10 +101,12 @@ export function FormularioManual() {
   const itemsConDatos = items.filter((it) => it.cantidad && it.costo_unitario)
   const itemsParaCalculo = itemsConDatos.map((it) => ({
     cantidad: Number(it.cantidad),
-    costoUnitario: Number(it.costo_unitario),
+    costoUnitario: costoConDescuento(Number(it.costo_unitario), Number(it.descuento) || 0),
     alicuotaIva: Number(it.alicuota_iva),
   }))
   const totales = calcularTotalesFactura(itemsParaCalculo)
+  const percepcion = Number(percepcionArba) || 0
+  const totalConPercepcion = totales.total + percepcion
   const proveedorSeleccionado = proveedores.find((p) => p.id === proveedorId) ?? null
 
   async function handleSubmit(e: React.FormEvent) {
@@ -122,7 +125,7 @@ export function FormularioManual() {
     const itemsInput: NuevaFacturaItemInput[] = itemsValidos.map((it) => ({
       producto_id: it.producto_id,
       cantidad: Number(it.cantidad),
-      costo_unitario: Number(it.costo_unitario),
+      costo_unitario: costoConDescuento(Number(it.costo_unitario), Number(it.descuento) || 0),
       alicuota_iva: Number(it.alicuota_iva),
     }))
     const totalesFinales = calcularTotalesFactura(
@@ -142,7 +145,8 @@ export function FormularioManual() {
         fecha,
         subtotal: totalesFinales.subtotal,
         iva_total: totalesFinales.ivaTotal,
-        total: totalesFinales.total,
+        total: totalesFinales.total + percepcion,
+        percepciones_total: percepcion,
         items: itemsInput,
       })
       router.push(`/compras/${id}`)
@@ -218,6 +222,7 @@ export function FormularioManual() {
               <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-faint">Producto</th>
               <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-faint">Cantidad</th>
               <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-faint">Costo unitario</th>
+              <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-faint">DTO %</th>
               <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-faint">IVA %</th>
               <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-faint">Subtotal</th>
               <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-faint">Costo real</th>
@@ -228,11 +233,11 @@ export function FormularioManual() {
             {items.map((item, index) => {
               const subtotalItem =
                 item.cantidad && item.costo_unitario
-                  ? Number(item.cantidad) * Number(item.costo_unitario)
+                  ? Number(item.cantidad) * costoConDescuento(Number(item.costo_unitario), Number(item.descuento) || 0)
                   : 0
               const costoReal =
                 proveedorSeleccionado && item.costo_unitario
-                  ? calcularCostoRealUnitario(Number(item.costo_unitario), Number(item.alicuota_iva), {
+                  ? calcularCostoRealUnitario(costoConDescuento(Number(item.costo_unitario), Number(item.descuento) || 0), Number(item.alicuota_iva), {
                       aplicaIibb: proveedorSeleccionado.aplica_iibb,
                       tasaIibb: proveedorSeleccionado.tasa_iibb,
                       aplicaPercIva: proveedorSeleccionado.aplica_perc_iva,
@@ -297,6 +302,17 @@ export function FormularioManual() {
                     <input
                       type="number"
                       min={0}
+                      max={100}
+                      step="any"
+                      value={item.descuento ?? ''}
+                      onChange={(e) => updateItem(index, { descuento: e.target.value })}
+                      className="w-16 rounded-[var(--r-sm)] border border-line bg-surface p-2 text-sm text-ink outline-none transition focus:border-accent"
+                    />
+                  </td>
+                  <td className="px-3 py-2 text-ink">
+                    <input
+                      type="number"
+                      min={0}
                       step="any"
                       value={item.alicuota_iva}
                       onChange={(e) => updateItem(index, { alicuota_iva: e.target.value })}
@@ -327,7 +343,7 @@ export function FormularioManual() {
           + Agregar ítem
         </button>
 
-        <div className="shell ml-auto w-64">
+        <div className="shell ml-auto w-72">
           <div className="core flex flex-col gap-2 text-sm">
             <div className="flex justify-between text-ink-soft">
               <span>Subtotal</span>
@@ -337,9 +353,20 @@ export function FormularioManual() {
               <span>IVA</span>
               <span className="mono">${totales.ivaTotal.toLocaleString('es-AR')}</span>
             </div>
+            <label className="flex items-center justify-between gap-2 text-ink-soft">
+              <span>Percepción ARBA</span>
+              <input
+                type="number"
+                min={0}
+                step="any"
+                value={percepcionArba}
+                onChange={(e) => setPercepcionArba(e.target.value)}
+                className="mono w-24 rounded-[var(--r-sm)] border border-line bg-surface p-1.5 text-right text-sm text-ink outline-none transition focus:border-accent"
+              />
+            </label>
             <div className="flex justify-between border-t border-line pt-2 font-semibold text-ink">
               <span>Total</span>
-              <span className="mono">${totales.total.toLocaleString('es-AR')}</span>
+              <span className="mono">${totalConPercepcion.toLocaleString('es-AR')}</span>
             </div>
           </div>
         </div>
