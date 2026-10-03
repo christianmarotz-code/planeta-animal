@@ -1,35 +1,24 @@
 'use client'
 
 import Link from 'next/link'
-import { Fragment, useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { listarProductos } from '@/lib/data/productos'
-import { ajustarStockManual } from '@/lib/data/stock'
 import { listarMovimientosStock } from '@/lib/data/movimientos'
+import { formatearMonto } from '@/lib/calc/factura'
+import { esStockeable } from '@/lib/productos/stock'
+import { etiquetaRama, resumirPorSector } from '@/lib/productos/sectores'
 import { EntradasPendientes } from './EntradasPendientes'
+import { HistorialMovimientos } from './HistorialMovimientos'
+import { TablaStock } from './TablaStock'
 import { useEsAdministrador } from '@/lib/hooks/useEsAdministrador'
-import type { Producto, MovimientoStock } from '@/types/database'
-
-const ETIQUETA_TIPO: Record<MovimientoStock['tipo'], string> = {
-  entrada_compra: 'Entrada por compra',
-  ajuste_manual: 'Ajuste manual',
-  salida_venta: 'Salida por venta',
-}
+import type { MovimientoStock, Producto, Rama } from '@/types/database'
 
 export default function StockPage() {
-  const esAdmin = useEsAdministrador()
-  const [productos, setProductos] = useState<Producto[]>([])
+  const esAdmin = useEsAdministrador() === true
+  const [productos, setProductos] = useState<Producto[] | null>(null)
   const [movimientos, setMovimientos] = useState<MovimientoStock[]>([])
-  const [ajusteAbierto, setAjusteAbierto] = useState<string | null>(null)
-  const [cantidad, setCantidad] = useState('')
-  const [motivo, setMotivo] = useState('')
-  const [error, setError] = useState<string | null>(null)
   const [busqueda, setBusqueda] = useState('')
-
-  const productosFiltrados = useMemo(() => {
-    const term = busqueda.trim().toLowerCase()
-    if (!term) return productos
-    return productos.filter((p) => p.nombre.toLowerCase().includes(term))
-  }, [productos, busqueda])
+  const [rama, setRama] = useState<Rama | ''>('')
 
   function cargar() {
     listarProductos().then(setProductos)
@@ -38,28 +27,28 @@ export default function StockPage() {
 
   useEffect(cargar, [])
 
-  async function handleAjustar(productoId: string) {
-    setError(null)
-    if (!motivo.trim()) return setError('El motivo es obligatorio.')
-    if (!cantidad || Number(cantidad) === 0) return setError('Ingresá una cantidad distinta de 0.')
-    try {
-      await ajustarStockManual(productoId, Number(cantidad), motivo.trim())
-      setAjusteAbierto(null)
-      setCantidad('')
-      setMotivo('')
-      cargar()
-    } catch {
-      setError('No se pudo ajustar el stock. Intentá de nuevo.')
-    }
-  }
+  const enRama = useMemo(
+    () => (productos ?? []).filter((p) => (rama ? p.rama === rama : true)),
+    [productos, rama]
+  )
+
+  const sectores = useMemo(() => resumirPorSector(enRama), [enRama])
+
+  // La búsqueda mira solo mercadería, igual que las tarjetas: los servicios
+  // tienen stock de relleno y no corresponden a esta vista.
+  const resultados = useMemo(() => {
+    const term = busqueda.trim().toLowerCase()
+    if (!term) return []
+    return enRama
+      .filter((p) => esStockeable(p) && p.nombre.toLowerCase().includes(term))
+      .sort((a, b) => a.nombre.localeCompare(b.nombre))
+  }, [enRama, busqueda])
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-5 p-5 sm:p-8">
       <div className="rise flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="text-[11.5px] font-semibold uppercase tracking-[0.14em] text-ink-faint">
-            Gestión
-          </p>
+          <p className="text-[11.5px] font-semibold uppercase tracking-[0.14em] text-ink-faint">Gestión</p>
           <h1 className="mt-1 text-[27px] text-ink">Stock</h1>
         </div>
         <div className="flex flex-wrap gap-2 text-sm">
@@ -85,146 +74,61 @@ export default function StockPage() {
           </Link>
         </div>
       </div>
-      <EntradasPendientes productos={productos} onConfirmada={cargar} />
-      <input
-        type="text"
-        placeholder="Buscar por nombre…"
-        value={busqueda}
-        onChange={(e) => setBusqueda(e.target.value)}
-        className="rise w-full max-w-xs rounded-[var(--r-sm)] border border-line bg-surface-sunk p-2.5 text-sm text-ink outline-none transition focus:border-accent"
-      />
-      <div className="card rise overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b-2 border-line-strong text-left">
-              <th className="px-5 py-3 text-[11.5px] font-semibold uppercase tracking-[0.1em] text-ink-faint">
-                Producto
-              </th>
-              <th className="px-5 py-3 text-[11.5px] font-semibold uppercase tracking-[0.1em] text-ink-faint">
-                Stock actual
-              </th>
-              <th className="px-5 py-3 text-[11.5px] font-semibold uppercase tracking-[0.1em] text-ink-faint">
-                Stock mínimo
-              </th>
-              {esAdmin && (
-                <th className="px-5 py-3 text-[11.5px] font-semibold uppercase tracking-[0.1em] text-ink-faint">
-                  Valor (costo × stock)
-                </th>
-              )}
-              <th />
-            </tr>
-          </thead>
-          <tbody>
-            {productosFiltrados.map((p) => {
-              const bajo = p.stock_actual <= p.stock_minimo
-              const columnas = esAdmin ? 5 : 4
-              return (
-                <Fragment key={p.id}>
-                  <tr className="border-b border-line transition last:border-0 hover:bg-accent/5">
-                    <td className="px-5 py-3 text-ink">{p.nombre}</td>
-                    <td className="px-5 py-3">
-                      {bajo ? (
-                        <span className="chip down">
-                          {p.stock_actual} {p.unidad_stock}
-                        </span>
-                      ) : (
-                        <span className="mono text-ink">
-                          {p.stock_actual} {p.unidad_stock}
-                        </span>
-                      )}
-                    </td>
-                    <td className="mono px-5 py-3 text-ink-soft">{p.stock_minimo}</td>
-                    {esAdmin && (
-                      <td className="mono px-5 py-3 text-ink">
-                        ${(p.stock_actual * p.costo_unitario_actual).toLocaleString('es-AR')}
-                      </td>
-                    )}
-                    <td className="px-5 py-3">
-                      <button
-                        onClick={() => {
-                          setAjusteAbierto(ajusteAbierto === p.id ? null : p.id)
-                          setCantidad('')
-                          setMotivo('')
-                          setError(null)
-                        }}
-                        className="text-xs font-semibold text-accent hover:underline"
-                      >
-                        Ajustar
-                      </button>
-                    </td>
-                  </tr>
-                  {ajusteAbierto === p.id && (
-                    <tr className="border-b border-line bg-surface-sunk">
-                      <td colSpan={columnas} className="px-5 py-4">
-                        <div className="flex flex-wrap items-end gap-3">
-                          <label className="text-sm text-ink-soft">
-                            Cantidad (+/- en {p.unidad_stock})
-                            <input
-                              type="number"
-                              step="any"
-                              value={cantidad}
-                              onChange={(e) => setCantidad(e.target.value)}
-                              className="mt-1 block w-32 rounded-[var(--r-sm)] border border-line bg-surface p-2 text-sm text-ink outline-none focus:border-accent"
-                            />
-                          </label>
-                          <label className="text-sm text-ink-soft">
-                            Motivo
-                            <input
-                              value={motivo}
-                              onChange={(e) => setMotivo(e.target.value)}
-                              className="mt-1 block w-64 rounded-[var(--r-sm)] border border-line bg-surface p-2 text-sm text-ink outline-none focus:border-accent"
-                            />
-                          </label>
-                          <button onClick={() => handleAjustar(p.id)} className="pill-btn">
-                            Confirmar
-                          </button>
-                        </div>
-                        {error && <p className="mt-2 text-sm text-negative">{error}</p>}
-                      </td>
-                    </tr>
-                  )}
-                </Fragment>
-              )
-            })}
-            {productosFiltrados.length === 0 && (
-              <tr>
-                <td colSpan={esAdmin ? 5 : 4} className="px-5 py-6 text-sm text-ink-faint">
-                  {productos.length === 0 ? 'Sin productos aún.' : 'Sin productos que coincidan con la búsqueda.'}
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+      <EntradasPendientes productos={productos ?? []} onConfirmada={cargar} />
+      <div className="flex flex-wrap items-center gap-3 rise">
+        <input
+          type="text"
+          placeholder="Buscar producto por nombre…"
+          value={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)}
+          className="w-full max-w-xs rounded-[var(--r-sm)] border border-line bg-surface-sunk p-2.5 text-sm text-ink outline-none transition focus:border-accent"
+        />
+        <select
+          aria-label="Rama"
+          value={rama}
+          onChange={(e) => setRama(e.target.value as Rama | '')}
+          className="w-fit rounded-[var(--r-sm)] border border-line bg-surface p-2.5 text-sm text-ink outline-none transition focus:border-accent"
+        >
+          <option value="">Todas las ramas</option>
+          <option value="clinica">Clínica</option>
+          <option value="petshop">Petshop</option>
+        </select>
       </div>
-
-      <div className="shell rise">
-        <div className="core">
-          <p className="mb-3 text-[11.5px] font-semibold uppercase tracking-[0.14em] text-ink-faint">
-            Historial de movimientos
-          </p>
-          <ul className="divide-y divide-line">
-            {movimientos.map((m) => {
-              const producto = productos.find((p) => p.id === m.producto_id)
-              return (
-                <li key={m.id} className="flex items-center justify-between py-2.5 text-sm">
-                  <span className="text-ink">
-                    <span className="mono text-ink-faint">{m.fecha}</span> — {producto?.nombre ?? '—'} —{' '}
-                    {ETIQUETA_TIPO[m.tipo]}
-                    {m.motivo && <span className="text-ink-faint"> ({m.motivo})</span>}
-                  </span>
-                  <span className={`chip ${m.cantidad >= 0 ? 'up' : 'down'}`}>
-                    {m.cantidad >= 0 ? '+' : ''}
-                    {m.cantidad}
-                  </span>
-                </li>
-              )
-            })}
-            {movimientos.length === 0 && (
-              <li className="py-2.5 text-sm text-ink-faint">Sin movimientos aún.</li>
-            )}
-          </ul>
+      {busqueda.trim() ? (
+        <TablaStock
+          productos={resultados}
+          esAdmin={esAdmin}
+          onAjustado={cargar}
+          mostrarSector
+          textoVacio="Sin productos que coincidan con la búsqueda."
+        />
+      ) : productos === null ? (
+        <p className="card rise px-5 py-6 text-sm text-ink-soft">Cargando…</p>
+      ) : sectores.length === 0 ? (
+        <p className="card rise px-5 py-6 text-sm text-ink-faint">Sin productos aún.</p>
+      ) : (
+        <div className="grid gap-4 rise sm:grid-cols-2 lg:grid-cols-3">
+          {sectores.map((s) => (
+            <Link
+              key={`${s.ramaParam}/${s.slug}`}
+              href={`/stock/${s.ramaParam}/${s.slug}`}
+              className="card flex flex-col gap-3 p-5 transition hover:-translate-y-0.5 hover:border-accent"
+            >
+              <span className="text-[11.5px] font-semibold uppercase tracking-[0.14em] text-ink-faint">
+                {etiquetaRama(s.rama)}
+              </span>
+              <span className="text-[17px] font-semibold text-ink">{s.subcategoria}</span>
+              <span className="text-sm text-ink-soft">
+                {s.productos} {s.productos === 1 ? 'producto' : 'productos'} · {s.sinStock} sin stock
+              </span>
+              {s.aReponer > 0 && <span className="chip down w-fit">{s.aReponer} a reponer</span>}
+              {esAdmin && <span className="mono text-lg font-semibold text-ink">{formatearMonto(s.valor)}</span>}
+            </Link>
+          ))}
         </div>
-      </div>
+      )}
+
+      <HistorialMovimientos movimientos={movimientos} productos={productos ?? []} />
     </div>
   )
 }
