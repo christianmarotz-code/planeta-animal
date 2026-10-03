@@ -83,6 +83,7 @@ export default function ComprasPage() {
                 <span className="mono text-ink-faint">{f.fecha}</span> — {proveedor?.nombre ?? '—'} —{' '}
                 {f.tipo_comprobante} {f.numero_comprobante}
                 {f.estado === 'anulada' && <span className="chip down ml-2">ANULADA</span>}
+                {f.estado === 'revision' && <span className="chip down ml-2">REVISIÓN</span>}
               </span>
               {esAdmin && (
                 <span className="mono font-semibold text-ink">${f.total.toLocaleString('es-AR')}</span>

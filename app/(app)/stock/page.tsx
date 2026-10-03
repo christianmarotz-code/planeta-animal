@@ -4,6 +4,7 @@ import { Fragment, useEffect, useMemo, useState } from 'react'
 import { listarProductos } from '@/lib/data/productos'
 import { ajustarStockManual } from '@/lib/data/stock'
 import { listarMovimientosStock } from '@/lib/data/movimientos'
+import { EntradasPendientes } from './EntradasPendientes'
 import { useEsAdministrador } from '@/lib/hooks/useEsAdministrador'
 import type { Producto, MovimientoStock } from '@/types/database'
 
@@ -59,6 +60,7 @@ export default function StockPage() {
         </p>
         <h1 className="mt-1 text-[27px] text-ink">Stock</h1>
       </div>
+      <EntradasPendientes productos={productos} onConfirmada={cargar} />
       <input
         type="text"
         placeholder="Buscar por nombre…"

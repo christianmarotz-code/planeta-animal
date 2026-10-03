@@ -46,6 +46,16 @@ function proveedor(id: string, nombre: string): Proveedor {
     aplica_perc_iva: false,
     tasa_perc_iva: 3,
     descuento_pronto_pago: 0,
+    razon_social: null,
+    alias: [],
+    tipos_comprobante: [],
+    condicion_pago_habitual: null,
+    formato_habitual: null,
+    primera_boleta: null,
+    ultima_boleta: null,
+    cantidad_boletas: 0,
+    total_acumulado: 0,
+    activo: true,
     created_at: '',
   }
 }
@@ -70,6 +80,19 @@ function factura(
     notas: null,
     created_at: '',
     created_by: null,
+    es_fiscal: true,
+    condicion_pago: null,
+    vencimiento: null,
+    cae: null,
+    cae_vto: null,
+    pedido: null,
+    remito: null,
+    orden_compra: null,
+    percepciones_total: 0,
+    ajuste_redondeo: 0,
+    total_calculado: null,
+    hash_imagen: null,
+    impuestos: [],
   }
 }
 
@@ -131,6 +154,17 @@ function itemFactura(
     costo_unitario: subtotal,
     alicuota_iva: 21,
     subtotal,
+    codigo_proveedor: null,
+    descripcion_original: null,
+    precio_lista: null,
+    bonificaciones: [],
+    neto_linea: null,
+    iva_monto: null,
+    percepciones: [],
+    total_linea: null,
+    precio_final_unitario: null,
+    es_regalo: false,
+    leyenda_regalo: null,
   }
 }
 

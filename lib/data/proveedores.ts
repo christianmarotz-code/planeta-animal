@@ -1,6 +1,19 @@
 import { createClient } from '@/lib/supabase/client'
 import type { Proveedor } from '@/types/database'
 
+// Columnas que la base completa sola (defaults o recálculo al registrar facturas).
+export type CamposProveedorAutomaticos =
+  | 'razon_social'
+  | 'alias'
+  | 'tipos_comprobante'
+  | 'condicion_pago_habitual'
+  | 'formato_habitual'
+  | 'primera_boleta'
+  | 'ultima_boleta'
+  | 'cantidad_boletas'
+  | 'total_acumulado'
+  | 'activo'
+
 export async function listarProveedores(): Promise<Proveedor[]> {
   const supabase = createClient()
   const { data, error } = await supabase.from('proveedores').select('*').order('nombre')
@@ -16,7 +29,7 @@ export async function obtenerProveedor(id: string): Promise<Proveedor> {
 }
 
 export async function crearProveedor(
-  input: Omit<Proveedor, 'id' | 'created_at'>
+  input: Omit<Proveedor, 'id' | 'created_at' | CamposProveedorAutomaticos>
 ): Promise<Proveedor> {
   const supabase = createClient()
   const { data, error } = await supabase

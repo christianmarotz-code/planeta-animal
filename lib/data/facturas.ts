@@ -1,12 +1,24 @@
 import { createClient } from '@/lib/supabase/client'
 import type { FacturaCompra, ItemFactura, TipoComprobante } from '@/types/database'
-import type { FacturaDetectada } from '@/lib/facturas/reconocimientoSchema'
 
 export interface NuevaFacturaItemInput {
-  producto_id: string
+  /** Null cuando la línea no está vinculada a un producto del catálogo. */
+  producto_id: string | null
   cantidad: number
   costo_unitario: number
   alicuota_iva: number
+  // Detalle de la carga inteligente (opcional: la carga manual no lo manda).
+  codigo_proveedor?: string | null
+  descripcion_original?: string | null
+  precio_lista?: number | null
+  bonificaciones?: number[]
+  neto_linea?: number
+  iva_monto?: number
+  percepciones?: { nombre: string; monto: number }[]
+  total_linea?: number
+  precio_final_unitario?: number
+  es_regalo?: boolean
+  leyenda_regalo?: string | null
 }
 
 export interface NuevaFacturaInput {
@@ -20,6 +32,21 @@ export interface NuevaFacturaInput {
   archivo_adjunto?: string | null
   notas?: string | null
   items: NuevaFacturaItemInput[]
+  // Campos de la carga inteligente (opcionales).
+  estado?: 'cargada' | 'revision'
+  es_fiscal?: boolean
+  condicion_pago?: string | null
+  vencimiento?: string | null
+  cae?: string | null
+  cae_vto?: string | null
+  pedido?: string | null
+  remito?: string | null
+  orden_compra?: string | null
+  percepciones_total?: number
+  ajuste_redondeo?: number
+  total_calculado?: number
+  hash_imagen?: string | null
+  impuestos?: { tipo: string; alicuota: number | null; monto: number }[]
 }
 
 export async function registrarFacturaCompra(input: NuevaFacturaInput): Promise<{ id: string }> {
@@ -90,20 +117,3 @@ export async function subirFotoFactura(file: File): Promise<string> {
   return ruta
 }
 
-export async function reconocerFactura(
-  rutaArchivo: string
-): Promise<{ ok: true; factura: FacturaDetectada } | { ok: false; error: string }> {
-  const respuesta = await fetch('/api/facturas/reconocer', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ ruta_archivo: rutaArchivo }),
-  })
-  if (!respuesta.ok) {
-    return { ok: false, error: 'No se pudo leer la factura automáticamente.' }
-  }
-  const datos = await respuesta.json()
-  if (!datos.ok) {
-    return { ok: false, error: datos.error ?? 'No se pudo leer la factura automáticamente.' }
-  }
-  return { ok: true, factura: datos.factura as FacturaDetectada }
-}
