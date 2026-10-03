@@ -55,7 +55,7 @@ function StatShell({
   const contenido = (
     <div className="glass-core flex h-full flex-col justify-between gap-4">
       <div className="flex items-start justify-between gap-3">
-        <p className="line-clamp-2 min-w-0 flex-1 text-[11.5px] font-semibold uppercase tracking-[0.14em] text-white/60 transition-colors group-hover:text-accent">
+        <p className="line-clamp-2 min-w-0 flex-1 text-[11.5px] font-semibold uppercase tracking-[0.14em] text-ink-soft transition-colors group-hover:text-accent">
           {eyebrow}
         </p>
         {delta && (
@@ -64,7 +64,7 @@ function StatShell({
           </span>
         )}
       </div>
-      <p className="mono text-[27px] font-medium leading-none text-white">{value}</p>
+      <p className="mono text-[27px] font-medium leading-none text-ink">{value}</p>
       {children}
     </div>
   )
@@ -115,34 +115,34 @@ function SeccionRama({
   return (
     <div className="glass-shell rise">
       <div className="glass-core flex flex-col gap-5">
-        <p className="text-[11.5px] font-semibold uppercase tracking-[0.14em] text-white/60">
+        <p className="text-[11.5px] font-semibold uppercase tracking-[0.14em] text-ink-soft">
           {NOMBRE_RAMA[rama]}
         </p>
 
         <Link
           href="/stock"
-          className="group -mx-1 flex flex-col gap-1 rounded-2xl px-1 py-1 no-underline transition-colors hover:bg-white/5"
+          className="group -mx-1 flex flex-col gap-1 rounded-2xl px-1 py-1 no-underline transition-colors hover:bg-ink/5"
         >
           <div className="flex items-start justify-between">
-            <p className="text-xs text-white/60 transition-colors group-hover:text-accent">
+            <p className="text-xs text-ink-soft transition-colors group-hover:text-accent">
               Capital en riesgo (stock bajo mínimo)
             </p>
             <span className="chip chip-on-glass down">{capital.cantidad} prod.</span>
           </div>
-          <p className="mono text-xl font-medium text-white">
+          <p className="mono text-xl font-medium text-ink">
             ${capital.valor.toLocaleString('es-AR')}
           </p>
         </Link>
 
         <div>
-          <p className="mb-2 text-xs text-white/60">Top proveedores (30 días, neto)</p>
-          <ul className="divide-y divide-white/10">
+          <p className="mb-2 text-xs text-ink-soft">Top proveedores (30 días, neto)</p>
+          <ul className="divide-y divide-line">
             {topProveedores.map((p) => {
               const proveedor = proveedores.find((pr) => pr.nombre === p.proveedor)
               const fila = (
                 <div className="flex items-center justify-between py-2 text-sm">
-                  <span className="text-white">{p.proveedor}</span>
-                  <span className="mono text-white/70">${p.total.toLocaleString('es-AR')}</span>
+                  <span className="text-ink">{p.proveedor}</span>
+                  <span className="mono text-ink-soft">${p.total.toLocaleString('es-AR')}</span>
                 </div>
               )
               return (
@@ -150,7 +150,7 @@ function SeccionRama({
                   {proveedor ? (
                     <Link
                       href={`/proveedores/${proveedor.id}`}
-                      className="-mx-1 block rounded-lg px-1 no-underline transition-colors hover:bg-white/5"
+                      className="-mx-1 block rounded-lg px-1 no-underline transition-colors hover:bg-ink/5"
                     >
                       {fila}
                     </Link>
@@ -161,43 +161,43 @@ function SeccionRama({
               )
             })}
             {topProveedores.length === 0 && (
-              <li className="py-2 text-sm text-white/60">Sin compras en los últimos 30 días.</li>
+              <li className="py-2 text-sm text-ink-soft">Sin compras en los últimos 30 días.</li>
             )}
           </ul>
         </div>
 
         <div>
-          <p className="mb-2 text-xs text-white/60">Comprobantes (30 días)</p>
-          <ul className="divide-y divide-white/10">
+          <p className="mb-2 text-xs text-ink-soft">Comprobantes (30 días)</p>
+          <ul className="divide-y divide-line">
             {comprobantes.map((c) => (
               <li key={c.tipo} className="flex items-center justify-between py-2 text-sm">
-                <span className="text-white">
-                  {c.tipo} <span className="text-white/60">({c.cantidad})</span>
+                <span className="text-ink">
+                  {c.tipo} <span className="text-ink-soft">({c.cantidad})</span>
                 </span>
-                <span className="mono text-white/70">${c.total.toLocaleString('es-AR')}</span>
+                <span className="mono text-ink-soft">${c.total.toLocaleString('es-AR')}</span>
               </li>
             ))}
             {comprobantes.length === 0 && (
-              <li className="py-2 text-sm text-white/60">Sin comprobantes en los últimos 30 días.</li>
+              <li className="py-2 text-sm text-ink-soft">Sin comprobantes en los últimos 30 días.</li>
             )}
           </ul>
         </div>
 
         <div>
-          <p className="mb-2 text-xs text-white/60">Actividad reciente</p>
-          <ul className="divide-y divide-white/10">
+          <p className="mb-2 text-xs text-ink-soft">Actividad reciente</p>
+          <ul className="divide-y divide-line">
             {actividad.map((m) => {
               const producto = productosPorId.get(m.producto_id)
               const contenido = (
                 <>
                   <div className="flex items-center justify-between">
-                    <span className="text-white">{producto?.nombre ?? '—'}</span>
-                    <span className="mono text-white/70">
+                    <span className="text-ink">{producto?.nombre ?? '—'}</span>
+                    <span className="mono text-ink-soft">
                       {m.tipo === 'ajuste_manual' && m.cantidad > 0 ? '+' : ''}
                       {m.cantidad}
                     </span>
                   </div>
-                  <p className="mono text-[11px] text-white/50">
+                  <p className="mono text-[11px] text-ink-faint">
                     {NOMBRE_TIPO_MOVIMIENTO[m.tipo]}
                     {m.usuario_id && usuariosPorId.get(m.usuario_id) ? ` · ${usuariosPorId.get(m.usuario_id)}` : ''}
                     {' · '}
@@ -210,7 +210,7 @@ function SeccionRama({
                   {producto ? (
                     <Link
                       href={`/productos/${producto.id}`}
-                      className="-mx-1 block rounded-lg px-1 no-underline transition-colors hover:bg-white/5"
+                      className="-mx-1 block rounded-lg px-1 no-underline transition-colors hover:bg-ink/5"
                     >
                       {contenido}
                     </Link>
@@ -221,7 +221,7 @@ function SeccionRama({
               )
             })}
             {actividad.length === 0 && (
-              <li className="py-2 text-sm text-white/60">Sin movimientos recientes.</li>
+              <li className="py-2 text-sm text-ink-soft">Sin movimientos recientes.</li>
             )}
           </ul>
         </div>
@@ -315,13 +315,13 @@ export default function DashboardPage() {
     <div className="app-bg dashboard-shell relative isolate min-h-screen overflow-hidden">
       <div className="relative z-10 mx-auto flex max-w-6xl flex-col gap-5 p-5 sm:p-8">
         <div className="rise">
-          <p className="text-[11.5px] font-semibold uppercase tracking-[0.14em] text-white/60">
+          <p className="text-[11.5px] font-semibold uppercase tracking-[0.14em] text-ink-soft">
             Panel general
           </p>
-          <h1 className="mt-1 text-[27px] font-semibold text-white">
+          <h1 className="mt-1 text-[27px] font-semibold text-ink">
             {perfil?.nombre ? `Bienvenido, ${perfil.nombre}` : 'Bienvenido'}
           </h1>
-          {perfilError && <p className="text-xs text-[#ffb4a3]">No se pudo cargar tu perfil.</p>}
+          {perfilError && <p className="text-xs text-negative">No se pudo cargar tu perfil.</p>}
         </div>
 
         {esAdmin && (
@@ -393,10 +393,10 @@ export default function DashboardPage() {
               <Link href="/reportes" className="glass-shell group rise block no-underline">
                 <div className="glass-core">
                   <div className="mb-6 flex items-center justify-between">
-                    <p className="text-[11.5px] font-semibold uppercase tracking-[0.14em] text-white/60 transition-colors group-hover:text-accent">
+                    <p className="text-[11.5px] font-semibold uppercase tracking-[0.14em] text-ink-soft transition-colors group-hover:text-accent">
                       Gasto por semana
                     </p>
-                    <span className="mono text-xs text-white/50">últimas 8 semanas</span>
+                    <span className="mono text-xs text-ink-faint">últimas 8 semanas</span>
                   </div>
                   <div className="flex h-36 items-end gap-3">
                     {semanas.map((s) => (
@@ -406,7 +406,7 @@ export default function DashboardPage() {
                           style={{ height: `${Math.max(4, (s.total / maxSemana) * 100)}%` }}
                           title={`$${s.total.toLocaleString('es-AR')}`}
                         />
-                        <span className="mono text-[10px] text-white/50">
+                        <span className="mono text-[10px] text-ink-faint">
                           {new Date(s.semana).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' })}
                         </span>
                       </div>
@@ -417,7 +417,7 @@ export default function DashboardPage() {
             </div>
 
             <div>
-              <p className="mb-3 text-[11.5px] font-semibold uppercase tracking-[0.14em] text-white/60">
+              <p className="mb-3 text-[11.5px] font-semibold uppercase tracking-[0.14em] text-ink-soft">
                 Por rama de negocio
               </p>
               <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
@@ -441,21 +441,21 @@ export default function DashboardPage() {
         <div className="glass-shell rise">
           <div className="glass-core">
             <div className="mb-3 flex items-center justify-between">
-              <p className="text-[11.5px] font-semibold uppercase tracking-[0.14em] text-white/60">
+              <p className="text-[11.5px] font-semibold uppercase tracking-[0.14em] text-ink-soft">
                 Stock bajo
               </p>
               <Link href="/stock" className="text-xs font-semibold text-accent hover:underline">
                 Ver todo
               </Link>
             </div>
-            <ul className="divide-y divide-white/10">
+            <ul className="divide-y divide-line">
               {productosStockBajo.slice(0, 6).map((p) => (
                 <li key={p.id}>
                   <Link
                     href={`/productos/${p.id}`}
-                    className="-mx-1 flex items-center justify-between rounded-lg px-1 py-2.5 text-sm no-underline transition-colors hover:bg-white/5"
+                    className="-mx-1 flex items-center justify-between rounded-lg px-1 py-2.5 text-sm no-underline transition-colors hover:bg-ink/5"
                   >
-                    <span className="text-white">{p.nombre}</span>
+                    <span className="text-ink">{p.nombre}</span>
                     <span className="chip chip-on-glass down">
                       {p.stock_actual} {p.unidad_stock}
                     </span>
@@ -463,7 +463,7 @@ export default function DashboardPage() {
                 </li>
               ))}
               {productosStockBajo.length === 0 && (
-                <li className="py-2.5 text-sm text-white/60">Ningún producto está bajo el mínimo.</li>
+                <li className="py-2.5 text-sm text-ink-soft">Ningún producto está bajo el mínimo.</li>
               )}
             </ul>
           </div>
@@ -473,33 +473,33 @@ export default function DashboardPage() {
           <div className="glass-shell rise">
             <div className="glass-core">
               <div className="mb-3 flex items-center justify-between">
-                <p className="text-[11.5px] font-semibold uppercase tracking-[0.14em] text-white/60">
+                <p className="text-[11.5px] font-semibold uppercase tracking-[0.14em] text-ink-soft">
                   Últimas facturas
                 </p>
                 <Link href="/compras" className="text-xs font-semibold text-accent hover:underline">
                   Ver todo
                 </Link>
               </div>
-              <ul className="divide-y divide-white/10">
+              <ul className="divide-y divide-line">
                 {ultimasFacturas.map((f) => {
                   const proveedor = proveedores.find((p) => p.id === f.proveedor_id)
                   return (
                     <li key={f.id}>
                       <Link
                         href={`/compras/${f.id}`}
-                        className="-mx-1 flex items-center justify-between rounded-lg px-1 py-2.5 text-sm no-underline transition-colors hover:bg-white/5"
+                        className="-mx-1 flex items-center justify-between rounded-lg px-1 py-2.5 text-sm no-underline transition-colors hover:bg-ink/5"
                       >
-                        <span className="text-white">
-                          <span className="mono text-white/50">{f.fecha}</span> — {proveedor?.nombre ?? '—'}
+                        <span className="text-ink">
+                          <span className="mono text-ink-faint">{f.fecha}</span> — {proveedor?.nombre ?? '—'}
                           {f.estado === 'anulada' && <span className="chip chip-on-glass down ml-2">ANULADA</span>}
                         </span>
-                        <span className="mono font-semibold text-white">${f.total.toLocaleString('es-AR')}</span>
+                        <span className="mono font-semibold text-ink">${f.total.toLocaleString('es-AR')}</span>
                       </Link>
                     </li>
                   )
                 })}
                 {ultimasFacturas.length === 0 && (
-                  <li className="py-2.5 text-sm text-white/60">Sin facturas aún.</li>
+                  <li className="py-2.5 text-sm text-ink-soft">Sin facturas aún.</li>
                 )}
               </ul>
             </div>

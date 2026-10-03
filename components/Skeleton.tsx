@@ -1,5 +1,5 @@
 function Bloque({ className = '' }: { className?: string }) {
-  return <div className={`animate-pulse rounded-[var(--r-sm)] bg-white/8 ${className}`} />
+  return <div className={`animate-pulse rounded-[var(--r-sm)] bg-ink/10 ${className}`} />
 }
 
 export function SkeletonStatCards({ cantidad = 3 }: { cantidad?: number }) {

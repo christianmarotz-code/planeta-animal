@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useSyncExternalStore } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { Logo } from '@/components/Logo'
@@ -157,6 +157,50 @@ function NavLinks({
   )
 }
 
+function suscribirTema(cb: () => void) {
+  window.addEventListener('tema-cambiado', cb)
+  return () => window.removeEventListener('tema-cambiado', cb)
+}
+
+function BotonTema() {
+  const claro = useSyncExternalStore(
+    suscribirTema,
+    () => document.documentElement.dataset.theme === 'light',
+    () => false,
+  )
+
+  function alternar() {
+    const siguiente = claro ? 'oscuro' : 'claro'
+    if (siguiente === 'claro') document.documentElement.dataset.theme = 'light'
+    else delete document.documentElement.dataset.theme
+    try {
+      localStorage.setItem('tema', siguiente)
+    } catch {}
+    window.dispatchEvent(new Event('tema-cambiado'))
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={alternar}
+      aria-label={claro ? 'Cambiar a modo oscuro' : 'Cambiar a modo claro'}
+      className="flex w-full items-center gap-2.5 rounded-full px-3.5 py-2 text-left text-[13.5px] font-medium text-white/75 transition-all duration-300 hover:bg-white/5 hover:text-white hover:shadow-[var(--shadow-inset-dark)]"
+    >
+      <svg viewBox="0 0 20 20" fill="none" className="h-[18px] w-[18px]" stroke="currentColor" strokeWidth="1.6">
+        {claro ? (
+          <path d="M16.5 11.5A6.5 6.5 0 0 1 8.5 3.5a6.5 6.5 0 1 0 8 8Z" strokeLinecap="round" strokeLinejoin="round" />
+        ) : (
+          <>
+            <circle cx="10" cy="10" r="3.2" />
+            <path d="M10 2.5v2M10 15.5v2M2.5 10h2M15.5 10h2M4.7 4.7l1.4 1.4M13.9 13.9l1.4 1.4M4.7 15.3l1.4-1.4M13.9 6.1l1.4-1.4" strokeLinecap="round" />
+          </>
+        )}
+      </svg>
+      {claro ? 'Modo oscuro' : 'Modo claro'}
+    </button>
+  )
+}
+
 function PerfilYSalir({ perfil, onNavigate }: { perfil: Perfil | null; onNavigate?: () => void }) {
   return (
     <div className="mt-auto flex flex-col gap-1 border-t border-white/10 pt-3">
@@ -171,6 +215,7 @@ function PerfilYSalir({ perfil, onNavigate }: { perfil: Perfil | null; onNavigat
           <span className="text-[11px] text-white/50">Mi perfil</span>
         </span>
       </Link>
+      <BotonTema />
       <form action="/api/auth/signout" method="post">
         <button
           type="submit"
@@ -189,7 +234,7 @@ function BotonVolver() {
     <button
       type="button"
       onClick={() => router.back()}
-      className="group inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-[13px] font-medium text-white/70 backdrop-blur-xl transition-colors hover:border-white/25 hover:bg-white/10 hover:text-white"
+      className="group inline-flex items-center gap-1.5 rounded-full border border-line bg-ink/5 px-3 py-1.5 text-[13px] font-medium text-ink-soft backdrop-blur-xl transition-colors hover:border-line-strong hover:bg-ink/10 hover:text-ink"
     >
       <svg viewBox="0 0 20 20" fill="none" className="h-4 w-4" stroke="currentColor" strokeWidth="1.8">
         <path d="M12.5 4.5 6 10l6.5 5.5" strokeLinecap="round" strokeLinejoin="round" />

@@ -50,7 +50,40 @@
   --dur-med: .45s;
   --dur-slow: .6s;
 
+  --text-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+  --glass-bg: linear-gradient(165deg, rgba(28, 28, 31, 0.62) 0%, rgba(20, 20, 23, 0.48) 100%);
+  --glass-border: rgba(255, 255, 255, 0.22);
+  --glass-border-hover: rgba(255, 255, 255, 0.32);
+  --glass-sheen: rgba(255, 255, 255, 0.12);
+  --app-bg: radial-gradient(ellipse 900px 520px at 50% -10%, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0) 60%),
+    linear-gradient(165deg, #08080a 0%, #1c1c1f 55%, #29292e 100%);
+
   color-scheme: dark;
+}
+
+/* ---- light theme: se activa con <html data-theme="light"> ---- */
+:root[data-theme="light"] {
+  --page: #f4f2ee;
+  --surface: rgba(255, 255, 255, 0.82);
+  --surface-sunk: rgba(28, 28, 31, 0.05);
+  --ink: #1c1c1f;
+  --ink-soft: rgba(28, 28, 31, 0.74);
+  --ink-faint: rgba(28, 28, 31, 0.55);
+  --line: rgba(28, 28, 31, 0.12);
+  --line-strong: rgba(28, 28, 31, 0.24);
+  --positive: #15803d;
+  --positive-soft: #e1f5e8;
+  --negative: #b93815;
+  --negative-soft: #fde9e2;
+  --shadow-inset: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  --text-shadow: none;
+  --glass-bg: linear-gradient(165deg, rgba(255, 255, 255, 0.92) 0%, rgba(255, 255, 255, 0.7) 100%);
+  --glass-border: rgba(28, 28, 31, 0.1);
+  --glass-border-hover: rgba(28, 28, 31, 0.22);
+  --glass-sheen: rgba(255, 255, 255, 0.5);
+  --app-bg: radial-gradient(ellipse 900px 520px at 50% -10%, rgba(245, 166, 35, 0.1) 0%, rgba(245, 166, 35, 0) 60%),
+    linear-gradient(165deg, #faf8f4 0%, #f1eee8 55%, #e9e5dd 100%);
+  color-scheme: light;
 }
 
 @theme inline {
@@ -95,9 +128,7 @@ body {
 
 /* Vibrant brand gradient behind the whole app shell */
 .app-bg {
-  background:
-    radial-gradient(ellipse 900px 520px at 50% -10%, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0) 60%),
-    linear-gradient(165deg, #08080a 0%, #1c1c1f 55%, #29292e 100%);
+  background: var(--app-bg);
   background-attachment: fixed;
 }
 
@@ -125,8 +156,8 @@ h1, h2, h3 {
 .glass-shell {
   position: relative;
   border-radius: var(--r-xl);
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  background: linear-gradient(165deg, rgba(28, 28, 31, 0.62) 0%, rgba(20, 20, 23, 0.48) 100%);
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg);
   backdrop-filter: blur(26px) saturate(160%);
   -webkit-backdrop-filter: blur(26px) saturate(160%);
   box-shadow:
@@ -134,13 +165,13 @@ h1, h2, h3 {
     inset 0 1px 0 rgba(255, 255, 255, 0.2),
     inset 0 0 0 1px rgba(255, 255, 255, 0.06);
   overflow: hidden;
-  color: #fff;
+  color: var(--ink);
   transition: transform var(--dur-med) var(--ease), box-shadow var(--dur-med) var(--ease), border-color var(--dur-med) var(--ease);
 }
 .shell:hover,
 .glass-shell:hover {
   transform: translateY(-4px);
-  border-color: rgba(255, 255, 255, 0.32);
+  border-color: var(--glass-border-hover);
   box-shadow:
     0 32px 74px -22px rgba(0, 0, 0, 0.6),
     inset 0 1px 0 rgba(255, 255, 255, 0.24),
@@ -151,7 +182,7 @@ h1, h2, h3 {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0) 45%);
+  background: linear-gradient(135deg, var(--glass-sheen) 0%, rgba(255, 255, 255, 0) 45%);
   pointer-events: none;
 }
 .core,
@@ -159,18 +190,18 @@ h1, h2, h3 {
   position: relative;
   z-index: 1;
   padding: var(--sp-5);
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+  text-shadow: var(--text-shadow);
 }
 
 /* Status chips on glass — dark base so text stays legible over any background */
 .chip.chip-on-glass.up {
-  background: rgba(10, 36, 18, 0.75);
-  color: #8bf0ac;
+  background: var(--positive-soft);
+  color: var(--positive);
   text-shadow: none;
 }
 .chip.chip-on-glass.down {
-  background: rgba(46, 16, 10, 0.75);
-  color: #ffab8f;
+  background: var(--negative-soft);
+  color: var(--negative);
   text-shadow: none;
 }
 
@@ -184,7 +215,7 @@ h1, h2, h3 {
   backdrop-filter: blur(20px) saturate(160%);
   -webkit-backdrop-filter: blur(20px) saturate(160%);
   box-shadow: var(--shadow-card), var(--shadow-inset);
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+  text-shadow: var(--text-shadow);
   transition: border-color var(--dur-med) var(--ease), box-shadow var(--dur-med) var(--ease);
 }
 .card:hover {

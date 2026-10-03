@@ -21,7 +21,7 @@ export function GaugeRing({
         <path
           d="M 10 50 A 40 40 0 0 1 90 50"
           fill="none"
-          stroke="rgba(255,255,255,0.25)"
+          stroke="var(--line-strong)"
           strokeWidth="9"
           strokeLinecap="round"
         />
@@ -36,7 +36,7 @@ export function GaugeRing({
           style={{ transition: 'stroke-dashoffset var(--dur-slow) var(--ease)' }}
         />
       </svg>
-      <div className="absolute bottom-0 flex flex-col items-center leading-none text-white">
+      <div className="absolute bottom-0 flex flex-col items-center leading-none text-ink">
         <span className="mono text-lg font-semibold">{Math.round(clamped)}%</span>
         {label && <span className="mt-0.5 text-[10px] opacity-70">{label}</span>}
       </div>
