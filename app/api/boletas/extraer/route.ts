@@ -102,11 +102,17 @@ export async function POST(request: Request) {
       max_tokens: 12_000,
       system: PROMPT_EXTRACTOR,
       tools: [HERRAMIENTA_EXTRAER_BOLETA],
-      tool_choice: { type: 'tool', name: HERRAMIENTA_EXTRAER_BOLETA.name },
+      tool_choice: { type: 'auto' },
       messages: [
         {
           role: 'user',
-          content: [...bloquesArchivo, { type: 'text', text: mensajeProveedorDeclarado(proveedor) }],
+          content: [
+            ...bloquesArchivo,
+            {
+              type: 'text',
+              text: `${mensajeProveedorDeclarado(proveedor)}\n\nDevolvé los datos llamando a la herramienta ${HERRAMIENTA_EXTRAER_BOLETA.name}.`,
+            },
+          ],
         },
       ],
     })
