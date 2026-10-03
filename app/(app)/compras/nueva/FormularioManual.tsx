@@ -10,6 +10,7 @@ import { calcularCostoRealUnitario } from '@/lib/calc/costoReal'
 import type { Proveedor, Producto, TipoComprobante } from '@/types/database'
 import { useEsAdministrador } from '@/lib/hooks/useEsAdministrador'
 import { REPOSICION_DRAFT_KEY, type BorradorReposicion } from '@/lib/data/reposicion'
+import { SelectorProntoPago } from '@/components/SelectorProntoPago'
 import { TIPOS_COMPROBANTE, itemDraftVacio, validarBorradorFactura, costoConDescuento, type ItemDraft } from '@/lib/facturas/itemDraft'
 
 export function FormularioManual() {
@@ -22,6 +23,9 @@ export function FormularioManual() {
   const [tipoComprobante, setTipoComprobante] = useState<TipoComprobante>('Factura A')
   const [fecha, setFecha] = useState(() => new Date().toISOString().slice(0, 10))
   const [percepcionArba, setPercepcionArba] = useState('')
+  // Tramos de pronto pago de la factura. Por defecto se asume el primero (el mejor descuento).
+  const [tramos, setTramos] = useState<{ dias: string; descuento: string }[]>([])
+  const [tramoElegido, setTramoElegido] = useState(0)
   const [items, setItems] = useState<ItemDraft[]>([itemDraftVacio()])
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
@@ -107,6 +111,10 @@ export function FormularioManual() {
   const totales = calcularTotalesFactura(itemsParaCalculo)
   const percepcion = Number(percepcionArba) || 0
   const totalConPercepcion = totales.total + percepcion
+  const tramosValidos = tramos
+    .map((t, indice) => ({ indice, dias: Number(t.dias), descuento: Number(t.descuento) }))
+    .filter((t) => t.dias > 0 && t.descuento > 0 && t.descuento < 100)
+  const descuentoElegido = tramosValidos.find((t) => t.indice === tramoElegido)?.descuento ?? 0
   const proveedorSeleccionado = proveedores.find((p) => p.id === proveedorId) ?? null
 
   async function handleSubmit(e: React.FormEvent) {
@@ -147,6 +155,8 @@ export function FormularioManual() {
         iva_total: totalesFinales.ivaTotal,
         total: totalesFinales.total + percepcion,
         percepciones_total: percepcion,
+        pronto_pago: tramosValidos.map(({ dias, descuento }) => ({ dias, descuento })),
+        pronto_pago_elegido: descuentoElegido,
         items: itemsInput,
       })
       router.push(`/compras/${id}`)
@@ -242,7 +252,8 @@ export function FormularioManual() {
                       tasaIibb: proveedorSeleccionado.tasa_iibb,
                       aplicaPercIva: proveedorSeleccionado.aplica_perc_iva,
                       tasaPercIva: proveedorSeleccionado.tasa_perc_iva,
-                      descuentoProntoPago: proveedorSeleccionado.descuento_pronto_pago,
+                      descuentoProntoPago:
+                        tramosValidos.length > 0 ? descuentoElegido : proveedorSeleccionado.descuento_pronto_pago,
                     })
                   : null
               return (
@@ -370,6 +381,64 @@ export function FormularioManual() {
             </div>
           </div>
         </div>
+
+        <section className="card flex flex-col gap-3 p-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-ink">Pronto pago</h2>
+            <button
+              type="button"
+              onClick={() => setTramos((prev) => [...prev, { dias: '', descuento: '' }])}
+              className="text-xs font-semibold text-accent hover:underline"
+            >
+              + Agregar tramo
+            </button>
+          </div>
+          {tramos.length === 0 && (
+            <p className="text-xs text-ink-faint">
+              Si la factura trae descuento por pagar antes (ej. contado hasta 7 días 5%), agregalo acá.
+            </p>
+          )}
+          {tramos.map((t, i) => (
+            <div key={i} className="flex flex-wrap items-center gap-2 text-sm text-ink-soft">
+              <span>Hasta</span>
+              <input
+                type="number"
+                min={1}
+                value={t.dias}
+                onChange={(e) => setTramos((prev) => prev.map((x, j) => (j === i ? { ...x, dias: e.target.value } : x)))}
+                className="w-16 rounded-[var(--r-sm)] border border-line bg-surface p-2 text-sm text-ink outline-none transition focus:border-accent"
+              />
+              <span>días, dto</span>
+              <input
+                type="number"
+                min={0}
+                max={100}
+                step="any"
+                value={t.descuento}
+                onChange={(e) => setTramos((prev) => prev.map((x, j) => (j === i ? { ...x, descuento: e.target.value } : x)))}
+                className="w-16 rounded-[var(--r-sm)] border border-line bg-surface p-2 text-sm text-ink outline-none transition focus:border-accent"
+              />
+              <span>%</span>
+              <button
+                type="button"
+                onClick={() => {
+                  setTramos((prev) => prev.filter((_, j) => j !== i))
+                  setTramoElegido((prev) => (prev === i ? 0 : prev > i ? prev - 1 : prev))
+                }}
+                className="text-xs font-semibold text-negative hover:underline"
+              >
+                Quitar
+              </button>
+            </div>
+          ))}
+          <SelectorProntoPago
+            tramos={tramosValidos.map(({ dias, descuento }) => ({ dias, descuento }))}
+            elegido={descuentoElegido}
+            total={totalConPercepcion}
+            fechaFactura={fecha}
+            onElegir={(d) => setTramoElegido(tramosValidos.find((t) => t.descuento === d)?.indice ?? -1)}
+          />
+        </section>
 
         {error && <p className="text-sm text-negative">{error}</p>}
         <button

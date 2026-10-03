@@ -85,6 +85,8 @@ export interface FacturaCompra {
   total_calculado: number | null
   hash_imagen: string | null
   impuestos: { tipo: string; alicuota: number | null; monto: number }[]
+  pronto_pago: { dias: number; descuento: number }[]
+  pronto_pago_elegido: number
 }
 
 export interface ItemFactura {

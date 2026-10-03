@@ -2,13 +2,14 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { obtenerFacturaConItems, anularFactura, editarFacturaCompra } from '@/lib/data/facturas'
+import { obtenerFacturaConItems, anularFactura, editarFacturaCompra, cambiarProntoPagoFactura } from '@/lib/data/facturas'
 import { obtenerProveedor, listarProveedores } from '@/lib/data/proveedores'
 import { listarProductos, obtenerProducto, crearProducto } from '@/lib/data/productos'
 import { calcularCostoRealUnitario } from '@/lib/calc/costoReal'
 import { calcularTotalesFactura } from '@/lib/calc/factura'
 import type { FacturaCompra, ItemFactura, Proveedor, Producto, TipoComprobante } from '@/types/database'
 import { useEsAdministrador } from '@/lib/hooks/useEsAdministrador'
+import { SelectorProntoPago } from '@/components/SelectorProntoPago'
 import { TIPOS_COMPROBANTE, validarBorradorFactura, type ItemDraft } from '@/lib/facturas/itemDraft'
 
 export default function DetalleFacturaPage() {
@@ -22,6 +23,7 @@ export default function DetalleFacturaPage() {
   const [productos, setProductos] = useState<Producto[]>([])
   const [anulando, setAnulando] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [cambiandoProntoPago, setCambiandoProntoPago] = useState(false)
 
   const [editando, setEditando] = useState(false)
   const [guardandoEdicion, setGuardandoEdicion] = useState(false)
@@ -63,6 +65,19 @@ export default function DetalleFacturaPage() {
       setError('No se pudo anular la factura. Intentá de nuevo.')
     } finally {
       setAnulando(false)
+    }
+  }
+
+  async function handleElegirProntoPago(descuento: number) {
+    setError(null)
+    setCambiandoProntoPago(true)
+    try {
+      await cambiarProntoPagoFactura(id, descuento)
+      setFactura((prev) => (prev ? { ...prev, pronto_pago_elegido: descuento } : prev))
+    } catch {
+      setError('No se pudo cambiar el pronto pago. Intentá de nuevo.')
+    } finally {
+      setCambiandoProntoPago(false)
     }
   }
 
@@ -168,7 +183,7 @@ export default function DetalleFacturaPage() {
         fecha: fechaEdit,
         subtotal: totalesEdit.subtotal,
         iva_total: totalesEdit.ivaTotal,
-        total: totalesEdit.total,
+        total: totalesEdit.total + (factura?.percepciones_total ?? 0),
         items: itemsEditConDatos.map((it) => ({
           producto_id: it.producto_id,
           cantidad: Number(it.cantidad),
@@ -237,7 +252,10 @@ export default function DetalleFacturaPage() {
                         tasaIibb: proveedor.tasa_iibb,
                         aplicaPercIva: proveedor.aplica_perc_iva,
                         tasaPercIva: proveedor.tasa_perc_iva,
-                        descuentoProntoPago: proveedor.descuento_pronto_pago,
+                        descuentoProntoPago:
+                          factura.pronto_pago.length > 0
+                            ? factura.pronto_pago_elegido
+                            : proveedor.descuento_pronto_pago,
                       })
                     : null
                   return (
@@ -288,12 +306,32 @@ export default function DetalleFacturaPage() {
                   <span>IVA</span>
                   <span className="mono">${factura.iva_total.toLocaleString('es-AR')}</span>
                 </div>
+                {factura.percepciones_total > 0 && (
+                  <div className="flex justify-between text-ink-soft">
+                    <span>Percepciones</span>
+                    <span className="mono">${factura.percepciones_total.toLocaleString('es-AR')}</span>
+                  </div>
+                )}
                 <div className="flex justify-between border-t border-line pt-2 font-semibold text-ink">
                   <span>Total</span>
                   <span className="mono">${factura.total.toLocaleString('es-AR')}</span>
                 </div>
               </div>
             </div>
+          )}
+
+          {esAdmin && factura.pronto_pago.length > 0 && (
+            <section className="card flex flex-col gap-3 p-4 rise">
+              <h2 className="text-sm font-semibold text-ink">Pronto pago</h2>
+              <SelectorProntoPago
+                tramos={factura.pronto_pago}
+                elegido={factura.pronto_pago_elegido}
+                total={factura.total}
+                fechaFactura={factura.fecha}
+                onElegir={handleElegirProntoPago}
+                deshabilitado={cambiandoProntoPago || factura.estado === 'anulada'}
+              />
+            </section>
           )}
 
           {factura.estado !== 'anulada' && (

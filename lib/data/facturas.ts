@@ -47,6 +47,8 @@ export interface NuevaFacturaInput {
   total_calculado?: number
   hash_imagen?: string | null
   impuestos?: { tipo: string; alicuota: number | null; monto: number }[]
+  pronto_pago?: { dias: number; descuento: number }[]
+  pronto_pago_elegido?: number
 }
 
 export async function registrarFacturaCompra(input: NuevaFacturaInput): Promise<{ id: string }> {
@@ -97,6 +99,15 @@ export async function editarFacturaCompra(id: string, input: NuevaFacturaInput):
   const { error } = await supabase.rpc('editar_factura_compra', {
     p_factura_id: id,
     payload: input,
+  } as never)
+  if (error) throw error
+}
+
+export async function cambiarProntoPagoFactura(id: string, descuento: number): Promise<void> {
+  const supabase = createClient()
+  const { error } = await supabase.rpc('cambiar_pronto_pago_factura', {
+    p_factura_id: id,
+    p_descuento: descuento,
   } as never)
   if (error) throw error
 }

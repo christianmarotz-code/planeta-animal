@@ -93,6 +93,8 @@ function factura(
     total_calculado: null,
     hash_imagen: null,
     impuestos: [],
+    pronto_pago: [],
+    pronto_pago_elegido: 0,
   }
 }
 
