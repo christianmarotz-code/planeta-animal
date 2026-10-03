@@ -65,6 +65,32 @@ export async function crearProducto(
   return data
 }
 
+export type ResultadoEliminacion = 'eliminado' | 'desactivado'
+
+// Un producto con facturas, movimientos de stock o ventas no se puede borrar
+// (la base lo impide para no perder historial). En ese caso se desactiva: deja
+// de verse en las listas pero conserva sus registros. Sin historial se borra.
+export async function eliminarProducto(id: string): Promise<ResultadoEliminacion> {
+  const supabase = createClient()
+  const { data, error } = await supabase.from('productos').delete().eq('id', id).select('id')
+  if (!error) {
+    // Con RLS, un borrado sin permiso no da error: simplemente no borra nada.
+    if (!(data as { id: string }[] | null)?.length) {
+      throw new Error('No se pudo eliminar el producto (sin permiso o ya no existe).')
+    }
+    return 'eliminado'
+  }
+  if (error.code === '23503') {
+    const { error: errorDesactivar } = await supabase
+      .from('productos')
+      .update({ activo: false } as never)
+      .eq('id', id)
+    if (errorDesactivar) throw errorDesactivar
+    return 'desactivado'
+  }
+  throw error
+}
+
 export async function actualizarProducto(id: string, input: Partial<Producto>): Promise<void> {
   const supabase = createClient()
   const { error } = await supabase.from('productos').update(input as never).eq('id', id)
