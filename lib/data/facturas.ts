@@ -112,6 +112,14 @@ export async function cambiarProntoPagoFactura(id: string, descuento: number): P
   if (error) throw error
 }
 
+/** URL temporal (1 h) para ver la foto adjunta; el bucket es privado. */
+export async function urlFotoFactura(ruta: string): Promise<string> {
+  const supabase = createClient()
+  const { data, error } = await supabase.storage.from('facturas-adjuntos').createSignedUrl(ruta, 3600)
+  if (error) throw error
+  return data.signedUrl
+}
+
 export async function anularFactura(id: string): Promise<void> {
   const supabase = createClient()
   const { error } = await supabase.rpc('anular_factura_compra', { p_factura_id: id } as never)

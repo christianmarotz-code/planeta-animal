@@ -2,11 +2,13 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { obtenerFacturaConItems, anularFactura, editarFacturaCompra, cambiarProntoPagoFactura } from '@/lib/data/facturas'
+import { obtenerFacturaConItems, anularFactura, editarFacturaCompra, cambiarProntoPagoFactura, urlFotoFactura } from '@/lib/data/facturas'
 import { obtenerProveedor, listarProveedores } from '@/lib/data/proveedores'
 import { listarProductos, obtenerProducto, crearProducto } from '@/lib/data/productos'
 import { calcularCostoRealUnitario } from '@/lib/calc/costoReal'
-import { calcularTotalesFactura } from '@/lib/calc/factura'
+import { calcularTotalesFactura, formatearMonto } from '@/lib/calc/factura'
+import { formatearFechaCorta } from '@/lib/facturas/meses'
+import Link from 'next/link'
 import type { FacturaCompra, ItemFactura, Proveedor, Producto, TipoComprobante } from '@/types/database'
 import { useEsAdministrador } from '@/lib/hooks/useEsAdministrador'
 import { SelectorProntoPago } from '@/components/SelectorProntoPago'
@@ -50,6 +52,8 @@ export default function DetalleFacturaPage() {
     listarProductos().then(setProductos)
   }, [id])
 
+  const desgloseImpuestos = (factura?.impuestos?.length ?? 0) > 0
+
   if (!factura) return <p className="p-8 text-sm text-ink-soft">Cargando…</p>
 
   async function handleAnular() {
@@ -65,6 +69,15 @@ export default function DetalleFacturaPage() {
       setError('No se pudo anular la factura. Intentá de nuevo.')
     } finally {
       setAnulando(false)
+    }
+  }
+
+  async function handleVerFoto() {
+    if (!factura?.archivo_adjunto) return
+    try {
+      window.open(await urlFotoFactura(factura.archivo_adjunto), '_blank', 'noopener')
+    } catch {
+      setError('No se pudo abrir la foto adjunta.')
     }
   }
 
@@ -219,6 +232,40 @@ export default function DetalleFacturaPage() {
 
       {!editando && (
         <>
+          <section className="card rise grid gap-x-6 gap-y-3 p-5 text-sm sm:grid-cols-2 lg:grid-cols-3">
+            {[
+              ['Proveedor', proveedor ? <Link key="p" href={`/proveedores/${proveedor.id}`} className="font-semibold text-ink hover:underline">{proveedor.nombre}</Link> : null],
+              ['Comprobante', `${factura.tipo_comprobante} ${factura.numero_comprobante}`],
+              ['Fecha', formatearFechaCorta(factura.fecha)],
+              ['Carga', tieneDetalleInteligente ? 'Lectura inteligente' : 'Manual'],
+              ['Condición de pago', factura.condicion_pago],
+              ['Vencimiento', factura.vencimiento ? formatearFechaCorta(factura.vencimiento) : null],
+              ['CAE', factura.cae],
+              ['Vto. CAE', factura.cae_vto ? formatearFechaCorta(factura.cae_vto) : null],
+              ['Pedido', factura.pedido],
+              ['Remito', factura.remito],
+              ['Orden de compra', factura.orden_compra],
+              ['Cargada el', formatearFechaCorta(factura.created_at.slice(0, 10))],
+            ]
+              .filter(([, valor]) => valor)
+              .map(([etiqueta, valor]) => (
+                <div key={etiqueta as string} className="flex flex-col">
+                  <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-faint">{etiqueta}</span>
+                  <span className="mono text-ink">{valor}</span>
+                </div>
+              ))}
+            {factura.notas && (
+              <div className="flex flex-col sm:col-span-2 lg:col-span-3">
+                <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-faint">Notas</span>
+                <span className="text-ink">{factura.notas}</span>
+              </div>
+            )}
+            {factura.archivo_adjunto && (
+              <button type="button" onClick={handleVerFoto} className="pill-btn ghost w-fit">
+                Ver foto de la factura
+              </button>
+            )}
+          </section>
           <div className="card rise overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
@@ -229,6 +276,12 @@ export default function DetalleFacturaPage() {
                   <th className="px-5 py-3 text-[11.5px] font-semibold uppercase tracking-[0.1em] text-ink-faint">
                     Cantidad
                   </th>
+                  {esAdmin && tieneDetalleInteligente && (
+                    <>
+                      <th className="px-5 py-3 text-[11.5px] font-semibold uppercase tracking-[0.1em] text-ink-faint">Precio lista</th>
+                      <th className="px-5 py-3 text-[11.5px] font-semibold uppercase tracking-[0.1em] text-ink-faint">Bonif.</th>
+                    </>
+                  )}
                   {esAdmin && (
                     <>
                       <th className="px-5 py-3 text-[11.5px] font-semibold uppercase tracking-[0.1em] text-ink-faint">
@@ -240,6 +293,9 @@ export default function DetalleFacturaPage() {
                       <th className="px-5 py-3 text-[11.5px] font-semibold uppercase tracking-[0.1em] text-ink-faint">
                         Subtotal
                       </th>
+                      {tieneDetalleInteligente && (
+                        <th className="px-5 py-3 text-[11.5px] font-semibold uppercase tracking-[0.1em] text-ink-faint">Total línea</th>
+                      )}
                     </>
                   )}
                 </tr>
@@ -262,17 +318,36 @@ export default function DetalleFacturaPage() {
                     <tr key={item.id} className="border-b border-line last:border-0">
                       <td className="px-5 py-3 text-ink">
                         {(item.producto_id && productosPorId.get(item.producto_id)?.nombre) || item.descripcion_original}
+                        {item.es_regalo && <span className="chip ml-2">REGALO</span>}
+                        {item.codigo_proveedor && (
+                          <span className="mono block text-xs text-ink-faint">Cód. {item.codigo_proveedor}</span>
+                        )}
                       </td>
                       <td className="mono px-5 py-3 text-ink">{item.cantidad}</td>
+                      {esAdmin && tieneDetalleInteligente && (
+                        <>
+                          <td className="mono px-5 py-3 text-ink-soft">
+                            {item.precio_lista !== null ? formatearMonto(item.precio_lista) : '—'}
+                          </td>
+                          <td className="mono px-5 py-3 text-ink-soft">
+                            {item.bonificaciones?.length ? item.bonificaciones.map((b) => `${b}%`).join(' + ') : '—'}
+                          </td>
+                        </>
+                      )}
                       {esAdmin && (
                         <>
                           <td className="mono px-5 py-3 text-ink-soft">
-                            ${item.costo_unitario.toLocaleString('es-AR')}
+                            {formatearMonto(item.costo_unitario)}
                           </td>
                           <td className="mono px-5 py-3 font-semibold text-ink">
-                            {costoReal !== null ? `$${costoReal.toLocaleString('es-AR')}` : '—'}
+                            {costoReal !== null ? `${formatearMonto(costoReal)}` : '—'}
                           </td>
-                          <td className="mono px-5 py-3 text-ink">${item.subtotal.toLocaleString('es-AR')}</td>
+                          <td className="mono px-5 py-3 text-ink">{formatearMonto(item.subtotal)}</td>
+                          {tieneDetalleInteligente && (
+                            <td className="mono px-5 py-3 font-semibold text-ink">
+                              {item.total_linea !== null ? formatearMonto(item.total_linea) : '—'}
+                            </td>
+                          )}
                         </>
                       )}
                     </tr>
@@ -300,21 +375,38 @@ export default function DetalleFacturaPage() {
               <div className="core flex flex-col gap-2 text-sm">
                 <div className="flex justify-between text-ink-soft">
                   <span>Subtotal</span>
-                  <span className="mono">${factura.subtotal.toLocaleString('es-AR')}</span>
+                  <span className="mono">{formatearMonto(factura.subtotal)}</span>
                 </div>
-                <div className="flex justify-between text-ink-soft">
-                  <span>IVA</span>
-                  <span className="mono">${factura.iva_total.toLocaleString('es-AR')}</span>
-                </div>
-                {factura.percepciones_total > 0 && (
+                {!desgloseImpuestos && (
+                  <div className="flex justify-between text-ink-soft">
+                    <span>IVA</span>
+                    <span className="mono">{formatearMonto(factura.iva_total)}</span>
+                  </div>
+                )}
+                {factura.impuestos.map((imp) => (
+                  <div key={`${imp.tipo}-${imp.alicuota}`} className="flex justify-between text-ink-soft">
+                    <span>
+                      {imp.tipo}
+                      {imp.alicuota !== null && ` ${imp.alicuota}%`}
+                    </span>
+                    <span className="mono">{formatearMonto(imp.monto)}</span>
+                  </div>
+                ))}
+                {!desgloseImpuestos && factura.percepciones_total > 0 && (
                   <div className="flex justify-between text-ink-soft">
                     <span>Percepciones</span>
-                    <span className="mono">${factura.percepciones_total.toLocaleString('es-AR')}</span>
+                    <span className="mono">{formatearMonto(factura.percepciones_total)}</span>
+                  </div>
+                )}
+                {factura.ajuste_redondeo !== 0 && (
+                  <div className="flex justify-between text-ink-soft">
+                    <span>Ajuste por redondeo</span>
+                    <span className="mono">{formatearMonto(factura.ajuste_redondeo)}</span>
                   </div>
                 )}
                 <div className="flex justify-between border-t border-line pt-2 font-semibold text-ink">
                   <span>Total</span>
-                  <span className="mono">${factura.total.toLocaleString('es-AR')}</span>
+                  <span className="mono">{formatearMonto(factura.total)}</span>
                 </div>
               </div>
             </div>
@@ -494,15 +586,15 @@ export default function DetalleFacturaPage() {
             <div className="core flex flex-col gap-2 text-sm">
               <div className="flex justify-between text-ink-soft">
                 <span>Subtotal</span>
-                <span className="mono">${totalesEdit.subtotal.toLocaleString('es-AR')}</span>
+                <span className="mono">{formatearMonto(totalesEdit.subtotal)}</span>
               </div>
               <div className="flex justify-between text-ink-soft">
                 <span>IVA</span>
-                <span className="mono">${totalesEdit.ivaTotal.toLocaleString('es-AR')}</span>
+                <span className="mono">{formatearMonto(totalesEdit.ivaTotal)}</span>
               </div>
               <div className="flex justify-between border-t border-line pt-2 font-semibold text-ink">
                 <span>Total</span>
-                <span className="mono">${totalesEdit.total.toLocaleString('es-AR')}</span>
+                <span className="mono">{formatearMonto(totalesEdit.total)}</span>
               </div>
             </div>
           </div>

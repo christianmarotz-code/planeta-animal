@@ -5,6 +5,9 @@ import Link from 'next/link'
 import { listarFacturas } from '@/lib/data/facturas'
 import { listarProveedores } from '@/lib/data/proveedores'
 import type { FacturaCompra, Proveedor } from '@/types/database'
+import { FilaFactura } from '@/components/FilaFactura'
+import { formatearMonto } from '@/lib/calc/factura'
+import { resumirPorMes } from '@/lib/facturas/meses'
 import { useEsAdministrador } from '@/lib/hooks/useEsAdministrador'
 
 export default function ComprasPage() {
@@ -33,6 +36,8 @@ export default function ComprasPage() {
       )
     })
   }, [facturas, proveedores, busqueda])
+
+  const meses = useMemo(() => resumirPorMes(facturas), [facturas])
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-5 p-5 sm:p-8">
@@ -70,33 +75,40 @@ export default function ComprasPage() {
           ))}
         </select>
       </div>
-      <div className="card rise divide-y divide-line">
-        {facturasFiltradas.map((f) => {
-          const proveedor = proveedores.find((p) => p.id === f.proveedor_id)
-          return (
-            <Link
+      {busqueda.trim() ? (
+        <div className="card rise divide-y divide-line">
+          {facturasFiltradas.map((f) => (
+            <FilaFactura
               key={f.id}
-              href={`/compras/${f.id}`}
-              className="flex items-center justify-between px-5 py-3.5 text-sm transition hover:bg-accent/5"
+              factura={f}
+              proveedor={proveedores.find((p) => p.id === f.proveedor_id)?.nombre ?? '—'}
+              mostrarTotal={esAdmin === true}
+            />
+          ))}
+          {facturasFiltradas.length === 0 && (
+            <p className="px-5 py-6 text-sm text-ink-faint">Sin facturas que coincidan con la búsqueda.</p>
+          )}
+        </div>
+      ) : meses.length === 0 ? (
+        <p className="card rise px-5 py-6 text-sm text-ink-faint">Sin facturas aún.</p>
+      ) : (
+        <div className="grid gap-4 rise sm:grid-cols-2 lg:grid-cols-3">
+          {meses.map((m) => (
+            <Link
+              key={m.mes}
+              href={`/compras/mes/${m.mes}`}
+              className="card flex flex-col gap-3 p-5 transition hover:-translate-y-0.5 hover:border-accent"
             >
-              <span className="text-ink">
-                <span className="mono text-ink-faint">{f.fecha}</span> — {proveedor?.nombre ?? '—'} —{' '}
-                {f.tipo_comprobante} {f.numero_comprobante}
-                {f.estado === 'anulada' && <span className="chip down ml-2">ANULADA</span>}
-                {f.estado === 'revision' && <span className="chip down ml-2">REVISIÓN</span>}
+              <span className="text-[17px] font-semibold text-ink">{m.etiqueta}</span>
+              <span className="text-sm text-ink-soft">
+                {m.cantidad} {m.cantidad === 1 ? 'factura' : 'facturas'} · {m.proveedores}{' '}
+                {m.proveedores === 1 ? 'proveedor' : 'proveedores'}
               </span>
-              {esAdmin && (
-                <span className="mono font-semibold text-ink">${f.total.toLocaleString('es-AR')}</span>
-              )}
+              {esAdmin && <span className="mono text-lg font-semibold text-ink">{formatearMonto(m.total)}</span>}
             </Link>
-          )
-        })}
-        {facturasFiltradas.length === 0 && (
-          <p className="px-5 py-6 text-sm text-ink-faint">
-            {facturas.length === 0 ? 'Sin facturas aún.' : 'Sin facturas que coincidan con la búsqueda.'}
-          </p>
-        )}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
