@@ -65,7 +65,8 @@ function enriquecerItems(
   for (const item of items) {
     const factura = facturaPorId.get(item.factura_id)
     if (!factura || factura.estado === 'anulada') continue
-    resultado.push({ item, factura, rama: productoPorId.get(item.producto_id)?.rama ?? null })
+    const producto = item.producto_id ? productoPorId.get(item.producto_id) : undefined
+    resultado.push({ item, factura, rama: producto?.rama ?? null })
   }
   return resultado
 }
@@ -273,6 +274,7 @@ export function calcularProductosMasComprados(
   const cantidadPorProducto = new Map<string, number>()
   for (const { item, factura } of enriquecerItems(items, facturas, productos)) {
     if (parseFechaLocal(factura.fecha).getFullYear() !== anio) continue
+    if (!item.producto_id) continue
     cantidadPorProducto.set(
       item.producto_id,
       (cantidadPorProducto.get(item.producto_id) ?? 0) + item.cantidad

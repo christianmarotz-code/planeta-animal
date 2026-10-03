@@ -11,6 +11,16 @@ export interface Proveedor {
   aplica_perc_iva: boolean
   tasa_perc_iva: number
   descuento_pronto_pago: number
+  razon_social: string | null
+  alias: string[]
+  tipos_comprobante: string[]
+  condicion_pago_habitual: string | null
+  formato_habitual: string | null
+  primera_boleta: string | null
+  ultima_boleta: string | null
+  cantidad_boletas: number
+  total_acumulado: number
+  activo: boolean
   created_at: string
 }
 
@@ -41,8 +51,12 @@ export type TipoComprobante =
   | 'Factura C'
   | 'Remito'
   | 'Nota de Credito'
+  | 'Ticket Factura'
+  | 'Presupuesto X'
+  | 'Pedido X'
+  | 'Comprobante Interno'
 
-export type EstadoFactura = 'cargada' | 'anulada'
+export type EstadoFactura = 'cargada' | 'anulada' | 'revision'
 
 export interface FacturaCompra {
   id: string
@@ -58,16 +72,53 @@ export interface FacturaCompra {
   notas: string | null
   created_at: string
   created_by: string | null
+  es_fiscal: boolean
+  condicion_pago: string | null
+  vencimiento: string | null
+  cae: string | null
+  cae_vto: string | null
+  pedido: string | null
+  remito: string | null
+  orden_compra: string | null
+  percepciones_total: number
+  ajuste_redondeo: number
+  total_calculado: number | null
+  hash_imagen: string | null
+  impuestos: { tipo: string; alicuota: number | null; monto: number }[]
 }
 
 export interface ItemFactura {
   id: string
   factura_id: string
-  producto_id: string
+  producto_id: string | null
   cantidad: number
   costo_unitario: number
   alicuota_iva: number
   subtotal: number
+  codigo_proveedor: string | null
+  descripcion_original: string | null
+  precio_lista: number | null
+  bonificaciones: number[]
+  neto_linea: number | null
+  iva_monto: number | null
+  percepciones: { nombre: string; monto: number }[]
+  total_linea: number | null
+  precio_final_unitario: number | null
+  es_regalo: boolean
+  leyenda_regalo: string | null
+}
+
+export interface EntradaStockSugerida {
+  id: string
+  factura_id: string
+  producto_id: string
+  cantidad_sugerida: number
+  cantidad_recibida: number | null
+  estado: 'pendiente' | 'confirmada'
+  nota: string | null
+  confirmada_por: string | null
+  confirmada_en: string | null
+  created_at: string
 }
 
 export type TipoMovimientoStock = 'entrada_compra' | 'ajuste_manual' | 'salida_venta'

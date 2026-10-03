@@ -30,6 +30,9 @@ export default function DetalleFacturaPage() {
   const [numeroComprobanteEdit, setNumeroComprobanteEdit] = useState('')
   const [tipoComprobanteEdit, setTipoComprobanteEdit] = useState<TipoComprobante>('Factura A')
   const [fechaEdit, setFechaEdit] = useState('')
+  // El editor manual no conoce bonificaciones ni percepciones: corregir una factura leída con
+  // detalle borraría ese detalle. Esas facturas se corrigen anulando y volviendo a cargar.
+  const tieneDetalleInteligente = items.some((it) => it.total_linea !== null)
   const [itemsEdit, setItemsEdit] = useState<ItemDraft[]>([])
   const [creandoProductoIndices, setCreandoProductoIndices] = useState<Set<number>>(new Set())
 
@@ -76,7 +79,7 @@ export default function DetalleFacturaPage() {
     // el campo se ve vacío y, al no poder re-matchearlo desde el datalist,
     // termina marcado como "sin producto asignado" y bloqueando el guardado.
     const idsFaltantes = [...new Set(items.map((item) => item.producto_id))].filter(
-      (id) => !productos.some((p) => p.id === id)
+      (id): id is string => id !== null && !productos.some((p) => p.id === id)
     )
     const faltantes = idsFaltantes.length > 0 ? await Promise.all(idsFaltantes.map((id) => obtenerProducto(id))) : []
     if (faltantes.length > 0) setProductos((prev) => [...prev, ...faltantes])
@@ -84,8 +87,11 @@ export default function DetalleFacturaPage() {
 
     setItemsEdit(
       items.map((item) => ({
-        producto_id: item.producto_id,
-        productoTexto: todosLosProductos.find((p) => p.id === item.producto_id)?.nombre ?? '',
+        producto_id: item.producto_id ?? '',
+        productoTexto:
+          todosLosProductos.find((p) => p.id === item.producto_id)?.nombre ??
+          item.descripcion_original ??
+          '',
         cantidad: String(item.cantidad),
         costo_unitario: String(item.costo_unitario),
         alicuota_iva: String(item.alicuota_iva),
@@ -189,6 +195,7 @@ export default function DetalleFacturaPage() {
         <h1 className="flex items-center gap-2 text-[27px] text-ink">
           {factura.tipo_comprobante} {factura.numero_comprobante}
           {factura.estado === 'anulada' && <span className="chip down">ANULADA</span>}
+          {factura.estado === 'revision' && <span className="chip down">REQUIERE REVISIÓN</span>}
         </h1>
         <p className="mt-1 text-sm text-ink-soft">
           {proveedor?.nombre} — <span className="mono">{factura.fecha}</span>
@@ -236,7 +243,7 @@ export default function DetalleFacturaPage() {
                   return (
                     <tr key={item.id} className="border-b border-line last:border-0">
                       <td className="px-5 py-3 text-ink">
-                        {productosPorId.get(item.producto_id)?.nombre}
+                        {(item.producto_id && productosPorId.get(item.producto_id)?.nombre) || item.descripcion_original}
                       </td>
                       <td className="mono px-5 py-3 text-ink">{item.cantidad}</td>
                       {esAdmin && (
@@ -289,9 +296,9 @@ export default function DetalleFacturaPage() {
             </div>
           )}
 
-          {factura.estado === 'cargada' && (
+          {factura.estado !== 'anulada' && (
             <div className="flex flex-wrap gap-2 rise">
-              {esAdmin && (
+              {esAdmin && !tieneDetalleInteligente && (
                 <button onClick={iniciarEdicion} className="pill-btn ghost">
                   ✏️ Corregir factura
                 </button>

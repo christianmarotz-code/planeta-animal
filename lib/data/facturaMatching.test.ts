@@ -16,6 +16,16 @@ function proveedor(id: string, nombre: string, cuit: string | null = null): Prov
     aplica_perc_iva: false,
     tasa_perc_iva: 0,
     descuento_pronto_pago: 0,
+    razon_social: null,
+    alias: [],
+    tipos_comprobante: [],
+    condicion_pago_habitual: null,
+    formato_habitual: null,
+    primera_boleta: null,
+    ultima_boleta: null,
+    cantidad_boletas: 0,
+    total_acumulado: 0,
+    activo: true,
     created_at: '',
   }
 }
