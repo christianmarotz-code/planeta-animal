@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { Fragment, useEffect, useMemo, useState } from 'react'
 import { listarProductos } from '@/lib/data/productos'
 import { ajustarStockManual } from '@/lib/data/stock'
@@ -54,11 +55,35 @@ export default function StockPage() {
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-5 p-5 sm:p-8">
-      <div className="rise">
-        <p className="text-[11.5px] font-semibold uppercase tracking-[0.14em] text-ink-faint">
-          Gestión
-        </p>
-        <h1 className="mt-1 text-[27px] text-ink">Stock</h1>
+      <div className="rise flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <p className="text-[11.5px] font-semibold uppercase tracking-[0.14em] text-ink-faint">
+            Gestión
+          </p>
+          <h1 className="mt-1 text-[27px] text-ink">Stock</h1>
+        </div>
+        <div className="flex flex-wrap gap-2 text-sm">
+          {esAdmin && (
+            <Link
+              href="/reposicion"
+              className="rounded-full border border-line px-4 py-2 font-medium text-ink transition hover:border-accent"
+            >
+              A reponer
+            </Link>
+          )}
+          <Link
+            href="/productos"
+            className="rounded-full border border-line px-4 py-2 font-medium text-ink transition hover:border-accent"
+          >
+            Catálogo de productos
+          </Link>
+          <Link
+            href="/productos/nuevo"
+            className="rounded-full bg-accent px-4 py-2 font-medium text-accent-ink transition hover:opacity-90"
+          >
+            Nuevo producto
+          </Link>
+        </div>
       </div>
       <EntradasPendientes productos={productos} onConfirmada={cargar} />
       <input
