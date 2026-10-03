@@ -1,5 +1,6 @@
 'use client'
 
+import { formatearMonto } from '@/lib/calc/factura'
 import { fechaLimiteTramo, montoConDescuento, tramoVencido, type TramoProntoPago } from '@/lib/facturas/prontoPago'
 
 function formatearFecha(iso: string): string {
@@ -38,7 +39,7 @@ export function SelectorProntoPago({ tramos, elegido, total, fechaFactura, onEle
               }`}
             >
               <span>{op.etiqueta}</span>
-              <span className="mono text-xs">${montoConDescuento(total, op.descuento).toLocaleString('es-AR')}</span>
+              <span className="mono text-xs">{formatearMonto(montoConDescuento(total, op.descuento))}</span>
               {op.dias > 0 && <span className="text-[11px] text-ink-faint">hasta el {formatearFecha(fechaLimiteTramo(fechaFactura, op.dias))}</span>}
             </button>
           )

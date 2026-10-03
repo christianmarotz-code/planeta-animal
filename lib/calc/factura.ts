@@ -16,7 +16,22 @@ export function calcularTotalesFactura(
     subtotal += subtotalItem
     ivaTotal += calcularIvaItem(subtotalItem, item.alicuotaIva)
   }
-  return { subtotal, ivaTotal, total: subtotal + ivaTotal }
+  const subtotalRedondeado = redondearCentavos(subtotal)
+  const ivaRedondeado = redondearCentavos(ivaTotal)
+  return {
+    subtotal: subtotalRedondeado,
+    ivaTotal: ivaRedondeado,
+    total: redondearCentavos(subtotalRedondeado + ivaRedondeado),
+  }
+}
+
+export function redondearCentavos(valor: number): number {
+  return Math.round(valor * 100) / 100
+}
+
+/** Monto en pesos con separadores es-AR y siempre 2 decimales (ej. $1.234,50). */
+export function formatearMonto(valor: number): string {
+  return `$${valor.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 }
 
 export function convertirCantidadAUnidadStock(

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { listarProveedores } from '@/lib/data/proveedores'
 import { listarProductos, crearProducto } from '@/lib/data/productos'
 import { registrarFacturaCompra, type NuevaFacturaItemInput } from '@/lib/data/facturas'
-import { calcularTotalesFactura } from '@/lib/calc/factura'
+import { calcularTotalesFactura, formatearMonto, redondearCentavos } from '@/lib/calc/factura'
 import { calcularCostoRealUnitario } from '@/lib/calc/costoReal'
 import type { Proveedor, Producto, TipoComprobante } from '@/types/database'
 import { useEsAdministrador } from '@/lib/hooks/useEsAdministrador'
@@ -110,7 +110,7 @@ export function FormularioManual() {
   }))
   const totales = calcularTotalesFactura(itemsParaCalculo)
   const percepcion = Number(percepcionArba) || 0
-  const totalConPercepcion = totales.total + percepcion
+  const totalConPercepcion = redondearCentavos(totales.total + percepcion)
   const tramosValidos = tramos
     .map((t, indice) => ({ indice, dias: Number(t.dias), descuento: Number(t.descuento) }))
     .filter((t) => t.dias > 0 && t.descuento > 0 && t.descuento < 100)
@@ -153,7 +153,7 @@ export function FormularioManual() {
         fecha,
         subtotal: totalesFinales.subtotal,
         iva_total: totalesFinales.ivaTotal,
-        total: totalesFinales.total + percepcion,
+        total: redondearCentavos(totalesFinales.total + percepcion),
         percepciones_total: percepcion,
         pronto_pago: tramosValidos.map(({ dias, descuento }) => ({ dias, descuento })),
         pronto_pago_elegido: descuentoElegido,
@@ -177,20 +177,14 @@ export function FormularioManual() {
   }
 
   return (
-    <div className="mx-auto flex max-w-4xl flex-col gap-5 p-5 sm:p-8">
-      <div className="rise">
-        <p className="text-[11.5px] font-semibold uppercase tracking-[0.14em] text-ink-faint">
-          Gestión
-        </p>
-        <h1 className="mt-1 text-[27px] text-ink">Nueva factura de compra</h1>
-      </div>
+    <div className="flex flex-col gap-5">
       <form onSubmit={handleSubmit} className="flex flex-col gap-5 rise">
-        <div className="flex flex-wrap gap-2">
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-[2fr_1fr_1.5fr_1fr]">
           <select
             required
             value={proveedorId}
             onChange={(e) => setProveedorId(e.target.value)}
-            className="rounded-[var(--r-sm)] border border-line bg-surface p-2.5 text-sm text-ink outline-none transition focus:border-accent"
+            className="w-full rounded-[var(--r-sm)] border border-line bg-surface p-2.5 text-sm text-ink outline-none transition focus:border-accent"
           >
             <option value="">Proveedor…</option>
             {proveedores.map((p) => (
@@ -202,7 +196,7 @@ export function FormularioManual() {
           <select
             value={tipoComprobante}
             onChange={(e) => setTipoComprobante(e.target.value as TipoComprobante)}
-            className="rounded-[var(--r-sm)] border border-line bg-surface p-2.5 text-sm text-ink outline-none transition focus:border-accent"
+            className="w-full rounded-[var(--r-sm)] border border-line bg-surface p-2.5 text-sm text-ink outline-none transition focus:border-accent"
           >
             {TIPOS_COMPROBANTE.map((t) => (
               <option key={t} value={t}>
@@ -215,21 +209,21 @@ export function FormularioManual() {
             placeholder="Número de comprobante"
             value={numeroComprobante}
             onChange={(e) => setNumeroComprobante(e.target.value)}
-            className="rounded-[var(--r-sm)] border border-line bg-surface p-2.5 text-sm text-ink outline-none transition focus:border-accent"
+            className="w-full rounded-[var(--r-sm)] border border-line bg-surface p-2.5 text-sm text-ink outline-none transition focus:border-accent"
           />
           <input
             required
             type="date"
             value={fecha}
             onChange={(e) => setFecha(e.target.value)}
-            className="rounded-[var(--r-sm)] border border-line bg-surface p-2.5 text-sm text-ink outline-none transition focus:border-accent"
+            className="w-full rounded-[var(--r-sm)] border border-line bg-surface p-2.5 text-sm text-ink outline-none transition focus:border-accent"
           />
         </div>
 
-        <table className="card w-full border-collapse text-sm">
+        <table className="card w-full border-collapse overflow-hidden text-sm">
           <thead>
             <tr className="border-b-2 border-line-strong text-left">
-              <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-faint">Producto</th>
+              <th className="w-[34%] px-3 py-2.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-faint">Producto</th>
               <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-faint">Cantidad</th>
               <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-faint">Costo unitario</th>
               <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-faint">DTO %</th>
@@ -296,7 +290,7 @@ export function FormularioManual() {
                       step="any"
                       value={item.cantidad}
                       onChange={(e) => updateItem(index, { cantidad: e.target.value })}
-                      className="w-20 rounded-[var(--r-sm)] border border-line bg-surface p-2 text-sm text-ink outline-none transition focus:border-accent"
+                      className="w-full min-w-16 rounded-[var(--r-sm)] border border-line bg-surface p-2 text-sm text-ink outline-none transition focus:border-accent"
                     />
                   </td>
                   <td className="px-3 py-2 text-ink">
@@ -306,7 +300,7 @@ export function FormularioManual() {
                       step="any"
                       value={item.costo_unitario}
                       onChange={(e) => updateItem(index, { costo_unitario: e.target.value })}
-                      className="w-24 rounded-[var(--r-sm)] border border-line bg-surface p-2 text-sm text-ink outline-none transition focus:border-accent"
+                      className="w-full min-w-28 rounded-[var(--r-sm)] border border-line bg-surface p-2 text-sm text-ink outline-none transition focus:border-accent"
                     />
                   </td>
                   <td className="px-3 py-2 text-ink">
@@ -317,7 +311,7 @@ export function FormularioManual() {
                       step="any"
                       value={item.descuento ?? ''}
                       onChange={(e) => updateItem(index, { descuento: e.target.value })}
-                      className="w-16 rounded-[var(--r-sm)] border border-line bg-surface p-2 text-sm text-ink outline-none transition focus:border-accent"
+                      className="w-full min-w-16 rounded-[var(--r-sm)] border border-line bg-surface p-2 text-sm text-ink outline-none transition focus:border-accent"
                     />
                   </td>
                   <td className="px-3 py-2 text-ink">
@@ -327,12 +321,12 @@ export function FormularioManual() {
                       step="any"
                       value={item.alicuota_iva}
                       onChange={(e) => updateItem(index, { alicuota_iva: e.target.value })}
-                      className="w-16 rounded-[var(--r-sm)] border border-line bg-surface p-2 text-sm text-ink outline-none transition focus:border-accent"
+                      className="w-full min-w-16 rounded-[var(--r-sm)] border border-line bg-surface p-2 text-sm text-ink outline-none transition focus:border-accent"
                     />
                   </td>
-                  <td className="mono px-3 py-2 text-ink">${subtotalItem.toLocaleString('es-AR')}</td>
-                  <td className="mono px-3 py-2 font-semibold text-ink">
-                    {costoReal !== null ? `$${costoReal.toLocaleString('es-AR')}` : '—'}
+                  <td className="mono whitespace-nowrap px-3 py-2 text-ink">{formatearMonto(subtotalItem)}</td>
+                  <td className="mono whitespace-nowrap px-3 py-2 font-semibold text-ink">
+                    {costoReal !== null ? formatearMonto(costoReal) : '—'}
                   </td>
                   <td className="px-3 py-2 text-ink">
                     <button type="button" onClick={() => removeItem(index)} className="text-xs font-semibold text-negative hover:underline">
@@ -354,104 +348,105 @@ export function FormularioManual() {
           + Agregar ítem
         </button>
 
-        <div className="shell ml-auto w-72">
-          <div className="core flex flex-col gap-2 text-sm">
-            <div className="flex justify-between text-ink-soft">
-              <span>Subtotal</span>
-              <span className="mono">${totales.subtotal.toLocaleString('es-AR')}</span>
+        <div className="grid items-start gap-5 lg:grid-cols-[1fr_20rem]">
+          <section className="card flex flex-col gap-3 p-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-semibold text-ink">Pronto pago</h2>
+              <button
+                type="button"
+                onClick={() => setTramos((prev) => [...prev, { dias: '', descuento: '' }])}
+                className="text-xs font-semibold text-accent hover:underline"
+              >
+                + Agregar tramo
+              </button>
             </div>
-            <div className="flex justify-between text-ink-soft">
-              <span>IVA</span>
-              <span className="mono">${totales.ivaTotal.toLocaleString('es-AR')}</span>
-            </div>
-            <label className="flex items-center justify-between gap-2 text-ink-soft">
-              <span>Percepción ARBA</span>
-              <input
-                type="number"
-                min={0}
-                step="any"
-                value={percepcionArba}
-                onChange={(e) => setPercepcionArba(e.target.value)}
-                className="mono w-24 rounded-[var(--r-sm)] border border-line bg-surface p-1.5 text-right text-sm text-ink outline-none transition focus:border-accent"
-              />
-            </label>
-            <div className="flex justify-between border-t border-line pt-2 font-semibold text-ink">
-              <span>Total</span>
-              <span className="mono">${totalConPercepcion.toLocaleString('es-AR')}</span>
+            {tramos.length === 0 && (
+              <p className="text-xs text-ink-faint">
+                Si la factura trae descuento por pagar antes (ej. contado hasta 7 días 5%), agregalo acá.
+              </p>
+            )}
+            {tramos.map((t, i) => (
+              <div key={i} className="flex flex-wrap items-center gap-2 text-sm text-ink-soft">
+                <span>Hasta</span>
+                <input
+                  type="number"
+                  min={1}
+                  value={t.dias}
+                  onChange={(e) => setTramos((prev) => prev.map((x, j) => (j === i ? { ...x, dias: e.target.value } : x)))}
+                  className="w-20 rounded-[var(--r-sm)] border border-line bg-surface p-2 text-sm text-ink outline-none transition focus:border-accent"
+                />
+                <span>días, dto</span>
+                <input
+                  type="number"
+                  min={0}
+                  max={100}
+                  step="any"
+                  value={t.descuento}
+                  onChange={(e) => setTramos((prev) => prev.map((x, j) => (j === i ? { ...x, descuento: e.target.value } : x)))}
+                  className="w-20 rounded-[var(--r-sm)] border border-line bg-surface p-2 text-sm text-ink outline-none transition focus:border-accent"
+                />
+                <span>%</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTramos((prev) => prev.filter((_, j) => j !== i))
+                    setTramoElegido((prev) => (prev === i ? 0 : prev > i ? prev - 1 : prev))
+                  }}
+                  className="text-xs font-semibold text-negative hover:underline"
+                >
+                  Quitar
+                </button>
+              </div>
+            ))}
+            <SelectorProntoPago
+              tramos={tramosValidos.map(({ dias, descuento }) => ({ dias, descuento }))}
+              elegido={descuentoElegido}
+              total={totalConPercepcion}
+              fechaFactura={fecha}
+              onElegir={(d) => setTramoElegido(tramosValidos.find((t) => t.descuento === d)?.indice ?? -1)}
+            />
+          </section>
+
+          <div className="shell">
+            <div className="core flex flex-col gap-2 text-sm">
+              <div className="flex justify-between text-ink-soft">
+                <span>Subtotal</span>
+                <span className="mono">{formatearMonto(totales.subtotal)}</span>
+              </div>
+              <div className="flex justify-between text-ink-soft">
+                <span>IVA</span>
+                <span className="mono">{formatearMonto(totales.ivaTotal)}</span>
+              </div>
+              <label className="flex items-center justify-between gap-2 text-ink-soft">
+                <span>Percepción ARBA</span>
+                <input
+                  type="number"
+                  min={0}
+                  step="any"
+                  value={percepcionArba}
+                  onChange={(e) => setPercepcionArba(e.target.value)}
+                  className="mono w-28 rounded-[var(--r-sm)] border border-line bg-surface p-1.5 text-right text-sm text-ink outline-none transition focus:border-accent"
+                />
+              </label>
+              <div className="flex justify-between border-t border-line pt-2 text-base font-semibold text-ink">
+                <span>Total</span>
+                <span className="mono">{formatearMonto(totalConPercepcion)}</span>
+              </div>
+              {error && <p className="text-sm text-negative">{error}</p>}
+              <button
+                type="submit"
+                disabled={saving || creandoProductoIndices.size > 0}
+                className="pill-btn mt-1 w-full justify-center disabled:opacity-50"
+              >
+                {saving
+                  ? 'Guardando…'
+                  : creandoProductoIndices.size > 0
+                    ? 'Creando producto…'
+                    : 'Guardar factura'}
+              </button>
             </div>
           </div>
         </div>
-
-        <section className="card flex flex-col gap-3 p-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-ink">Pronto pago</h2>
-            <button
-              type="button"
-              onClick={() => setTramos((prev) => [...prev, { dias: '', descuento: '' }])}
-              className="text-xs font-semibold text-accent hover:underline"
-            >
-              + Agregar tramo
-            </button>
-          </div>
-          {tramos.length === 0 && (
-            <p className="text-xs text-ink-faint">
-              Si la factura trae descuento por pagar antes (ej. contado hasta 7 días 5%), agregalo acá.
-            </p>
-          )}
-          {tramos.map((t, i) => (
-            <div key={i} className="flex flex-wrap items-center gap-2 text-sm text-ink-soft">
-              <span>Hasta</span>
-              <input
-                type="number"
-                min={1}
-                value={t.dias}
-                onChange={(e) => setTramos((prev) => prev.map((x, j) => (j === i ? { ...x, dias: e.target.value } : x)))}
-                className="w-16 rounded-[var(--r-sm)] border border-line bg-surface p-2 text-sm text-ink outline-none transition focus:border-accent"
-              />
-              <span>días, dto</span>
-              <input
-                type="number"
-                min={0}
-                max={100}
-                step="any"
-                value={t.descuento}
-                onChange={(e) => setTramos((prev) => prev.map((x, j) => (j === i ? { ...x, descuento: e.target.value } : x)))}
-                className="w-16 rounded-[var(--r-sm)] border border-line bg-surface p-2 text-sm text-ink outline-none transition focus:border-accent"
-              />
-              <span>%</span>
-              <button
-                type="button"
-                onClick={() => {
-                  setTramos((prev) => prev.filter((_, j) => j !== i))
-                  setTramoElegido((prev) => (prev === i ? 0 : prev > i ? prev - 1 : prev))
-                }}
-                className="text-xs font-semibold text-negative hover:underline"
-              >
-                Quitar
-              </button>
-            </div>
-          ))}
-          <SelectorProntoPago
-            tramos={tramosValidos.map(({ dias, descuento }) => ({ dias, descuento }))}
-            elegido={descuentoElegido}
-            total={totalConPercepcion}
-            fechaFactura={fecha}
-            onElegir={(d) => setTramoElegido(tramosValidos.find((t) => t.descuento === d)?.indice ?? -1)}
-          />
-        </section>
-
-        {error && <p className="text-sm text-negative">{error}</p>}
-        <button
-          type="submit"
-          disabled={saving || creandoProductoIndices.size > 0}
-          className="pill-btn w-fit disabled:opacity-50"
-        >
-          {saving
-            ? 'Guardando…'
-            : creandoProductoIndices.size > 0
-              ? 'Creando producto…'
-              : 'Guardar factura'}
-        </button>
       </form>
     </div>
   )
