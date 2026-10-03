@@ -2,11 +2,13 @@
 
 import { useState } from 'react'
 import type { Producto, Rama } from '@/types/database'
+import { SIN_CLASIFICAR, opcionesSubcategoria } from '@/lib/productos/subcategorias'
 
 export interface ProductoFormValues {
   nombre: string
   categoria: string
   rama: Rama | ''
+  subcategoria: string
   unidad_compra: string
   unidad_stock: string
   factor_conversion: number
@@ -29,6 +31,7 @@ export function ProductoForm({
     nombre: initial?.nombre ?? '',
     categoria: initial?.categoria ?? '',
     rama: initial?.rama ?? '',
+    subcategoria: initial?.subcategoria ?? SIN_CLASIFICAR,
     unidad_compra: initial?.unidad_compra ?? '',
     unidad_stock: initial?.unidad_stock ?? '',
     factor_conversion: initial?.factor_conversion ?? 1,
@@ -76,7 +79,11 @@ export function ProductoForm({
         <select
           required
           value={values.rama}
-          onChange={(e) => set('rama', e.target.value as Rama)}
+          onChange={(e) => {
+            // Las subcategorías son propias de cada rama: al cambiarla, la
+            // elegida antes deja de aplicar.
+            setValues((v) => ({ ...v, rama: e.target.value as Rama, subcategoria: SIN_CLASIFICAR }))
+          }}
           className="mt-1 w-full rounded-[var(--r-sm)] border border-line bg-surface-sunk p-2.5 text-sm text-ink outline-none transition focus:border-accent"
         >
           <option value="" disabled>
@@ -85,6 +92,24 @@ export function ProductoForm({
           <option value="clinica">Clínica</option>
           <option value="petshop">Petshop</option>
         </select>
+      </label>
+      <label className="text-sm font-medium text-ink-soft">
+        Subcategoría
+        <select
+          value={values.subcategoria}
+          disabled={values.rama === ''}
+          onChange={(e) => set('subcategoria', e.target.value)}
+          className="mt-1 w-full rounded-[var(--r-sm)] border border-line bg-surface-sunk p-2.5 text-sm text-ink outline-none transition focus:border-accent disabled:opacity-50"
+        >
+          {opcionesSubcategoria(values.rama, values.subcategoria).map((s) => (
+            <option key={s} value={s}>
+              {s}
+            </option>
+          ))}
+        </select>
+        {values.rama === '' && (
+          <span className="mt-1 block text-xs font-normal text-ink-faint">Elegí primero la rama.</span>
+        )}
       </label>
       <div className="flex gap-2">
         <input

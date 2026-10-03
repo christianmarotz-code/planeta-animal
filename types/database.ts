@@ -31,6 +31,7 @@ export interface Producto {
   nombre: string
   categoria: string | null
   rama: Rama | null
+  subcategoria?: string | null
   unidad_compra: string
   unidad_stock: string
   factor_conversion: number

@@ -12,6 +12,7 @@ export default function ProductosPage() {
   const [productos, setProductos] = useState<Producto[]>([])
   const [soloStockBajo, setSoloStockBajo] = useState(false)
   const [categoria, setCategoria] = useState('')
+  const [subcategoria, setSubcategoria] = useState('')
   const [busqueda, setBusqueda] = useState('')
   const [loading, setLoading] = useState(true)
   const [soloStockBajoCargado, setSoloStockBajoCargado] = useState(soloStockBajo)
@@ -32,13 +33,36 @@ export default function ProductosPage() {
     [productos]
   )
 
+  // Las subcategorías ofrecidas dependen de la categoría elegida, para no
+  // listar opciones que darían cero resultados.
+  const subcategorias = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          productos
+            .filter((p) => (categoria ? p.categoria === categoria : true))
+            .map((p) => p.subcategoria)
+            .filter(Boolean)
+        )
+      ).sort() as string[],
+    [productos, categoria]
+  )
+
   const filtrados = useMemo(() => {
     const term = busqueda.trim().toLowerCase()
     return productos
       .filter((p) => (categoria ? p.categoria === categoria : true))
+      .filter((p) => (subcategoria ? p.subcategoria === subcategoria : true))
       .filter((p) => (term ? p.nombre.toLowerCase().includes(term) : true))
-      .sort((a, b) => (a.categoria ?? '').localeCompare(b.categoria ?? '') || a.nombre.localeCompare(b.nombre))
-  }, [productos, categoria, busqueda])
+      .sort(
+        (a, b) =>
+          (a.categoria ?? '').localeCompare(b.categoria ?? '') ||
+          (a.subcategoria ?? '').localeCompare(b.subcategoria ?? '') ||
+          a.nombre.localeCompare(b.nombre)
+      )
+  }, [productos, categoria, subcategoria, busqueda])
+
+  const columnas = esAdmin ? 5 : 4
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-5 p-5 sm:p-8">
@@ -64,13 +88,28 @@ export default function ProductosPage() {
         />
         <select
           value={categoria}
-          onChange={(e) => setCategoria(e.target.value)}
+          onChange={(e) => {
+            setCategoria(e.target.value)
+            setSubcategoria('')
+          }}
           className="rounded-[var(--r-sm)] border border-line bg-surface-sunk p-2.5 text-sm text-ink outline-none transition focus:border-accent"
         >
           <option value="">Todas las categorías</option>
           {categorias.map((c) => (
             <option key={c} value={c}>
               {c}
+            </option>
+          ))}
+        </select>
+        <select
+          value={subcategoria}
+          onChange={(e) => setSubcategoria(e.target.value)}
+          className="max-w-[16rem] rounded-[var(--r-sm)] border border-line bg-surface-sunk p-2.5 text-sm text-ink outline-none transition focus:border-accent"
+        >
+          <option value="">Todas las subcategorías</option>
+          {subcategorias.map((s) => (
+            <option key={s} value={s}>
+              {s}
             </option>
           ))}
         </select>
@@ -85,7 +124,7 @@ export default function ProductosPage() {
         </label>
       </div>
       {loading ? (
-        <SkeletonTable filas={8} columnas={esAdmin ? 4 : 3} />
+        <SkeletonTable filas={8} columnas={columnas} />
       ) : (
         <div className="card rise overflow-x-auto">
           <table className="w-full text-sm">
@@ -96,6 +135,9 @@ export default function ProductosPage() {
                 </th>
                 <th className="px-5 py-3 text-[11.5px] font-semibold uppercase tracking-[0.1em] text-ink-faint">
                   Categoría
+                </th>
+                <th className="px-5 py-3 text-[11.5px] font-semibold uppercase tracking-[0.1em] text-ink-faint">
+                  Subcategoría
                 </th>
                 <th className="px-5 py-3 text-[11.5px] font-semibold uppercase tracking-[0.1em] text-ink-faint">
                   Stock actual
@@ -115,7 +157,7 @@ export default function ProductosPage() {
                     {nuevaCategoria && (
                       <tr key={`sep-${p.categoria}`} className="bg-surface-sunk">
                         <td
-                          colSpan={esAdmin ? 4 : 3}
+                          colSpan={columnas}
                           className="px-5 py-2 text-[11.5px] font-semibold uppercase tracking-[0.1em] text-ink-faint"
                         >
                           {p.categoria ?? 'Sin categoría'}
@@ -129,6 +171,9 @@ export default function ProductosPage() {
                         </Link>
                       </td>
                       <td className="px-5 py-3 text-ink-soft">{p.categoria}</td>
+                      <td className="px-5 py-3 text-ink-soft">
+                        {p.subcategoria ?? <span className="text-ink-faint">—</span>}
+                      </td>
                       <td className="px-5 py-3">
                         {p.stock_actual <= p.stock_minimo ? (
                           <span className="chip down">
@@ -151,7 +196,7 @@ export default function ProductosPage() {
               })}
               {filtrados.length === 0 && (
                 <tr>
-                  <td colSpan={esAdmin ? 4 : 3} className="px-5 py-6 text-sm text-ink-faint">
+                  <td colSpan={columnas} className="px-5 py-6 text-sm text-ink-faint">
                     Sin productos que coincidan con el filtro.
                   </td>
                 </tr>
