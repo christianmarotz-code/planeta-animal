@@ -163,6 +163,7 @@ export async function POST(request: Request) {
     })
   } catch (err) {
     console.error('Error extrayendo boleta:', err)
-    return falla('No se pudo leer la boleta automáticamente.')
+    const detalle = err instanceof Error ? err.message.slice(0, 200) : String(err).slice(0, 200)
+    return falla(`No se pudo leer la boleta automáticamente. (${detalle})`)
   }
 }
