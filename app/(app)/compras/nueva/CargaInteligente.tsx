@@ -36,6 +36,7 @@ export function CargaInteligente() {
   const [nuevoNombre, setNuevoNombre] = useState('')
   const [facturasProveedor, setFacturasProveedor] = useState<FacturaCompra[]>([])
 
+  const [cola, setCola] = useState<{ file: File; url: string }[]>([])
   const [leyendo, setLeyendo] = useState(false)
   const [errorLectura, setErrorLectura] = useState<string | null>(null)
   const [previews, setPreviews] = useState<{ url: string; esPdf: boolean }[]>([])
@@ -58,6 +59,10 @@ export function CargaInteligente() {
   useEffect(() => {
     return () => previews.forEach((p) => URL.revokeObjectURL(p.url))
   }, [previews])
+
+  useEffect(() => {
+    return () => cola.forEach((c) => URL.revokeObjectURL(c.url))
+  }, [cola])
 
   const proveedor = proveedores.find((p) => p.id === proveedorId) ?? null
 
@@ -89,9 +94,26 @@ export function CargaInteligente() {
     setNuevoNombre('')
   }
 
-  async function handleArchivos(e: React.ChangeEvent<HTMLInputElement>) {
+  function handleArchivos(e: React.ChangeEvent<HTMLInputElement>) {
     const archivos = Array.from(e.target.files ?? [])
     e.target.value = ''
+    leerArchivos(archivos)
+  }
+
+  // La cámara entrega una foto por vez: se juntan las hojas y se leen todas juntas.
+  function handleFoto(e: React.ChangeEvent<HTMLInputElement>) {
+    const fotos = Array.from(e.target.files ?? [])
+    e.target.value = ''
+    setCola((prev) => [...prev, ...fotos.map((file) => ({ file, url: URL.createObjectURL(file) }))])
+  }
+
+  function leerCola() {
+    const archivos = cola.map((c) => c.file)
+    setCola([])
+    leerArchivos(archivos)
+  }
+
+  async function leerArchivos(archivos: File[]) {
     if (archivos.length === 0 || !proveedor) return
 
     setErrorLectura(null)
@@ -251,17 +273,53 @@ export function CargaInteligente() {
           </button>
         </div>
         <p className="text-sm font-semibold text-ink">2. Subí la foto o el PDF</p>
-        <label className={`pill-btn ghost w-fit ${proveedor ? 'cursor-pointer' : 'pointer-events-none opacity-50'}`}>
-          📷 Elegir archivos (varias hojas del mismo comprobante)
-          <input
-            type="file"
-            accept="image/*,application/pdf"
-            multiple
-            disabled={!proveedor}
-            onChange={handleArchivos}
-            className="hidden"
-          />
-        </label>
+        <div className="flex flex-wrap gap-2">
+          <label className={`pill-btn w-fit ${proveedor && !leyendo ? 'cursor-pointer' : 'pointer-events-none opacity-50'}`}>
+            📷 {cola.length > 0 ? 'Otra hoja' : 'Sacar foto'}
+            <input
+              type="file"
+              accept="image/*"
+              capture="environment"
+              disabled={!proveedor || leyendo}
+              onChange={handleFoto}
+              className="hidden"
+            />
+          </label>
+          <label className={`pill-btn ghost w-fit ${proveedor ? 'cursor-pointer' : 'pointer-events-none opacity-50'}`}>
+            🖼️ Elegir archivos (galería o PDF)
+            <input
+              type="file"
+              accept="image/*,application/pdf"
+              multiple
+              disabled={!proveedor}
+              onChange={handleArchivos}
+              className="hidden"
+            />
+          </label>
+        </div>
+        {cola.length > 0 && (
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-wrap gap-2">
+              {cola.map((c, i) => (
+                <div key={c.url} className="relative">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={c.url} alt={`Hoja ${i + 1}`} className="h-24 w-20 rounded-[var(--r-sm)] border border-line object-cover" />
+                  <button
+                    type="button"
+                    aria-label={`Quitar hoja ${i + 1}`}
+                    onClick={() => setCola((prev) => prev.filter((_, k) => k !== i))}
+                    className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-ink text-xs text-surface"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+            </div>
+            <button type="button" onClick={leerCola} disabled={leyendo} className="pill-btn w-fit disabled:opacity-50">
+              Leer boleta ({cola.length} {cola.length === 1 ? 'hoja' : 'hojas'})
+            </button>
+          </div>
+        )}
         {leyendo && <p className="text-sm text-ink-faint">Leyendo boleta…</p>}
         {errorLectura && <p className="text-sm text-negative">{errorLectura}</p>}
       </div>
