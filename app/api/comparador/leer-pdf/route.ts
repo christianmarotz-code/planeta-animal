@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { requerirAdministrador } from '@/lib/auth/requerirAdministrador'
+import { requerirSesion } from '@/lib/auth/requerirSesion'
 import { extraerTablaPDF } from '@/lib/pdf/extraerTablaPDF'
 
 export const maxDuration = 60
@@ -7,7 +7,7 @@ export const maxDuration = 60
 const TAMANO_MAXIMO_BYTES = 15 * 1024 * 1024
 
 export async function POST(request: Request) {
-  const { error } = await requerirAdministrador()
+  const { error } = await requerirSesion()
   if (error) return error
 
   const formData = await request.formData().catch(() => null)
