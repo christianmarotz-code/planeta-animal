@@ -158,6 +158,7 @@ export interface PrecioProveedor {
   proveedor_id: string
   producto_id: string
   precio: number
+  nota: string | null
   actualizado_en: string
   created_at: string
 }
