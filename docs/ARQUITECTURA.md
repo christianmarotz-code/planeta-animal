@@ -87,3 +87,6 @@ negativo. Los productos se organizan en rama (Clínica / Petshop) → categoría
    a la base real después. No hay base de pruebas.
 3. Después de cambiar permisos o funciones, correr el aviso de seguridad de Supabase
    (`get_advisors`) y `npm run e2e`.
+4. `.mcp.json` deja el acceso de Claude a Supabase en **solo lectura** (`read_only=true`). Para
+   que Claude pueda aplicar una migración, cambiarlo a `false` solo durante esa tarea y volver
+   a ponerlo en `true` después, sin subir el cambio.
