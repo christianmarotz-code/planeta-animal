@@ -162,6 +162,20 @@ export interface PrecioProveedor {
   created_at: string
 }
 
+export type TablaRegistrada = 'proveedores' | 'precios_proveedor'
+
+export interface RegistroCambio {
+  id: string
+  creado_en: string
+  usuario_id: string | null
+  usuario_nombre: string
+  tabla: TablaRegistrada
+  registro_id: string
+  operacion: 'insert' | 'update' | 'delete'
+  proveedor_id: string | null
+  detalle: Record<string, unknown>
+}
+
 export type RolPerfil = 'administrador' | 'empleado'
 
 export interface Perfil {
@@ -246,6 +260,11 @@ export interface Database {
         Row: PrecioProveedor
         Insert: Partial<PrecioProveedor>
         Update: Partial<PrecioProveedor>
+      }
+      registro_cambios: {
+        Row: RegistroCambio
+        Insert: Partial<RegistroCambio>
+        Update: Partial<RegistroCambio>
       }
       servicios: { Row: Servicio; Insert: Partial<Servicio>; Update: Partial<Servicio> }
       clientes: { Row: Cliente; Insert: Partial<Cliente>; Update: Partial<Cliente> }
