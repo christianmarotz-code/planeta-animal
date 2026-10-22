@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
+    "e2e": "playwright test",
     "typecheck": "tsc --noEmit",
     "check": "npm run typecheck && npm run lint && npm run test && npm run build"
   },
@@ -22,6 +23,7 @@
     "react-dom": "19.2.8"
   },
   "devDependencies": {
+    "@playwright/test": "^1.64.1",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^22",
     "@types/react": "^19",

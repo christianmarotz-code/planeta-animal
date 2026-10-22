@@ -58,3 +58,7 @@ next-env.d.ts
 
 # facturas escaneadas de proveedores (documentos personales/financieros, no código)
 /facturas planeta animal/
+
+# resultados de Playwright
+/test-results/
+/playwright-report/
