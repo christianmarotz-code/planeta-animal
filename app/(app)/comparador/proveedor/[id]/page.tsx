@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { mensajeDeError } from '@/lib/errores'
-import { actualizarPrecio, listarComparador, type FilaComparador } from '@/lib/data/preciosProveedor'
+import { actualizarPrecio, listarComparador, listarSinPrecio, type FilaComparador } from '@/lib/data/preciosProveedor'
 import { listarProductos } from '@/lib/data/productos'
 import { listarProveedores } from '@/lib/data/proveedores'
 import { planillaDeProveedor } from '@/lib/comparador/vistas'
@@ -13,28 +13,36 @@ import { SkeletonList } from '@/components/Skeleton'
 import { INPUT_CLASS } from '../../estilos'
 import { PlanillaProveedor } from '../../PlanillaProveedor'
 import { FormularioPrecio } from '../../FormularioPrecio'
+import { SinPrecio } from '../../SinPrecio'
 
 export default function PlanillaProveedorPage() {
   const { id } = useParams<{ id: string }>()
   const [filas, setFilas] = useState<FilaComparador[]>([])
   const [proveedor, setProveedor] = useState<Proveedor | null>(null)
   const [productos, setProductos] = useState<Producto[]>([])
+  const [sinPrecio, setSinPrecio] = useState<{ precioId: string; nombre: string }[]>([])
   const [mostrandoFormulario, setMostrandoFormulario] = useState(false)
   const [busqueda, setBusqueda] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   const recargar = useCallback(async () => {
-    const [filasCargadas, proveedores] = await Promise.all([listarComparador(), listarProveedores()])
+    const [filasCargadas, proveedores, pendientes] = await Promise.all([
+      listarComparador(),
+      listarProveedores(),
+      listarSinPrecio(id),
+    ])
     setFilas(filasCargadas)
     setProveedor(proveedores.find((p) => p.id === id) ?? null)
+    setSinPrecio(pendientes)
   }, [id])
 
   useEffect(() => {
-    Promise.all([listarComparador(), listarProveedores()])
-      .then(([filasCargadas, proveedores]) => {
+    Promise.all([listarComparador(), listarProveedores(), listarSinPrecio(id)])
+      .then(([filasCargadas, proveedores, pendientes]) => {
         setFilas(filasCargadas)
         setProveedor(proveedores.find((p) => p.id === id) ?? null)
+        setSinPrecio(pendientes)
       })
       .catch((err) => setError(mensajeDeError(err, 'No se pudo cargar la planilla.')))
       .finally(() => setLoading(false))
@@ -111,6 +119,8 @@ export default function PlanillaProveedorPage() {
         onChange={(e) => setBusqueda(e.target.value)}
         className={`${INPUT_CLASS} w-full max-w-xs`}
       />
+
+      <SinPrecio items={sinPrecio} />
 
       {error && <p className="text-sm text-negative">{error}</p>}
 
