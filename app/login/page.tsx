@@ -12,6 +12,8 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null)
   const [eligiendoContrasena, setEligiendoContrasena] = useState(false)
   const [confirmacion, setConfirmacion] = useState('')
+  const [olvide, setOlvide] = useState(false)
+  const [aviso, setAviso] = useState<string | null>(null)
 
   // El link del mail de invitación (o de recuperar contraseña) llega con la sesión en el #hash.
   useEffect(() => {
@@ -27,12 +29,25 @@ export default function LoginPage() {
     const supabase = createClient()
     const { data } = await supabase.auth.getSession()
     if (!data.session) {
-      return setError('El link venció o ya se usó. Pedí que te inviten de nuevo.')
+      return setError('El link venció o ya se usó. Pedí uno nuevo con "¿Olvidaste tu contraseña?" o que te inviten de nuevo.')
     }
     const { error } = await supabase.auth.updateUser({ password })
     if (error) return setError('No se pudo guardar la contraseña. Intentá de nuevo.')
     router.push('/')
     router.refresh()
+  }
+
+  async function handleOlvide(e: React.FormEvent) {
+    e.preventDefault()
+    setError(null)
+    setAviso(null)
+    const supabase = createClient()
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/login`,
+    })
+    if (error) return setError('No se pudo enviar el mail. Esperá un minuto e intentá de nuevo.')
+    // Mismo mensaje exista o no el mail, para no revelar qué cuentas están registradas.
+    setAviso('Si el mail está registrado, te mandamos un link para elegir una contraseña nueva.')
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -56,10 +71,10 @@ export default function LoginPage() {
             <PawIcon className="h-14 w-14" />
             <div className="text-center">
               <p className="text-[11.5px] font-semibold uppercase tracking-[0.14em] text-ink-faint">
-                {eligiendoContrasena ? 'Tu invitación' : 'Bienvenido'}
+                {eligiendoContrasena ? 'Tu cuenta' : olvide ? 'Recuperar acceso' : 'Bienvenido'}
               </p>
               <h1 className="mt-1 text-[22px] text-ink">
-                {eligiendoContrasena ? 'Elegí tu contraseña' : 'Planeta Animal'}
+                {eligiendoContrasena ? 'Elegí tu contraseña' : olvide ? 'Olvidé mi contraseña' : 'Planeta Animal'}
               </h1>
             </div>
           </div>
@@ -86,6 +101,33 @@ export default function LoginPage() {
                 Guardar y entrar
               </button>
             </form>
+          ) : olvide ? (
+            <form onSubmit={handleOlvide} className="flex flex-col gap-3">
+              <input
+                type="email"
+                placeholder="Tu email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="rounded-[var(--r-sm)] border border-line bg-surface-sunk p-3 text-sm text-ink outline-none transition focus:border-accent"
+                required
+              />
+              {error && <p className="text-sm text-negative">{error}</p>}
+              {aviso && <p className="text-sm text-ink-soft">{aviso}</p>}
+              <button type="submit" className="pill-btn mt-2 justify-center">
+                Enviar link
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setOlvide(false)
+                  setError(null)
+                  setAviso(null)
+                }}
+                className="text-sm text-ink-faint transition hover:text-ink"
+              >
+                Volver a ingresar
+              </button>
+            </form>
           ) : (
           <form onSubmit={handleSubmit} className="flex flex-col gap-3">
             <input
@@ -107,6 +149,16 @@ export default function LoginPage() {
             {error && <p className="text-sm text-negative">{error}</p>}
             <button type="submit" className="pill-btn mt-2 justify-center">
               Ingresar
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setOlvide(true)
+                setError(null)
+              }}
+              className="text-sm text-ink-faint transition hover:text-ink"
+            >
+              ¿Olvidaste tu contraseña?
             </button>
           </form>
           )}
