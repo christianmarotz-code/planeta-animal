@@ -32,6 +32,15 @@ export async function invitarUsuario(input: {
   await parsearRespuesta(res)
 }
 
+export async function eliminarUsuario(id: string): Promise<void> {
+  const res = await fetch('/api/usuarios', {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id }),
+  })
+  await parsearRespuesta(res)
+}
+
 export async function actualizarRolUsuario(id: string, rol: RolPerfil): Promise<void> {
   const res = await fetch('/api/usuarios', {
     method: 'PATCH',

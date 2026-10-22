@@ -55,6 +55,33 @@ export async function POST(request: Request) {
   return NextResponse.json({ ok: true })
 }
 
+export async function DELETE(request: Request) {
+  const { error, user } = await requerirAdministrador()
+  if (error) return error
+
+  const { id } = (await request.json()) as { id: string }
+  if (!id) return NextResponse.json({ error: 'Datos inválidos' }, { status: 400 })
+  if (id === user.id) {
+    return NextResponse.json({ error: 'No podés eliminar tu propio usuario.' }, { status: 400 })
+  }
+
+  const admin = createAdminClient()
+  const { error: errorBorrar } = await admin.auth.admin.deleteUser(id)
+  if (errorBorrar) {
+    const tieneHistorial = /foreign key|violates|database error/i.test(errorBorrar.message)
+    return NextResponse.json(
+      {
+        error: tieneHistorial
+          ? 'Este usuario ya cargó datos y no se puede eliminar todavía. Falta aplicar la migración 0033.'
+          : errorBorrar.message,
+      },
+      { status: tieneHistorial ? 409 : 500 }
+    )
+  }
+
+  return NextResponse.json({ ok: true })
+}
+
 export async function PATCH(request: Request) {
   const { error, user } = await requerirAdministrador()
   if (error) return error

@@ -6,6 +6,7 @@ import {
   listarUsuarios,
   invitarUsuario,
   actualizarRolUsuario,
+  eliminarUsuario,
   type UsuarioConEmail,
 } from '@/lib/data/usuarios'
 import { obtenerOCrearPerfilActual } from '@/lib/data/perfiles'
@@ -64,6 +65,17 @@ export default function UsuariosPage() {
       cargarUsuarios()
     } catch (err) {
       setError(mensajeDeError(err, 'No se pudo cambiar el rol.'))
+    }
+  }
+
+  async function handleEliminar(u: UsuarioConEmail) {
+    if (!window.confirm(`¿Eliminar a ${u.nombre} (${u.email})? Va a perder el acceso al sistema.`)) return
+    setError(null)
+    try {
+      await eliminarUsuario(u.id)
+      cargarUsuarios()
+    } catch (err) {
+      setError(mensajeDeError(err, 'No se pudo eliminar el usuario.'))
     }
   }
 
@@ -139,14 +151,23 @@ export default function UsuariosPage() {
                   {u.rol === 'administrador' ? 'Administrador' : 'Empleado'}
                 </span>
               ) : (
-                <select
-                  value={u.rol}
-                  onChange={(e) => handleCambiarRol(u.id, e.target.value as RolPerfil)}
-                  className={INPUT_CLASS}
-                >
-                  <option value="empleado">Empleado</option>
-                  <option value="administrador">Administrador</option>
-                </select>
+                <div className="flex items-center gap-2">
+                  <select
+                    value={u.rol}
+                    onChange={(e) => handleCambiarRol(u.id, e.target.value as RolPerfil)}
+                    className={INPUT_CLASS}
+                  >
+                    <option value="empleado">Empleado</option>
+                    <option value="administrador">Administrador</option>
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => handleEliminar(u)}
+                    className="rounded-[var(--r-sm)] border border-line px-3 py-2.5 text-sm text-negative transition hover:border-negative"
+                  >
+                    Eliminar
+                  </button>
+                </div>
               )}
             </div>
           ))}
