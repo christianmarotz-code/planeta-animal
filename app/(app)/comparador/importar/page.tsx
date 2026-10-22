@@ -12,7 +12,6 @@ import {
   type ResultadoImportacion,
 } from '@/lib/data/preciosProveedor'
 import type { Proveedor } from '@/types/database'
-import { useEsAdministrador } from '@/lib/hooks/useEsAdministrador'
 
 const SELECT_CLASS =
   'rounded-[var(--r-sm)] border border-line bg-surface-sunk p-2.5 text-sm text-ink outline-none transition focus:border-accent'
@@ -48,7 +47,6 @@ function ColumnaSelect({
 }
 
 export default function ImportarPreciosPage() {
-  const esAdmin = useEsAdministrador()
   const [proveedores, setProveedores] = useState<Proveedor[]>([])
   const [proveedorId, setProveedorId] = useState('')
   const [filas, setFilas] = useState<string[][]>([])
@@ -136,15 +134,6 @@ export default function ImportarPreciosPage() {
     } finally {
       setImportando(false)
     }
-  }
-
-  if (esAdmin === null) return <p className="p-8 text-sm text-ink-soft">Cargando…</p>
-  if (esAdmin === false) {
-    return (
-      <p className="p-8 text-sm text-negative">
-        Acceso restringido — contactá a un administrador.
-      </p>
-    )
   }
 
   return (

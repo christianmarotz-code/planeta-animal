@@ -84,7 +84,20 @@ function IconUsuarios() {
   )
 }
 
-const GRUPOS = [
+interface LinkMenu {
+  href: string
+  label: string
+  Icono: () => React.JSX.Element
+  soloAdmin?: boolean
+}
+
+interface GrupoMenu {
+  titulo: string
+  soloAdmin?: boolean
+  links: LinkMenu[]
+}
+
+const GRUPOS: GrupoMenu[] = [
   {
     titulo: 'General',
     links: [
@@ -98,7 +111,7 @@ const GRUPOS = [
     links: [
       { href: '/compras', label: 'Compras', Icono: IconCompras },
       { href: '/ventas', label: 'Ventas', Icono: IconVentas },
-      { href: '/comparador', label: 'Comparador', Icono: IconComparador, soloAdmin: true },
+      { href: '/comparador', label: 'Comparador', Icono: IconComparador },
     ],
   },
   {
