@@ -6,14 +6,16 @@ import { useParams, useRouter } from 'next/navigation'
 import { obtenerFacturaConItems, anularFactura, editarFacturaCompra, cambiarProntoPagoFactura, urlFotoFactura } from '@/lib/data/facturas'
 import { obtenerProveedor, listarProveedores } from '@/lib/data/proveedores'
 import { listarProductos, obtenerProducto, crearProducto } from '@/lib/data/productos'
-import { calcularCostoRealUnitario } from '@/lib/calc/costoReal'
-import { calcularTotalesFactura, formatearMonto } from '@/lib/calc/factura'
+import { calcularTotalesFactura } from '@/lib/calc/factura'
 import { formatearFechaCorta } from '@/lib/facturas/meses'
 import Link from 'next/link'
 import type { FacturaCompra, ItemFactura, Proveedor, Producto, TipoComprobante } from '@/types/database'
 import { useEsAdministrador } from '@/lib/hooks/useEsAdministrador'
 import { SelectorProntoPago } from '@/components/SelectorProntoPago'
-import { TIPOS_COMPROBANTE, validarBorradorFactura, type ItemDraft } from '@/lib/facturas/itemDraft'
+import { TablaItemsFactura } from './TablaItemsFactura'
+import { TotalesFactura } from './TotalesFactura'
+import { FormularioCorreccion } from './FormularioCorreccion'
+import { validarBorradorFactura, type ItemDraft } from '@/lib/facturas/itemDraft'
 
 export default function DetalleFacturaPage() {
   const { id } = useParams<{ id: string }>()
@@ -52,8 +54,6 @@ export default function DetalleFacturaPage() {
     listarProveedores().then(setProveedores)
     listarProductos().then(setProductos)
   }, [id])
-
-  const desgloseImpuestos = (factura?.impuestos?.length ?? 0) > 0
 
   if (!factura) return <p className="p-8 text-sm text-ink-soft">Cargando…</p>
 
@@ -267,151 +267,16 @@ export default function DetalleFacturaPage() {
               </button>
             )}
           </section>
-          <div className="card rise overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b-2 border-line-strong text-left">
-                  <th className="px-5 py-3 text-[11.5px] font-semibold uppercase tracking-[0.1em] text-ink-faint">
-                    Producto
-                  </th>
-                  <th className="px-5 py-3 text-[11.5px] font-semibold uppercase tracking-[0.1em] text-ink-faint">
-                    Cantidad
-                  </th>
-                  {esAdmin && tieneDetalleInteligente && (
-                    <>
-                      <th className="px-5 py-3 text-[11.5px] font-semibold uppercase tracking-[0.1em] text-ink-faint">Precio lista</th>
-                      <th className="px-5 py-3 text-[11.5px] font-semibold uppercase tracking-[0.1em] text-ink-faint">Bonif.</th>
-                    </>
-                  )}
-                  {esAdmin && (
-                    <>
-                      <th className="px-5 py-3 text-[11.5px] font-semibold uppercase tracking-[0.1em] text-ink-faint">
-                        Costo neto
-                      </th>
-                      <th className="px-5 py-3 text-[11.5px] font-semibold uppercase tracking-[0.1em] text-ink-faint">
-                        Costo real (con imp.)
-                      </th>
-                      <th className="px-5 py-3 text-[11.5px] font-semibold uppercase tracking-[0.1em] text-ink-faint">
-                        Subtotal
-                      </th>
-                      {tieneDetalleInteligente && (
-                        <th className="px-5 py-3 text-[11.5px] font-semibold uppercase tracking-[0.1em] text-ink-faint">Total línea</th>
-                      )}
-                    </>
-                  )}
-                </tr>
-              </thead>
-              <tbody>
-                {items.map((item) => {
-                  const costoReal = proveedor
-                    ? calcularCostoRealUnitario(item.costo_unitario, item.alicuota_iva, {
-                        aplicaIibb: proveedor.aplica_iibb,
-                        tasaIibb: proveedor.tasa_iibb,
-                        aplicaPercIva: proveedor.aplica_perc_iva,
-                        tasaPercIva: proveedor.tasa_perc_iva,
-                        descuentoProntoPago:
-                          factura.pronto_pago.length > 0
-                            ? factura.pronto_pago_elegido
-                            : proveedor.descuento_pronto_pago,
-                      })
-                    : null
-                  return (
-                    <tr key={item.id} className="border-b border-line last:border-0">
-                      <td className="px-5 py-3 text-ink">
-                        {(item.producto_id && productosPorId.get(item.producto_id)?.nombre) || item.descripcion_original}
-                        {item.es_regalo && <span className="chip ml-2">REGALO</span>}
-                        {item.codigo_proveedor && (
-                          <span className="mono block text-xs text-ink-faint">Cód. {item.codigo_proveedor}</span>
-                        )}
-                      </td>
-                      <td className="mono px-5 py-3 text-ink">{item.cantidad}</td>
-                      {esAdmin && tieneDetalleInteligente && (
-                        <>
-                          <td className="mono px-5 py-3 text-ink-soft">
-                            {item.precio_lista !== null ? formatearMonto(item.precio_lista) : '—'}
-                          </td>
-                          <td className="mono px-5 py-3 text-ink-soft">
-                            {item.bonificaciones?.length ? item.bonificaciones.map((b) => `${b}%`).join(' + ') : '—'}
-                          </td>
-                        </>
-                      )}
-                      {esAdmin && (
-                        <>
-                          <td className="mono px-5 py-3 text-ink-soft">
-                            {formatearMonto(item.costo_unitario)}
-                          </td>
-                          <td className="mono px-5 py-3 font-semibold text-ink">
-                            {costoReal !== null ? `${formatearMonto(costoReal)}` : '—'}
-                          </td>
-                          <td className="mono px-5 py-3 text-ink">{formatearMonto(item.subtotal)}</td>
-                          {tieneDetalleInteligente && (
-                            <td className="mono px-5 py-3 font-semibold text-ink">
-                              {item.total_linea !== null ? formatearMonto(item.total_linea) : '—'}
-                            </td>
-                          )}
-                        </>
-                      )}
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
-          {esAdmin &&
-            proveedor &&
-            (proveedor.aplica_iibb || proveedor.aplica_perc_iva || proveedor.descuento_pronto_pago > 0) && (
-              <p className="text-xs text-ink-faint rise">
-                Costo real = costo neto × (1 + IVA
-                {proveedor.aplica_iibb && ` + II.BB. ${proveedor.tasa_iibb}%`}
-                {proveedor.aplica_perc_iva && ` + Perc. IVA ${proveedor.tasa_perc_iva}%`}) ×{' '}
-                {proveedor.descuento_pronto_pago > 0
-                  ? `(1 − ${proveedor.descuento_pronto_pago}% dto. pronto pago)`
-                  : '1'}{' '}
-                — configurado en la ficha de {proveedor.nombre}.
-              </p>
-            )}
+          <TablaItemsFactura
+            factura={factura}
+            items={items}
+            proveedor={proveedor}
+            productosPorId={productosPorId}
+            esAdmin={esAdmin === true}
+            tieneDetalleInteligente={tieneDetalleInteligente}
+          />
 
-          {esAdmin && (
-            <div className="shell ml-auto w-72 rise">
-              <div className="core flex flex-col gap-2 text-sm">
-                <div className="flex justify-between text-ink-soft">
-                  <span>Subtotal</span>
-                  <span className="mono">{formatearMonto(factura.subtotal)}</span>
-                </div>
-                {!desgloseImpuestos && (
-                  <div className="flex justify-between text-ink-soft">
-                    <span>IVA</span>
-                    <span className="mono">{formatearMonto(factura.iva_total)}</span>
-                  </div>
-                )}
-                {factura.impuestos.map((imp) => (
-                  <div key={`${imp.tipo}-${imp.alicuota}`} className="flex justify-between text-ink-soft">
-                    <span>
-                      {imp.tipo}
-                      {imp.alicuota !== null && ` ${imp.alicuota}%`}
-                    </span>
-                    <span className="mono">{formatearMonto(imp.monto)}</span>
-                  </div>
-                ))}
-                {!desgloseImpuestos && factura.percepciones_total > 0 && (
-                  <div className="flex justify-between text-ink-soft">
-                    <span>Percepciones</span>
-                    <span className="mono">{formatearMonto(factura.percepciones_total)}</span>
-                  </div>
-                )}
-                {factura.ajuste_redondeo !== 0 && (
-                  <div className="flex justify-between text-ink-soft">
-                    <span>Ajuste por redondeo</span>
-                    <span className="mono">{formatearMonto(factura.ajuste_redondeo)}</span>
-                  </div>
-                )}
-                <div className="flex justify-between border-t border-line pt-2 font-semibold text-ink">
-                  <span>Total</span>
-                  <span className="mono">{formatearMonto(factura.total)}</span>
-                </div>
-              </div>
-            </div>
-          )}
+          {esAdmin && <TotalesFactura factura={factura} />}
 
           {esAdmin && factura.pronto_pago.length > 0 && (
             <section className="card flex flex-col gap-3 p-4 rise">
@@ -448,182 +313,29 @@ export default function DetalleFacturaPage() {
       )}
 
       {editando && (
-        <div className="flex flex-col gap-5 rise">
-          <p className="text-sm text-ink-faint">
-            Corrigiendo esta factura: el stock que había sumado se revierte y se vuelve a aplicar con
-            los datos nuevos al guardar.
-          </p>
-          <div className="flex flex-wrap gap-2">
-            <select
-              required
-              value={proveedorIdEdit}
-              onChange={(e) => setProveedorIdEdit(e.target.value)}
-              className="rounded-[var(--r-sm)] border border-line bg-surface p-2.5 text-sm text-ink outline-none transition focus:border-accent"
-            >
-              <option value="">Proveedor…</option>
-              {proveedores.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.nombre}
-                </option>
-              ))}
-            </select>
-            <select
-              value={tipoComprobanteEdit}
-              onChange={(e) => setTipoComprobanteEdit(e.target.value as TipoComprobante)}
-              className="rounded-[var(--r-sm)] border border-line bg-surface p-2.5 text-sm text-ink outline-none transition focus:border-accent"
-            >
-              {TIPOS_COMPROBANTE.map((t) => (
-                <option key={t} value={t}>
-                  {t}
-                </option>
-              ))}
-            </select>
-            <input
-              required
-              placeholder="Número de comprobante"
-              value={numeroComprobanteEdit}
-              onChange={(e) => setNumeroComprobanteEdit(e.target.value)}
-              className="rounded-[var(--r-sm)] border border-line bg-surface p-2.5 text-sm text-ink outline-none transition focus:border-accent"
-            />
-            <input
-              required
-              type="date"
-              value={fechaEdit}
-              onChange={(e) => setFechaEdit(e.target.value)}
-              className="rounded-[var(--r-sm)] border border-line bg-surface p-2.5 text-sm text-ink outline-none transition focus:border-accent"
-            />
-          </div>
-
-          <table className="card w-full border-collapse text-sm">
-            <thead>
-              <tr className="border-b-2 border-line-strong text-left">
-                <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-faint">Producto</th>
-                <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-faint">Cantidad</th>
-                <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-faint">Costo unitario</th>
-                <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-faint">IVA %</th>
-                <th />
-              </tr>
-            </thead>
-            <tbody>
-              {itemsEdit.map((item, index) => (
-                <tr key={index} className="border-b border-line last:border-0">
-                  <td className="px-3 py-2 text-ink">
-                    <input
-                      list="productos-list-edicion"
-                      placeholder="Buscar o crear producto…"
-                      value={item.productoTexto}
-                      onChange={(e) => {
-                        const texto = e.target.value
-                        const match = productos.find((p) => p.nombre === texto)
-                        actualizarItemEdit(index, {
-                          productoTexto: texto,
-                          producto_id: match?.id ?? '',
-                          ...(match ? { alicuota_iva: String(match.alicuota_iva) } : {}),
-                        })
-                      }}
-                      onBlur={() => {
-                        const texto = item.productoTexto.trim()
-                        const match = productos.find((p) => p.nombre === texto)
-                        if (!match && texto.length > 2) {
-                          crearProductoRapido(index, texto)
-                        }
-                      }}
-                      className="w-full rounded-[var(--r-sm)] border border-line bg-surface p-2 text-sm text-ink outline-none transition focus:border-accent"
-                    />
-                    {creandoProductoIndices.has(index) && (
-                      <p className="mt-1 text-xs text-ink-faint">Creando producto…</p>
-                    )}
-                  </td>
-                  <td className="px-3 py-2 text-ink">
-                    <input
-                      type="number"
-                      min={0}
-                      step="any"
-                      value={item.cantidad}
-                      onChange={(e) => actualizarItemEdit(index, { cantidad: e.target.value })}
-                      className="w-20 rounded-[var(--r-sm)] border border-line bg-surface p-2 text-sm text-ink outline-none transition focus:border-accent"
-                    />
-                  </td>
-                  <td className="px-3 py-2 text-ink">
-                    <input
-                      type="number"
-                      min={0}
-                      step="any"
-                      value={item.costo_unitario}
-                      onChange={(e) => actualizarItemEdit(index, { costo_unitario: e.target.value })}
-                      className="w-24 rounded-[var(--r-sm)] border border-line bg-surface p-2 text-sm text-ink outline-none transition focus:border-accent"
-                    />
-                  </td>
-                  <td className="px-3 py-2 text-ink">
-                    <input
-                      type="number"
-                      min={0}
-                      step="any"
-                      value={item.alicuota_iva}
-                      onChange={(e) => actualizarItemEdit(index, { alicuota_iva: e.target.value })}
-                      className="w-16 rounded-[var(--r-sm)] border border-line bg-surface p-2 text-sm text-ink outline-none transition focus:border-accent"
-                    />
-                  </td>
-                  <td className="px-3 py-2 text-ink">
-                    <button type="button" onClick={() => quitarItemEdit(index)} className="text-xs font-semibold text-negative hover:underline">
-                      Quitar
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <datalist id="productos-list-edicion">
-            {productos.map((p) => (
-              <option key={p.id} value={p.nombre} />
-            ))}
-          </datalist>
-
-          <button type="button" onClick={agregarItemEdit} className="pill-btn ghost w-fit">
-            + Agregar ítem
-          </button>
-
-          <div className="shell ml-auto w-64">
-            <div className="core flex flex-col gap-2 text-sm">
-              <div className="flex justify-between text-ink-soft">
-                <span>Subtotal</span>
-                <span className="mono">{formatearMonto(totalesEdit.subtotal)}</span>
-              </div>
-              <div className="flex justify-between text-ink-soft">
-                <span>IVA</span>
-                <span className="mono">{formatearMonto(totalesEdit.ivaTotal)}</span>
-              </div>
-              <div className="flex justify-between border-t border-line pt-2 font-semibold text-ink">
-                <span>Total</span>
-                <span className="mono">{formatearMonto(totalesEdit.total)}</span>
-              </div>
-            </div>
-          </div>
-
-          {errorEdicion && <p className="text-sm text-negative">{errorEdicion}</p>}
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={handleGuardarEdicion}
-              disabled={guardandoEdicion || creandoProductoIndices.size > 0}
-              className="pill-btn w-fit disabled:opacity-50"
-            >
-              {guardandoEdicion
-                ? 'Guardando…'
-                : creandoProductoIndices.size > 0
-                  ? 'Creando producto…'
-                  : 'Guardar cambios'}
-            </button>
-            <button
-              type="button"
-              onClick={() => setEditando(false)}
-              disabled={guardandoEdicion}
-              className="pill-btn ghost w-fit disabled:opacity-50"
-            >
-              Cancelar
-            </button>
-          </div>
-        </div>
+        <FormularioCorreccion
+          proveedores={proveedores}
+          productos={productos}
+          proveedorId={proveedorIdEdit}
+          onProveedorId={setProveedorIdEdit}
+          tipoComprobante={tipoComprobanteEdit}
+          onTipoComprobante={setTipoComprobanteEdit}
+          numeroComprobante={numeroComprobanteEdit}
+          onNumeroComprobante={setNumeroComprobanteEdit}
+          fecha={fechaEdit}
+          onFecha={setFechaEdit}
+          items={itemsEdit}
+          creandoProductoIndices={creandoProductoIndices}
+          totales={totalesEdit}
+          error={errorEdicion}
+          guardando={guardandoEdicion}
+          onActualizarItem={actualizarItemEdit}
+          onAgregarItem={agregarItemEdit}
+          onQuitarItem={quitarItemEdit}
+          onCrearProductoRapido={crearProductoRapido}
+          onGuardar={handleGuardarEdicion}
+          onCancelar={() => setEditando(false)}
+        />
       )}
     </div>
   )
