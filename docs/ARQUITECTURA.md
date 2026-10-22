@@ -22,12 +22,15 @@ gastos y reportes. Next.js (App Router) + Supabase (Postgres, Auth, Storage).
 
 Hay dos, definidos en `perfiles.rol`: **administrador** y **empleado**.
 
-- Todos leen. Solo el administrador escribe en productos, proveedores, gastos, precios y
-  facturas (migración 0015, a nivel de base: no alcanza con ocultar botones).
-- Solo administrador: Comparador, Gastos, Reportes y Usuarios (el menú los oculta en
+- Todos leen. Solo el administrador escribe en productos, gastos y facturas (migración 0015,
+  a nivel de base: no alcanza con ocultar botones). Los empleados también pueden crear y editar
+  proveedores y cargar precios del comparador (migración 0035), pero no borrar nada ni cambiar
+  los datos fiscales de un proveedor (IIBB, percepción de IVA, pronto pago).
+- Solo administrador: Gastos, Reportes y Usuarios (el menú los oculta en
   `components/Sidebar.tsx`), cambiar el pronto pago y corregir una factura.
 - La columna `rol` no se puede editar desde el navegador (0008); se cambia por `/api/usuarios`.
-- Las rutas de `app/api/` verifican con `requerirAdministrador()`.
+- Las rutas de `app/api/` verifican con `requerirAdministrador()`, salvo las que usan los
+  empleados (`comparador/leer-pdf`), que usan `requerirSesion()`.
 
 ## Cómo se carga una compra
 
@@ -67,6 +70,25 @@ Cada cambio es una fila en `movimientos_stock`; el stock actual es el resultado 
 movimientos. El ajuste manual (`ajustar_stock_manual`) exige un motivo y no deja el stock en
 negativo. Los productos se organizan en rama (Clínica / Petshop) → categoría → subcategoría
 (sectores en `lib/productos/sectores.ts`). Un producto con historial no se borra: se desactiva.
+
+## Comparador de precios
+
+`/comparador` tiene dos pestañas: **Por proveedor** (una tarjeta por proveedor; al abrirla, su
+planilla en `/comparador/proveedor/[id]`) y **Por producto** (ranking de proveedores de menor
+a mayor precio, con filtro de proveedores). Todo sale de `listarComparador()`, que también usa
+la pantalla Reposición para elegir el proveedor más barato: no hay que romper su campo `mejor`.
+La lógica (comparar, resumir, ordenar) está en `lib/comparador/vistas.ts`, con pruebas.
+
+Los precios se cargan a mano (planilla del proveedor) o importando CSV/PDF. Cada precio puede
+tener una **nota** de texto libre (máximo 200 caracteres, `precios_proveedor.nota`, migración
+0036) para promociones; no se calcula nada con ella. Un precio con más de 30 días se marca
+para revisar.
+
+## Registro de cambios
+
+`registro_cambios` guarda quién creó, cambió o borró un proveedor o un precio (migración 0035).
+Lo llenan triggers y los usuarios solo lo leen. El historial se ve en la pantalla de cada
+proveedor.
 
 ## Seguridad: reglas que no hay que romper
 
