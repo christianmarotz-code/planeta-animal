@@ -1,5 +1,6 @@
 'use client'
 
+import { mensajeDeError } from '@/lib/errores'
 import { useEffect, useMemo, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { obtenerFacturaConItems, anularFactura, editarFacturaCompra, cambiarProntoPagoFactura, urlFotoFactura } from '@/lib/data/facturas'
@@ -65,8 +66,8 @@ export default function DetalleFacturaPage() {
       router.refresh()
       const { factura: actualizada } = await obtenerFacturaConItems(id)
       setFactura(actualizada)
-    } catch {
-      setError('No se pudo anular la factura. Intentá de nuevo.')
+    } catch (err) {
+      setError(mensajeDeError(err, 'No se pudo anular la factura. Intentá de nuevo.'))
     } finally {
       setAnulando(false)
     }
@@ -76,8 +77,8 @@ export default function DetalleFacturaPage() {
     if (!factura?.archivo_adjunto) return
     try {
       window.open(await urlFotoFactura(factura.archivo_adjunto), '_blank', 'noopener')
-    } catch {
-      setError('No se pudo abrir la foto adjunta.')
+    } catch (err) {
+      setError(mensajeDeError(err, 'No se pudo abrir la foto adjunta.'))
     }
   }
 
@@ -87,8 +88,8 @@ export default function DetalleFacturaPage() {
     try {
       await cambiarProntoPagoFactura(id, descuento)
       setFactura((prev) => (prev ? { ...prev, pronto_pago_elegido: descuento } : prev))
-    } catch {
-      setError('No se pudo cambiar el pronto pago. Intentá de nuevo.')
+    } catch (err) {
+      setError(mensajeDeError(err, 'No se pudo cambiar el pronto pago. Intentá de nuevo.'))
     } finally {
       setCambiandoProntoPago(false)
     }
@@ -211,7 +212,7 @@ export default function DetalleFacturaPage() {
       setEditando(false)
       router.refresh()
     } catch (err) {
-      setErrorEdicion(err instanceof Error ? err.message : 'No se pudieron guardar los cambios. Intentá de nuevo.')
+      setErrorEdicion(mensajeDeError(err, 'No se pudieron guardar los cambios. Intentá de nuevo.'))
     } finally {
       setGuardandoEdicion(false)
     }

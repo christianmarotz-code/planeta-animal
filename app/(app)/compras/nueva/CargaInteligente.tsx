@@ -1,5 +1,6 @@
 'use client'
 
+import { mensajeDeError } from '@/lib/errores'
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { listarProveedores, crearProveedor, actualizarProveedor } from '@/lib/data/proveedores'
@@ -131,8 +132,8 @@ export function CargaInteligente() {
         subidas.push(await subirFotoFactura(listo))
       }
       setRutas(subidas)
-    } catch {
-      setErrorLectura('No se pudo subir el archivo. Probá de nuevo.')
+    } catch (err) {
+      setErrorLectura(mensajeDeError(err, 'No se pudo subir el archivo. Probá de nuevo.'))
       setLeyendo(false)
       return
     }
@@ -153,8 +154,8 @@ export function CargaInteligente() {
       setProductoIds(
         r.boleta.lineas.map((l) => emparejarProducto(l.descripcion_normalizada ?? l.descripcion, productos)?.id ?? null)
       )
-    } catch {
-      setErrorLectura('No se pudo leer la boleta automáticamente.')
+    } catch (err) {
+      setErrorLectura(mensajeDeError(err, 'No se pudo leer la boleta automáticamente.'))
     } finally {
       setLeyendo(false)
     }
@@ -233,8 +234,8 @@ export function CargaInteligente() {
       const patch = completarProveedorDesdeBoleta(proveedor, boleta)
       if (Object.keys(patch).length > 0) await actualizarProveedor(proveedor.id, patch).catch(() => undefined)
       router.push(`/compras/${id}`)
-    } catch {
-      setErrorGuardado('No se pudo guardar la boleta. Intentá de nuevo.')
+    } catch (err) {
+      setErrorGuardado(mensajeDeError(err, 'No se pudo guardar la boleta. Intentá de nuevo.'))
     } finally {
       setGuardando(false)
     }

@@ -1,5 +1,6 @@
 'use client'
 
+import { mensajeDeError } from '@/lib/errores'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { listarProveedores } from '@/lib/data/proveedores'
@@ -160,8 +161,8 @@ export function FormularioManual() {
         items: itemsInput,
       })
       router.push(`/compras/${id}`)
-    } catch {
-      setError('No se pudo guardar la factura. Intentá de nuevo.')
+    } catch (err) {
+      setError(mensajeDeError(err, 'No se pudo guardar la factura. Intentá de nuevo.'))
     } finally {
       setSaving(false)
     }

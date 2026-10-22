@@ -1,5 +1,6 @@
 'use client'
 
+import { mensajeDeError } from '@/lib/errores'
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { listarProveedores } from '@/lib/data/proveedores'
@@ -84,8 +85,8 @@ export default function ImportarPreciosPage() {
         setHeaders(data.headers)
         setFilas(data.filas)
         setColumnas(detectarColumnas(data.headers))
-      } catch {
-        setError('No se pudo leer el PDF. Probá de nuevo.')
+      } catch (err) {
+        setError(mensajeDeError(err, 'No se pudo leer el PDF. Probá de nuevo.'))
       } finally {
         setLeyendoPdf(false)
       }
@@ -130,8 +131,8 @@ export default function ImportarPreciosPage() {
       setFilas([])
       setHeaders([])
       if (inputRef.current) inputRef.current.value = ''
-    } catch {
-      setError('No se pudo importar. Revisá el archivo e intentá de nuevo.')
+    } catch (err) {
+      setError(mensajeDeError(err, 'No se pudo importar. Revisá el archivo e intentá de nuevo.'))
     } finally {
       setImportando(false)
     }

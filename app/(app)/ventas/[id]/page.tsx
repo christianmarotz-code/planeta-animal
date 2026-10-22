@@ -1,5 +1,6 @@
 'use client'
 
+import { mensajeDeError } from '@/lib/errores'
 import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { obtenerVentaConItems, anularVenta } from '@/lib/data/ventas'
@@ -38,8 +39,8 @@ export default function DetalleVentaPage() {
       await anularVenta(id)
       const { venta: actualizada } = await obtenerVentaConItems(id)
       setVenta(actualizada)
-    } catch {
-      setError('No se pudo anular la venta. Intentá de nuevo.')
+    } catch (err) {
+      setError(mensajeDeError(err, 'No se pudo anular la venta. Intentá de nuevo.'))
     } finally {
       setAnulando(false)
     }

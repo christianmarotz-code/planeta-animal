@@ -1,5 +1,6 @@
 'use client'
 
+import { mensajeDeError } from '@/lib/errores'
 import { useState } from 'react'
 import type { Proveedor } from '@/types/database'
 
@@ -57,8 +58,8 @@ export function ProveedorForm({
     setSaving(true)
     try {
       await onSubmit(values)
-    } catch {
-      setError('No se pudo guardar. Intentá de nuevo.')
+    } catch (err) {
+      setError(mensajeDeError(err, 'No se pudo guardar. Intentá de nuevo.'))
     } finally {
       setSaving(false)
     }

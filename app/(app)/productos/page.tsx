@@ -1,5 +1,6 @@
 'use client'
 
+import { mensajeDeError } from '@/lib/errores'
 import { Fragment, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { eliminarProducto, listarProductos } from '@/lib/data/productos'
@@ -289,8 +290,8 @@ export default function ProductosPage() {
             ? `"${p.nombre}" se eliminó.`
             : `"${p.nombre}" tiene historial (compras, stock o ventas), así que se desactivó en lugar de borrarse. Ya no aparece en la lista.`,
       })
-    } catch {
-      setAviso({ tipo: 'error', texto: `No se pudo eliminar "${p.nombre}". Intentá de nuevo.` })
+    } catch (err) {
+      setAviso({ tipo: 'error', texto: mensajeDeError(err, `No se pudo eliminar "${p.nombre}". Intentá de nuevo.`) })
     } finally {
       setEliminando(null)
       setConfirmando(null)

@@ -1,5 +1,6 @@
 'use client'
 
+import { mensajeDeError } from '@/lib/errores'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { listarProductos } from '@/lib/data/productos'
@@ -103,8 +104,8 @@ export default function NuevaVentaPage() {
       setClientes((prev) => [...prev, cliente].sort((a, b) => a.nombre.localeCompare(b.nombre)))
       setClienteId(cliente.id)
       setNuevoClienteNombre('')
-    } catch {
-      setError('No se pudo agregar el cliente. Intentá de nuevo.')
+    } catch (err) {
+      setError(mensajeDeError(err, 'No se pudo agregar el cliente. Intentá de nuevo.'))
     }
   }
 
@@ -135,12 +136,13 @@ export default function NuevaVentaPage() {
       })
       router.push(`/ventas/${id}`)
     } catch (err) {
-      const mensaje = err instanceof Error ? err.message : ''
-      if (mensaje.includes('Stock insuficiente')) {
-        setError('No hay stock suficiente para uno de los productos. Revisá las cantidades.')
-      } else {
-        setError('No se pudo registrar la venta. Intentá de nuevo.')
-      }
+      const mensaje = mensajeDeError(err, 'No se pudo registrar la venta. Intentá de nuevo.')
+      // La base devuelve el id interno del producto: no le sirve a quien vende.
+      setError(
+        mensaje.includes('Stock insuficiente')
+          ? 'No hay stock suficiente para uno de los productos. Revisá las cantidades.'
+          : mensaje
+      )
     } finally {
       setSaving(false)
     }

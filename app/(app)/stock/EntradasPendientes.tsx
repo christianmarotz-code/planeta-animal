@@ -1,5 +1,6 @@
 'use client'
 
+import { mensajeDeError } from '@/lib/errores'
 import { useEffect, useState } from 'react'
 import { listarEntradasPendientes, confirmarEntradaStock } from '@/lib/data/entradasStock'
 import { listarFacturas } from '@/lib/data/facturas'
@@ -31,8 +32,8 @@ export function EntradasPendientes({ productos, onConfirmada }: { productos: Pro
       await confirmarEntradaStock(e.id, cantidad, notas[e.id]?.trim() || null)
       cargar()
       onConfirmada()
-    } catch {
-      setError('No se pudo confirmar la entrada. Intentá de nuevo.')
+    } catch (err) {
+      setError(mensajeDeError(err, 'No se pudo confirmar la entrada. Intentá de nuevo.'))
     } finally {
       setConfirmando(null)
     }

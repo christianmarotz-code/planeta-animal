@@ -1,5 +1,6 @@
 'use client'
 
+import { mensajeDeError } from '@/lib/errores'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { registrarGasto } from '@/lib/data/gastos'
@@ -45,8 +46,8 @@ export default function NuevoGastoPage() {
         notas: notas.trim() || null,
       })
       router.push('/gastos')
-    } catch {
-      setError('No se pudo guardar el gasto. Intentá de nuevo.')
+    } catch (err) {
+      setError(mensajeDeError(err, 'No se pudo guardar el gasto. Intentá de nuevo.'))
     } finally {
       setSaving(false)
     }

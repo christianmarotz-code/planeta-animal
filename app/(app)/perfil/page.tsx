@@ -1,5 +1,6 @@
 'use client'
 
+import { mensajeDeError } from '@/lib/errores'
 import { useEffect, useRef, useState } from 'react'
 import { Avatar } from '@/components/Avatar'
 import { obtenerOCrearPerfilActual, actualizarNombrePerfil, subirAvatar } from '@/lib/data/perfiles'
@@ -25,7 +26,7 @@ export default function PerfilPage() {
         setPerfil(p)
         setNombre(p.nombre)
       })
-      .catch(() => setError('No se pudo cargar tu perfil. Intentá de nuevo más tarde.'))
+      .catch((err) => setError(mensajeDeError(err, 'No se pudo cargar tu perfil. Intentá de nuevo más tarde.')))
   }, [])
 
   function handleSeleccionArchivo(e: React.ChangeEvent<HTMLInputElement>) {
@@ -57,8 +58,8 @@ export default function PerfilPage() {
       setNombre(actualizado.nombre)
       setArchivoSeleccionado(null)
       setPreviewUrl(null)
-    } catch {
-      setError('No se pudo guardar. Intentá de nuevo.')
+    } catch (err) {
+      setError(mensajeDeError(err, 'No se pudo guardar. Intentá de nuevo.'))
     } finally {
       setSaving(false)
     }

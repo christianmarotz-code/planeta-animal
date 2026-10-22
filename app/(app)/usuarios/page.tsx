@@ -1,5 +1,6 @@
 'use client'
 
+import { mensajeDeError } from '@/lib/errores'
 import { useEffect, useState } from 'react'
 import {
   listarUsuarios,
@@ -27,7 +28,7 @@ export default function UsuariosPage() {
   function cargarUsuarios() {
     listarUsuarios()
       .then(setUsuarios)
-      .catch((err) => setError(err instanceof Error ? err.message : 'No se pudo cargar la lista de usuarios.'))
+      .catch((err) => setError(mensajeDeError(err, 'No se pudo cargar la lista de usuarios.')))
       .finally(() => setLoading(false))
   }
 
@@ -50,7 +51,7 @@ export default function UsuariosPage() {
       setRol('empleado')
       cargarUsuarios()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo invitar. Intentá de nuevo.')
+      setError(mensajeDeError(err, 'No se pudo invitar. Intentá de nuevo.'))
     } finally {
       setInvitando(false)
     }
@@ -62,7 +63,7 @@ export default function UsuariosPage() {
       await actualizarRolUsuario(id, nuevoRol)
       cargarUsuarios()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo cambiar el rol.')
+      setError(mensajeDeError(err, 'No se pudo cambiar el rol.'))
     }
   }
 

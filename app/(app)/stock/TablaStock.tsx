@@ -1,5 +1,6 @@
 'use client'
 
+import { mensajeDeError } from '@/lib/errores'
 import { Fragment, useState } from 'react'
 import { ajustarStockManual } from '@/lib/data/stock'
 import type { Producto } from '@/types/database'
@@ -36,8 +37,8 @@ export function TablaStock({
       setCantidad('')
       setMotivo('')
       onAjustado()
-    } catch {
-      setError('No se pudo ajustar el stock. Intentá de nuevo.')
+    } catch (err) {
+      setError(mensajeDeError(err, 'No se pudo ajustar el stock. Intentá de nuevo.'))
     }
   }
 
