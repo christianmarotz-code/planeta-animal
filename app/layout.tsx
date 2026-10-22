@@ -27,7 +27,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <head>
         <script
           dangerouslySetInnerHTML={{
-            __html: `try{if(localStorage.getItem('tema')==='claro')document.documentElement.dataset.theme='light'}catch(e){}`,
+            __html: `try{if(localStorage.getItem('tema')==='claro')document.documentElement.dataset.theme='light'}catch(e){}try{var h=location.hash;if(/type=(invite|recovery)|error_code=otp_expired/.test(h)&&location.pathname!=='/elegir-contrasena')location.replace('/elegir-contrasena'+h)}catch(e){}`,
           }}
         />
       </head>

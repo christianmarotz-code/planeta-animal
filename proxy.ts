@@ -30,7 +30,11 @@ export async function proxy(request: NextRequest) {
   } = await supabase.auth.getUser()
 
   const isAuthRoute = request.nextUrl.pathname === '/login'
+  // Pantalla de los links de invitación y recuperación: la sesión viene en el #hash,
+  // así que tiene que ser accesible con o sin otra sesión abierta.
+  const isLinkDeMailRoute = request.nextUrl.pathname === '/elegir-contrasena'
 
+  if (isLinkDeMailRoute) return response
   if (!user && !isAuthRoute) {
     return NextResponse.redirect(new URL('/login', request.url))
   }

@@ -1,41 +1,20 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { PawIcon } from '@/components/Logo'
+
+const INPUT_CLASS =
+  'rounded-[var(--r-sm)] border border-line bg-surface-sunk p-3 text-sm text-ink outline-none transition focus:border-accent'
 
 export default function LoginPage() {
   const router = useRouter()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
-  const [eligiendoContrasena, setEligiendoContrasena] = useState(false)
-  const [confirmacion, setConfirmacion] = useState('')
   const [olvide, setOlvide] = useState(false)
   const [aviso, setAviso] = useState<string | null>(null)
-
-  // El link del mail de invitación (o de recuperar contraseña) llega con la sesión en el #hash.
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- el hash solo se puede leer en el navegador
-    if (/type=(invite|recovery)/.test(window.location.hash)) setEligiendoContrasena(true)
-  }, [])
-
-  async function handleElegirContrasena(e: React.FormEvent) {
-    e.preventDefault()
-    setError(null)
-    if (password.length < 8) return setError('La contraseña tiene que tener al menos 8 caracteres.')
-    if (password !== confirmacion) return setError('Las contraseñas no coinciden.')
-    const supabase = createClient()
-    const { data } = await supabase.auth.getSession()
-    if (!data.session) {
-      return setError('El link venció o ya se usó. Pedí uno nuevo con "¿Olvidaste tu contraseña?" o que te inviten de nuevo.')
-    }
-    const { error } = await supabase.auth.updateUser({ password })
-    if (error) return setError('No se pudo guardar la contraseña. Intentá de nuevo.')
-    router.push('/')
-    router.refresh()
-  }
 
   async function handleOlvide(e: React.FormEvent) {
     e.preventDefault()
@@ -43,7 +22,7 @@ export default function LoginPage() {
     setAviso(null)
     const supabase = createClient()
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/login`,
+      redirectTo: `${window.location.origin}/elegir-contrasena`,
     })
     if (error) return setError('No se pudo enviar el mail. Esperá un minuto e intentá de nuevo.')
     // Mismo mensaje exista o no el mail, para no revelar qué cuentas están registradas.
@@ -71,44 +50,21 @@ export default function LoginPage() {
             <PawIcon className="h-14 w-14" />
             <div className="text-center">
               <p className="text-[11.5px] font-semibold uppercase tracking-[0.14em] text-ink-faint">
-                {eligiendoContrasena ? 'Tu cuenta' : olvide ? 'Recuperar acceso' : 'Bienvenido'}
+                {olvide ? 'Recuperar acceso' : 'Bienvenido'}
               </p>
               <h1 className="mt-1 text-[22px] text-ink">
-                {eligiendoContrasena ? 'Elegí tu contraseña' : olvide ? 'Olvidé mi contraseña' : 'Planeta Animal'}
+                {olvide ? 'Olvidé mi contraseña' : 'Planeta Animal'}
               </h1>
             </div>
           </div>
-          {eligiendoContrasena ? (
-            <form onSubmit={handleElegirContrasena} className="flex flex-col gap-3">
-              <input
-                type="password"
-                placeholder="Contraseña nueva (mínimo 8 caracteres)"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="rounded-[var(--r-sm)] border border-line bg-surface-sunk p-3 text-sm text-ink outline-none transition focus:border-accent"
-                required
-              />
-              <input
-                type="password"
-                placeholder="Repetí la contraseña"
-                value={confirmacion}
-                onChange={(e) => setConfirmacion(e.target.value)}
-                className="rounded-[var(--r-sm)] border border-line bg-surface-sunk p-3 text-sm text-ink outline-none transition focus:border-accent"
-                required
-              />
-              {error && <p className="text-sm text-negative">{error}</p>}
-              <button type="submit" className="pill-btn mt-2 justify-center">
-                Guardar y entrar
-              </button>
-            </form>
-          ) : olvide ? (
+          {olvide ? (
             <form onSubmit={handleOlvide} className="flex flex-col gap-3">
               <input
                 type="email"
                 placeholder="Tu email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="rounded-[var(--r-sm)] border border-line bg-surface-sunk p-3 text-sm text-ink outline-none transition focus:border-accent"
+                className={INPUT_CLASS}
                 required
               />
               {error && <p className="text-sm text-negative">{error}</p>}
@@ -129,38 +85,38 @@ export default function LoginPage() {
               </button>
             </form>
           ) : (
-          <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-            <input
-              type="email"
-              placeholder="Email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="rounded-[var(--r-sm)] border border-line bg-surface-sunk p-3 text-sm text-ink outline-none transition focus:border-accent"
-              required
-            />
-            <input
-              type="password"
-              placeholder="Contraseña"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="rounded-[var(--r-sm)] border border-line bg-surface-sunk p-3 text-sm text-ink outline-none transition focus:border-accent"
-              required
-            />
-            {error && <p className="text-sm text-negative">{error}</p>}
-            <button type="submit" className="pill-btn mt-2 justify-center">
-              Ingresar
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setOlvide(true)
-                setError(null)
-              }}
-              className="text-sm text-ink-faint transition hover:text-ink"
-            >
-              ¿Olvidaste tu contraseña?
-            </button>
-          </form>
+            <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+              <input
+                type="email"
+                placeholder="Email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className={INPUT_CLASS}
+                required
+              />
+              <input
+                type="password"
+                placeholder="Contraseña"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className={INPUT_CLASS}
+                required
+              />
+              {error && <p className="text-sm text-negative">{error}</p>}
+              <button type="submit" className="pill-btn mt-2 justify-center">
+                Ingresar
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setOlvide(true)
+                  setError(null)
+                }}
+                className="text-sm text-ink-faint transition hover:text-ink"
+              >
+                ¿Olvidaste tu contraseña?
+              </button>
+            </form>
           )}
         </div>
       </div>
