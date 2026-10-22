@@ -1,8 +1,9 @@
 'use client'
 
 import { mensajeDeError } from '@/lib/errores'
-import { useEffect, useRef, useState } from 'react'
+import { Suspense, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import { listarProveedores } from '@/lib/data/proveedores'
 import {
   parsearCSV,
@@ -46,9 +47,10 @@ function ColumnaSelect({
   )
 }
 
-export default function ImportarPreciosPage() {
+function ImportarPrecios() {
+  const parametros = useSearchParams()
   const [proveedores, setProveedores] = useState<Proveedor[]>([])
-  const [proveedorId, setProveedorId] = useState('')
+  const [proveedorId, setProveedorId] = useState(parametros.get('proveedor') ?? '')
   const [filas, setFilas] = useState<string[][]>([])
   const [headers, setHeaders] = useState<string[]>([])
   const [columnas, setColumnas] = useState<ColumnasDetectadas>({ codigo: null, nombre: null, precio: null })
@@ -265,5 +267,13 @@ export default function ImportarPreciosPage() {
         </button>
       </div>
     </div>
+  )
+}
+
+export default function ImportarPreciosPage() {
+  return (
+    <Suspense fallback={null}>
+      <ImportarPrecios />
+    </Suspense>
   )
 }
