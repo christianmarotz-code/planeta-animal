@@ -48,6 +48,11 @@ export default function PlanillaProveedorPage() {
       .finally(() => setLoading(false))
   }, [id])
 
+  async function guardarEdicion(precioId: string, cambios: { precio: number; nota: string | null }) {
+    await actualizarPrecio(precioId, cambios)
+    await recargar()
+  }
+
   async function abrirFormulario() {
     setMostrandoFormulario(true)
     if (productos.length > 0) return
@@ -120,16 +125,13 @@ export default function PlanillaProveedorPage() {
         className={`${INPUT_CLASS} w-full max-w-xs`}
       />
 
-      <SinPrecio items={sinPrecio} />
+      <SinPrecio items={sinPrecio} onGuardar={guardarEdicion} />
 
       {error && <p className="text-sm text-negative">{error}</p>}
 
       <PlanillaProveedor
         filas={planilla}
-        onGuardar={async (precioId, cambios) => {
-          await actualizarPrecio(precioId, cambios)
-          await recargar()
-        }}
+        onGuardar={guardarEdicion}
       />
     </div>
   )
