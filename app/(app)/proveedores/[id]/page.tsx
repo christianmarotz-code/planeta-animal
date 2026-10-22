@@ -6,6 +6,7 @@ import { obtenerProveedor, actualizarProveedor } from '@/lib/data/proveedores'
 import { listarFacturas } from '@/lib/data/facturas'
 import type { Proveedor, FacturaCompra } from '@/types/database'
 import { ProveedorForm } from '../ProveedorForm'
+import { HistorialCambios } from '../HistorialCambios'
 import { useEsAdministrador } from '@/lib/hooks/useEsAdministrador'
 
 export default function EditarProveedorPage() {
@@ -61,6 +62,7 @@ export default function EditarProveedorPage() {
           )}
         </div>
       </div>
+      <HistorialCambios proveedorId={id} />
     </div>
   )
 }
