@@ -18,6 +18,16 @@ describe('parsearPrecio', () => {
     expect(parsearPrecio('10,555')).toBe(10.56)
   })
 
+  it('el signo de pesos y el formato argentino no dan cero (causa de los ceros de Bruncas)', () => {
+    expect(parsearPrecio('$ 1.200,50')).toBe(1200.5)
+    expect(parsearPrecio('$1.200,50')).toBe(1200.5)
+  })
+
+  it('un texto que no es un precio da null y no 0', () => {
+    expect(parsearPrecio('USD 10')).toBeNull()
+    expect(parsearPrecio('consultar')).toBeNull()
+  })
+
   it('rechaza lo que no es un precio positivo', () => {
     expect(parsearPrecio('')).toBeNull()
     expect(parsearPrecio('   ')).toBeNull()

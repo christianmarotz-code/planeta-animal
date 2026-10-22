@@ -105,6 +105,7 @@ export interface ResultadoImportacion {
   emparejadosPorCodigo: number
   emparejadosPorNombre: number
   sinMatch: string[]
+  sinPrecioValido: number
 }
 
 export async function importarListaPrecios(
@@ -126,9 +127,14 @@ export async function importarListaPrecios(
   const sinMatch: string[] = []
   let emparejadosPorCodigo = 0
   let emparejadosPorNombre = 0
+  let sinPrecioValido = 0
 
   for (const fila of filas) {
     if (!fila.nombre && !fila.codigo) continue
+    if (!(fila.precio > 0)) {
+      sinPrecioValido++
+      continue
+    }
     let producto: Producto | undefined
     if (fila.codigo) {
       producto = porCodigo.get(fila.codigo.trim().toLowerCase())
@@ -160,6 +166,7 @@ export async function importarListaPrecios(
     emparejadosPorCodigo,
     emparejadosPorNombre,
     sinMatch,
+    sinPrecioValido,
   }
 }
 
@@ -177,12 +184,46 @@ export interface FilaComparador {
   mejor: { proveedor: Proveedor; precio: number } | null
 }
 
+export function armarFilasComparador(
+  productos: Producto[],
+  proveedores: Proveedor[],
+  precios: PrecioProveedor[]
+): FilaComparador[] {
+  const proveedoresPorId = new Map(proveedores.map((p) => [p.id, p]))
+
+  const preciosPorProducto = new Map<string, PrecioProveedor[]>()
+  for (const precio of precios) {
+    // Un precio en cero es un dato faltante, no "gratis": no entra en ninguna comparación.
+    if (!(precio.precio > 0)) continue
+    const lista = preciosPorProducto.get(precio.producto_id) ?? []
+    lista.push(precio)
+    preciosPorProducto.set(precio.producto_id, lista)
+  }
+
+  const filas: FilaComparador[] = []
+  for (const producto of productos) {
+    const preciosProducto = preciosPorProducto.get(producto.id)
+    if (!preciosProducto || preciosProducto.length === 0) continue
+    const preciosFila = preciosProducto
+      .map((pp): PrecioDeFila | null => {
+        const proveedor = proveedoresPorId.get(pp.proveedor_id)
+        if (!proveedor) return null
+        return { proveedor, precio: pp.precio, actualizadoEn: pp.actualizado_en, precioId: pp.id, nota: pp.nota ?? null }
+      })
+      .filter((x): x is PrecioDeFila => x !== null)
+    if (preciosFila.length === 0) continue
+    const mejor = preciosFila.reduce((min, p) => (p.precio < min.precio ? p : min), preciosFila[0])
+    filas.push({ producto, precios: preciosFila, mejor: { proveedor: mejor.proveedor, precio: mejor.precio } })
+  }
+
+  return filas.sort((a, b) => a.producto.nombre.localeCompare(b.producto.nombre))
+}
+
 export async function listarComparador(): Promise<FilaComparador[]> {
   const supabase = createClient()
   const [productos, proveedoresRes] = await Promise.all([listarTodosLosProductos(), supabase.from('proveedores').select('*')])
   if (proveedoresRes.error) throw proveedoresRes.error
   const proveedores = proveedoresRes.data as Proveedor[]
-  const proveedoresPorId = new Map(proveedores.map((p) => [p.id, p]))
 
   const precios: PrecioProveedor[] = []
   let desde = 0
@@ -195,30 +236,7 @@ export async function listarComparador(): Promise<FilaComparador[]> {
     desde += TAMANO_PAGINA
   }
 
-  const preciosPorProducto = new Map<string, PrecioProveedor[]>()
-  for (const precio of precios) {
-    const lista = preciosPorProducto.get(precio.producto_id) ?? []
-    lista.push(precio)
-    preciosPorProducto.set(precio.producto_id, lista)
-  }
-
-  const filas: FilaComparador[] = []
-  for (const producto of productos) {
-    const preciosProducto = preciosPorProducto.get(producto.id)
-    if (!preciosProducto || preciosProducto.length === 0) continue
-    const precios = preciosProducto
-      .map((pp): PrecioDeFila | null => {
-        const proveedor = proveedoresPorId.get(pp.proveedor_id)
-        if (!proveedor) return null
-        return { proveedor, precio: pp.precio, actualizadoEn: pp.actualizado_en, precioId: pp.id, nota: pp.nota ?? null }
-      })
-      .filter((x): x is PrecioDeFila => x !== null)
-    if (precios.length === 0) continue
-    const mejor = precios.reduce((min, p) => (p.precio < min.precio ? p : min), precios[0])
-    filas.push({ producto, precios, mejor: { proveedor: mejor.proveedor, precio: mejor.precio } })
-  }
-
-  return filas.sort((a, b) => a.producto.nombre.localeCompare(b.producto.nombre))
+  return armarFilasComparador(productos, proveedores, precios)
 }
 
 export async function guardarPrecio(input: {
@@ -248,4 +266,30 @@ export async function actualizarPrecio(id: string, cambios: { precio: number; no
     .update({ ...cambios, actualizado_en: new Date().toISOString() } as never)
     .eq('id', id)
   if (error) throw error
+}
+
+/** Productos que ese proveedor tiene cargados con precio en cero (o vacío), pendientes de completar. */
+export async function listarSinPrecio(proveedorId: string): Promise<{ precioId: string; nombre: string }[]> {
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from('precios_proveedor')
+    .select('*')
+    .eq('proveedor_id', proveedorId)
+    .lte('precio', 0)
+  if (error) throw error
+  const precios = data as PrecioProveedor[]
+  if (precios.length === 0) return []
+
+  const nombres = new Map<string, string>()
+  const LOTE = 100
+  for (let i = 0; i < precios.length; i += LOTE) {
+    const ids = precios.slice(i, i + LOTE).map((p) => p.producto_id)
+    const { data: productos, error: errorProductos } = await supabase.from('productos').select('*').in('id', ids)
+    if (errorProductos) throw errorProductos
+    for (const p of productos as Producto[]) nombres.set(p.id, p.nombre)
+  }
+
+  return precios
+    .map((p) => ({ precioId: p.id, nombre: nombres.get(p.producto_id) ?? 'Producto sin nombre' }))
+    .sort((a, b) => a.nombre.localeCompare(b.nombre))
 }

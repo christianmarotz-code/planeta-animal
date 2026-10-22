@@ -12,6 +12,7 @@ import {
   type ColumnasDetectadas,
   type ResultadoImportacion,
 } from '@/lib/data/preciosProveedor'
+import { parsearPrecio } from '@/lib/comparador/parsearPrecio'
 import type { Proveedor } from '@/types/database'
 
 const SELECT_CLASS =
@@ -124,7 +125,7 @@ function ImportarPrecios() {
       const filasParaImportar = filas.map((fila) => ({
         codigo: columnas.codigo !== null ? (fila[columnas.codigo] ?? '') : '',
         nombre: columnas.nombre !== null ? (fila[columnas.nombre] ?? '') : '',
-        precio: Number(String(fila[columnas.precio!] ?? '0').replace(/\./g, '').replace(',', '.')) || 0,
+        precio: parsearPrecio(String(fila[columnas.precio!] ?? '')) ?? 0,
       }))
       const res = await importarListaPrecios(proveedorId, filasParaImportar)
       setResultado(res)
@@ -242,6 +243,11 @@ function ImportarPrecios() {
               {resultado.total} filas ({resultado.emparejadosPorCodigo} por código, {resultado.emparejadosPorNombre} por
               nombre).
             </p>
+            {resultado.sinPrecioValido > 0 && (
+              <p className="mt-1 text-negative">
+                {resultado.sinPrecioValido} {resultado.sinPrecioValido === 1 ? 'fila' : 'filas'} sin precio válido: no se importaron.
+              </p>
+            )}
             {resultado.sinMatch.length > 0 && (
               <details className="mt-2">
                 <summary className="cursor-pointer text-ink">
