@@ -73,8 +73,17 @@ export async function listarFacturas(filtros?: {
   return data
 }
 
-export async function listarItemsFactura(): Promise<ItemFactura[]> {
+/** Con `desde` (YYYY-MM-DD) trae solo los ítems de facturas con fecha desde ese día. */
+export async function listarItemsFactura(filtros?: { desde?: string }): Promise<ItemFactura[]> {
   const supabase = createClient()
+  if (filtros?.desde) {
+    const { data, error } = await supabase
+      .from('items_factura')
+      .select('*, facturas_compra!inner(fecha)')
+      .gte('facturas_compra.fecha', filtros.desde)
+    if (error) throw error
+    return data as unknown as ItemFactura[]
+  }
   const { data, error } = await supabase.from('items_factura').select('*')
   if (error) throw error
   return data as ItemFactura[]

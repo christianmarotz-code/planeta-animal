@@ -16,6 +16,7 @@ import {
   calcularGastoPorProveedorPorRama,
   calcularComprobantesPorRama,
   calcularIngresoPorSemana,
+  inicioSemana,
   RAMAS,
 } from '@/lib/data/reportes'
 import { obtenerOCrearPerfilActual } from '@/lib/data/perfiles'
@@ -243,11 +244,15 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    // Inicio solo usa los últimos 30 días de ítems y la semana actual de ventas:
+    // no hace falta traer el historial completo (crece con cada compra y cada venta).
+    const hace31Dias = new Date()
+    hace31Dias.setDate(hace31Dias.getDate() - 31)
     Promise.all([
       listarFacturas(),
       listarProveedores(),
       listarProductos(),
-      listarItemsFactura(),
+      listarItemsFactura({ desde: inicioSemana(hace31Dias) }),
       listarMovimientosStock(),
     ])
       .then(([f, p, pr, it, mv]) => {
@@ -258,7 +263,7 @@ export default function DashboardPage() {
         setMovimientos(mv)
       })
       .finally(() => setLoading(false))
-    listarVentas().then(setVentas)
+    listarVentas({ desde: inicioSemana(new Date()) }).then(setVentas)
   }, [])
 
   useEffect(() => {
