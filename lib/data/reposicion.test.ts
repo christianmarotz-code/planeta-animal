@@ -58,7 +58,9 @@ function filaComparador(
 ): FilaComparador {
   return {
     producto: productoRow,
-    precios: mejor ? [{ proveedor: mejor.proveedor, precio: mejor.precio, actualizadoEn: '' }] : [],
+    precios: mejor
+      ? [{ proveedor: mejor.proveedor, precio: mejor.precio, actualizadoEn: '', precioId: 'pp', nota: null }]
+      : [],
     mejor,
   }
 }

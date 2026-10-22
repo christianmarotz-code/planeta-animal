@@ -163,9 +163,17 @@ export async function importarListaPrecios(
   }
 }
 
+export interface PrecioDeFila {
+  proveedor: Proveedor
+  precio: number
+  actualizadoEn: string
+  precioId: string
+  nota: string | null
+}
+
 export interface FilaComparador {
   producto: Producto
-  precios: { proveedor: Proveedor; precio: number; actualizadoEn: string }[]
+  precios: PrecioDeFila[]
   mejor: { proveedor: Proveedor; precio: number } | null
 }
 
@@ -199,16 +207,45 @@ export async function listarComparador(): Promise<FilaComparador[]> {
     const preciosProducto = preciosPorProducto.get(producto.id)
     if (!preciosProducto || preciosProducto.length === 0) continue
     const precios = preciosProducto
-      .map((pp) => {
+      .map((pp): PrecioDeFila | null => {
         const proveedor = proveedoresPorId.get(pp.proveedor_id)
         if (!proveedor) return null
-        return { proveedor, precio: pp.precio, actualizadoEn: pp.actualizado_en }
+        return { proveedor, precio: pp.precio, actualizadoEn: pp.actualizado_en, precioId: pp.id, nota: pp.nota ?? null }
       })
-      .filter((x): x is { proveedor: Proveedor; precio: number; actualizadoEn: string } => x !== null)
+      .filter((x): x is PrecioDeFila => x !== null)
     if (precios.length === 0) continue
     const mejor = precios.reduce((min, p) => (p.precio < min.precio ? p : min), precios[0])
     filas.push({ producto, precios, mejor: { proveedor: mejor.proveedor, precio: mejor.precio } })
   }
 
   return filas.sort((a, b) => a.producto.nombre.localeCompare(b.producto.nombre))
+}
+
+export async function guardarPrecio(input: {
+  proveedorId: string
+  productoId: string
+  precio: number
+  nota: string | null
+}): Promise<void> {
+  const supabase = createClient()
+  const { error } = await supabase.from('precios_proveedor').upsert(
+    {
+      proveedor_id: input.proveedorId,
+      producto_id: input.productoId,
+      precio: input.precio,
+      nota: input.nota,
+      actualizado_en: new Date().toISOString(),
+    } as never,
+    { onConflict: 'proveedor_id,producto_id' }
+  )
+  if (error) throw error
+}
+
+export async function actualizarPrecio(id: string, cambios: { precio: number; nota: string | null }): Promise<void> {
+  const supabase = createClient()
+  const { error } = await supabase
+    .from('precios_proveedor')
+    .update({ ...cambios, actualizado_en: new Date().toISOString() } as never)
+    .eq('id', id)
+  if (error) throw error
 }
