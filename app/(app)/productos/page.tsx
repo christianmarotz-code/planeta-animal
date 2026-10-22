@@ -7,6 +7,8 @@ import { eliminarProducto, listarProductos } from '@/lib/data/productos'
 import type { Producto, Rama } from '@/types/database'
 import { useEsAdministrador } from '@/lib/hooks/useEsAdministrador'
 import { SkeletonTable } from '@/components/Skeleton'
+import { FilaProducto } from './FilaProducto'
+import { ResumenStock, TOP_RESUMEN } from './ResumenStock'
 import {
   aReponer,
   comparador,
@@ -24,7 +26,6 @@ const SIN_CLASIFICAR = 'Sin clasificar'
 const MAX_FILAS_AUTO_ABIERTO = 60
 // La vista de lista puede tener miles de filas: se muestran de a tandas.
 const TANDA_LISTA = 100
-const TOP_RESUMEN = 5
 
 type Vista = 'grupos' | 'lista'
 
@@ -53,89 +54,6 @@ function esSinClasificar(subcategoria: string) {
 const TH = 'px-5 py-3 text-[11.5px] font-semibold uppercase tracking-[0.1em] text-ink-faint'
 const CONTROL =
   'rounded-[var(--r-sm)] border border-line bg-surface-sunk p-2.5 text-sm text-ink outline-none transition focus:border-accent'
-
-function FilaProducto({
-  p,
-  esAdmin,
-  mostrarSubcategoria,
-  confirmando,
-  eliminando,
-  onPedirConfirmacion,
-  onCancelar,
-  onEliminar,
-}: {
-  p: Producto
-  esAdmin: boolean
-  mostrarSubcategoria: boolean
-  confirmando: boolean
-  eliminando: boolean
-  onPedirConfirmacion: () => void
-  onCancelar: () => void
-  onEliminar: () => void
-}) {
-  return (
-    <tr className="border-b border-line transition last:border-0 hover:bg-accent/5">
-      <td className="px-5 py-3">
-        <Link href={`/productos/${p.id}`} className="font-medium text-ink hover:text-accent">
-          {p.nombre}
-        </Link>
-      </td>
-      <td className="px-5 py-3 text-ink-soft">
-        {mostrarSubcategoria ? (p.subcategoria ?? <span className="text-ink-faint">—</span>) : p.categoria}
-      </td>
-      <td className="px-5 py-3">
-        {p.stock_actual <= p.stock_minimo ? (
-          <span className="chip down">
-            {p.stock_actual} {p.unidad_stock}
-          </span>
-        ) : (
-          <span className="mono text-ink">
-            {p.stock_actual} {p.unidad_stock}
-          </span>
-        )}
-        {esStockeable(p) && p.stock_minimo > 0 && (
-          <span className="ml-2 text-xs text-ink-faint">mín. {p.stock_minimo}</span>
-        )}
-      </td>
-      {esAdmin && (
-        <>
-          <td className="mono px-5 py-3 text-ink">
-            ${p.costo_unitario_actual.toLocaleString('es-AR')}
-          </td>
-          <td className="whitespace-nowrap px-5 py-3 text-right">
-            {confirmando ? (
-              <span className="flex items-center justify-end gap-3 text-xs">
-                <span className="text-ink-soft">
-                  ¿Eliminar{p.stock_actual !== 0 ? ` (tiene ${p.stock_actual} en stock)` : ''}?
-                </span>
-                <button
-                  type="button"
-                  onClick={onEliminar}
-                  disabled={eliminando}
-                  className="font-semibold text-negative hover:underline disabled:opacity-50"
-                >
-                  {eliminando ? 'Eliminando…' : 'Sí, eliminar'}
-                </button>
-                <button type="button" onClick={onCancelar} className="text-ink-soft hover:text-ink">
-                  Cancelar
-                </button>
-              </span>
-            ) : (
-              <span className="flex items-center justify-end gap-4 text-sm">
-                <Link href={`/productos/${p.id}`} className="text-ink-soft hover:text-accent">
-                  Editar
-                </Link>
-                <button type="button" onClick={onPedirConfirmacion} className="text-ink-soft hover:text-negative">
-                  Eliminar
-                </button>
-              </span>
-            )}
-          </td>
-        </>
-      )}
-    </tr>
-  )
-}
 
 export default function ProductosPage() {
   const esAdmin = useEsAdministrador() === true
@@ -382,91 +300,7 @@ export default function ProductosPage() {
         })}
       </div>
 
-      {!loading && (
-        <div className="grid gap-4 md:grid-cols-2 rise">
-          <section className="card p-5" aria-label="Productos a reponer">
-            <div className="flex items-center justify-between gap-3">
-              <h2 className="text-[15px] font-semibold text-ink">A reponer</h2>
-              <span className="chip down">{resumen.reponer.length}</span>
-            </div>
-            <p className="mt-0.5 text-xs text-ink-faint">Con stock en su mínimo o por debajo</p>
-            {resumen.reponer.length === 0 ? (
-              <p className="mt-3 text-sm text-ink-soft">Nada para reponer por ahora.</p>
-            ) : (
-              <ul className="mt-3 flex flex-col gap-1.5 text-sm">
-                {resumen.reponer.slice(0, TOP_RESUMEN).map((p) => (
-                  <li key={p.id} className="flex items-baseline justify-between gap-3">
-                    <Link href={`/productos/${p.id}`} className="truncate text-ink hover:text-accent">
-                      {p.nombre}
-                    </Link>
-                    <span className="mono shrink-0 text-xs text-ink-soft">
-                      {p.stock_actual} / mín. {p.stock_minimo}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
-            <div className="mt-4 flex flex-wrap items-center gap-4 text-sm">
-              {resumen.reponer.length > TOP_RESUMEN && (
-                <button
-                  type="button"
-                  onClick={() => verSoloEsto('reponer', 'urgente')}
-                  className="font-medium text-accent hover:underline"
-                >
-                  Ver los {resumen.reponer.length}
-                </button>
-              )}
-              {esAdmin && (
-                <Link href="/reposicion" className="text-ink-soft hover:text-accent">
-                  Armar pedido de reposición
-                </Link>
-              )}
-            </div>
-          </section>
-
-          <section className="card p-5" aria-label="Productos con más stock">
-            <h2 className="text-[15px] font-semibold text-ink">Más stock</h2>
-            <p className="mt-0.5 text-xs text-ink-faint">Sin contar servicios</p>
-            <ul className="mt-3 flex flex-col gap-1.5 text-sm">
-              {resumen.masStock.map((p) => (
-                <li key={p.id} className="flex items-baseline justify-between gap-3">
-                  <Link href={`/productos/${p.id}`} className="truncate text-ink hover:text-accent">
-                    {p.nombre}
-                  </Link>
-                  <span className="mono shrink-0 text-xs text-ink-soft">
-                    {p.stock_actual} {p.unidad_stock}
-                  </span>
-                </li>
-              ))}
-            </ul>
-            <div className="mt-4 flex flex-wrap items-center gap-4 text-sm">
-              <button
-                type="button"
-                onClick={() => verSoloEsto('con_stock', 'mas_stock')}
-                className="font-medium text-accent hover:underline"
-              >
-                Ver ranking completo
-              </button>
-              <button
-                type="button"
-                onClick={() => verSoloEsto('sin_stock', 'nombre')}
-                className="text-ink-soft hover:text-accent"
-              >
-                Sin stock ({resumen.sinStock})
-              </button>
-              {resumen.negativos > 0 && (
-                <button
-                  type="button"
-                  onClick={() => verSoloEsto('negativo', 'menos_stock')}
-                  className="text-ink-soft hover:text-negative"
-                >
-                  Stock negativo ({resumen.negativos})
-                </button>
-              )}
-            </div>
-          </section>
-        </div>
-      )}
+      {!loading && <ResumenStock resumen={resumen} esAdmin={esAdmin} onVerSoloEsto={verSoloEsto} />}
 
       <div className="flex flex-wrap items-center gap-3 rise">
         <input
