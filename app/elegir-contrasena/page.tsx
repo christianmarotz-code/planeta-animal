@@ -28,6 +28,19 @@ export default function ElegirContrasenaPage() {
     if (password.length < 8) return setError('La contraseña tiene que tener al menos 8 caracteres.')
     if (password !== confirmacion) return setError('Las contraseñas no coinciden.')
     const supabase = createClient()
+    // El cliente de @supabase/ssr usa PKCE y rechaza el formato de los links de mail
+    // (tokens en el #hash), así que armamos la sesión a mano con los tokens de la URL.
+    const params = new URLSearchParams(window.location.hash.slice(1))
+    const accessToken = params.get('access_token')
+    const refreshToken = params.get('refresh_token')
+    if (accessToken && refreshToken) {
+      const { error: errorSesion } = await supabase.auth.setSession({
+        access_token: accessToken,
+        refresh_token: refreshToken,
+      })
+      if (errorSesion) return setError(MENSAJE_VENCIDO)
+      window.history.replaceState(null, '', window.location.pathname)
+    }
     const { data } = await supabase.auth.getSession()
     if (!data.session) return setError(MENSAJE_VENCIDO)
     const { error } = await supabase.auth.updateUser({ password })
