@@ -104,7 +104,19 @@ export default function ComprasPage() {
                 {m.cantidad} {m.cantidad === 1 ? 'factura' : 'facturas'} · {m.proveedores}{' '}
                 {m.proveedores === 1 ? 'proveedor' : 'proveedores'}
               </span>
-              {esAdmin && <span className="mono text-lg font-semibold text-ink">{formatearMonto(m.total)}</span>}
+              {esAdmin && (
+                <span className="flex flex-col gap-0.5">
+                  <span className="mono text-lg font-semibold text-ink">{formatearMonto(m.total)}</span>
+                  {m.variacion !== null && (
+                    <span
+                      className={`whitespace-nowrap text-[11px] font-medium ${m.variacion >= 0 ? 'text-negative' : 'text-positive'}`}
+                      title="Contra el mes anterior (en compras, subir es gastar más)"
+                    >
+                      {m.variacion >= 0 ? '▲' : '▼'} {Math.abs(m.variacion).toFixed(0)} % vs mes anterior
+                    </span>
+                  )}
+                </span>
+              )}
             </Link>
           ))}
         </div>

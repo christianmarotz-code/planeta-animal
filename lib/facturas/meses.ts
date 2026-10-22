@@ -32,6 +32,29 @@ export interface ResumenMes {
   /** Suma de totales sin contar facturas anuladas. */
   total: number
   proveedores: number
+  /** % de cambio del total contra el mes calendario anterior; null si ese mes no tiene facturas. */
+  variacion: number | null
+}
+
+/** "2026-08" → "2026-07". */
+function mesAnterior(mes: string): string {
+  const [anio, numero] = mes.split('-').map(Number)
+  const d = new Date(anio, numero - 2, 1)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+}
+
+const DIAS_ATRAS_SOSPECHOSO = 60
+
+/**
+ * Avisa si la fecha de una factura parece un error de tipeo: futura o muy vieja.
+ * `hoy` es yyyy-mm-dd; devuelve null si la fecha es razonable.
+ */
+export function avisoFecha(fecha: string | null | undefined, hoy: string): string | null {
+  if (!fecha) return null
+  if (fecha > hoy) return 'La fecha es futura.'
+  const dias = (Date.parse(hoy) - Date.parse(fecha)) / 86_400_000
+  if (dias > DIAS_ATRAS_SOSPECHOSO) return `La fecha es de ${etiquetaMes(fecha.slice(0, 7))}, hace más de 2 meses.`
+  return null
 }
 
 /** Agrupa por mes de la fecha de la factura, del más reciente al más antiguo. */
@@ -41,16 +64,22 @@ export function resumirPorMes(facturas: FacturaCompra[]): ResumenMes[] {
     const mes = f.fecha.slice(0, 7)
     porMes.set(mes, [...(porMes.get(mes) ?? []), f])
   }
+  const totales = new Map<string, number>()
+  for (const [mes, lista] of porMes) {
+    totales.set(mes, lista.filter((f) => f.estado !== 'anulada').reduce((acc, f) => acc + f.total, 0))
+  }
   return [...porMes.entries()]
     .sort(([a], [b]) => b.localeCompare(a))
     .map(([mes, lista]) => {
-      const vigentes = lista.filter((f) => f.estado !== 'anulada')
+      const total = totales.get(mes) ?? 0
+      const previo = totales.get(mesAnterior(mes))
       return {
         mes,
         etiqueta: etiquetaMes(mes),
         cantidad: lista.length,
-        total: vigentes.reduce((acc, f) => acc + f.total, 0),
+        total,
         proveedores: new Set(lista.map((f) => f.proveedor_id)).size,
+        variacion: previo ? ((total - previo) / previo) * 100 : null,
       }
     })
 }

@@ -12,6 +12,7 @@ import type { Proveedor, Producto, TipoComprobante } from '@/types/database'
 import { useEsAdministrador } from '@/lib/hooks/useEsAdministrador'
 import { REPOSICION_DRAFT_KEY, type BorradorReposicion } from '@/lib/data/reposicion'
 import { SelectorProntoPago } from '@/components/SelectorProntoPago'
+import { avisoFecha } from '@/lib/facturas/meses'
 import { TIPOS_COMPROBANTE, itemDraftVacio, validarBorradorFactura, costoConDescuento, type ItemDraft } from '@/lib/facturas/itemDraft'
 
 export function FormularioManual() {
@@ -116,6 +117,7 @@ export function FormularioManual() {
     .map((t, indice) => ({ indice, dias: Number(t.dias), descuento: Number(t.descuento) }))
     .filter((t) => t.dias > 0 && t.descuento > 0 && t.descuento < 100)
   const descuentoElegido = tramosValidos.find((t) => t.indice === tramoElegido)?.descuento ?? 0
+  const hoy = new Date().toISOString().slice(0, 10)
   const proveedorSeleccionado = proveedores.find((p) => p.id === proveedorId) ?? null
 
   async function handleSubmit(e: React.FormEvent) {
@@ -129,6 +131,8 @@ export function FormularioManual() {
       itemsConDatos,
     })
     if (errorValidacion) return setError(errorValidacion)
+    const aviso = avisoFecha(fecha, hoy)
+    if (aviso && !window.confirm(`${aviso} ¿Guardar la factura igual?`)) return
 
     const itemsValidos = itemsConDatos
     const itemsInput: NuevaFacturaItemInput[] = itemsValidos.map((it) => ({
@@ -219,6 +223,9 @@ export function FormularioManual() {
             onChange={(e) => setFecha(e.target.value)}
             className="w-full rounded-[var(--r-sm)] border border-line bg-surface p-2.5 text-sm text-ink outline-none transition focus:border-accent"
           />
+          {avisoFecha(fecha, hoy) && (
+            <p className="text-xs text-negative sm:col-span-2 lg:col-span-4">⚠ {avisoFecha(fecha, hoy)} Revisá el año.</p>
+          )}
         </div>
 
         <table className="card w-full border-collapse overflow-hidden text-sm">

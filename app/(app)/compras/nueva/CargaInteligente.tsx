@@ -10,6 +10,7 @@ import { extraerBoleta } from '@/lib/data/boletas'
 import { emparejarProveedor, emparejarProducto } from '@/lib/data/facturaMatching'
 import { redimensionarImagen } from '@/lib/image/redimensionarImagen'
 import { TIPO_A_COMPROBANTE, type BoletaExtraida, type LineaExtraida, type TipoDocumento } from '@/lib/facturas/boletaExtraida'
+import { avisoFecha } from '@/lib/facturas/meses'
 import { procesarBoleta } from '@/lib/facturas/procesarBoleta'
 import { validarBoleta, type Alerta } from '@/lib/facturas/validacionesBoleta'
 import {
@@ -213,6 +214,8 @@ export function CargaInteligente() {
     if (!boleta.fecha) return setErrorGuardado('Falta la fecha de la boleta.')
     if (!boleta.tipo || boleta.tipo === 'otro_no_compra') return setErrorGuardado('Elegí el tipo de comprobante.')
     if (boleta.es_fiscal && !boleta.numero_comprobante) return setErrorGuardado('Falta el número de comprobante.')
+    const aviso = avisoFecha(boleta.fecha, new Date().toISOString().slice(0, 10))
+    if (aviso && !window.confirm(`${aviso} ¿Guardar la boleta igual?`)) return
 
     setGuardando(true)
     try {
@@ -392,6 +395,7 @@ export function CargaInteligente() {
                 value={boleta.fecha ?? ''}
                 onChange={(e) => patchBoleta({ fecha: e.target.value || null })}
                 className={INPUT}
+                title={avisoFecha(boleta.fecha, new Date().toISOString().slice(0, 10)) ?? undefined}
               />
               <input
                 placeholder="Condición de pago"
