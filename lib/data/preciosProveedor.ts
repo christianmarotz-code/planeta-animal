@@ -170,7 +170,7 @@ export async function importarListaPrecios(
   }
 }
 
-export interface PrecioDeFila {
+interface PrecioDeFila {
   proveedor: Proveedor
   precio: number
   actualizadoEn: string

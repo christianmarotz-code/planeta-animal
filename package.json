@@ -10,7 +10,8 @@
     "test": "vitest run",
     "e2e": "playwright test",
     "typecheck": "tsc --noEmit",
-    "check": "npm run typecheck && npm run lint && npm run test && npm run build"
+    "check": "npm run typecheck && npm run lint && npm run knip && npm run test && npm run build",
+    "knip": "knip"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.1.0",
@@ -23,6 +24,7 @@
     "react-dom": "19.3.1"
   },
   "devDependencies": {
+    "@next/env": "^16.4.2",
     "@playwright/test": "^1.64.1",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^22",
@@ -32,6 +34,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.4.2",
     "jsdom": "^30.0.1",
+    "knip": "^6.44.1",
     "tailwindcss": "^4",
     "typescript": "^5.9.3",
     "vite": "^8.2.2",

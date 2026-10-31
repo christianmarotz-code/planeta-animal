@@ -6,7 +6,7 @@ export const SIN_CLASIFICAR = 'Sin clasificar'
 // cargó la migración 0025. Las etiquetas "(mover a servicios)" no están acá a
 // propósito: marcan filas pendientes de migrar a `servicios`, no son un destino
 // válido para un producto.
-export const SUBCATEGORIAS_POR_RAMA: Record<Rama, string[]> = {
+const SUBCATEGORIAS_POR_RAMA: Record<Rama, string[]> = {
   clinica: [
     'Accesorios varios (clínica)',
     'Anestesia, soluciones y antisépticos',

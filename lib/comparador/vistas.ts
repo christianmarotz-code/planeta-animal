@@ -1,7 +1,7 @@
 import type { FilaComparador } from '@/lib/data/preciosProveedor'
 import type { Producto, Proveedor } from '@/types/database'
 
-export const DIAS_PRECIO_VIEJO = 30
+const DIAS_PRECIO_VIEJO = 30
 const MS_POR_DIA = 86_400_000
 
 export function esPrecioViejo(actualizadoEn: string, hoy: Date, dias = DIAS_PRECIO_VIEJO): boolean {

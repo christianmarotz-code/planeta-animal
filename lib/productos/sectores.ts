@@ -6,7 +6,7 @@ const SIN_CLASIFICAR = 'Sin clasificar'
 const ORDEN_RAMA = ['clinica', 'petshop']
 
 /** Valor del segmento de URL para los productos que no tienen rama. */
-export const RAMA_GENERAL = 'general'
+const RAMA_GENERAL = 'general'
 
 /** "Medicamento - antibióticos y antimicóticos" → "medicamento-antibioticos-y-antimicoticos". */
 export function slugSector(texto: string): string {

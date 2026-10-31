@@ -6,7 +6,7 @@ import type { BoletaProcesada } from './procesarBoleta'
  * revision: el documento queda en estado "revision".
  * aviso: informativo.
  */
-export type NivelAlerta = 'bloqueante' | 'revision' | 'aviso'
+type NivelAlerta = 'bloqueante' | 'revision' | 'aviso'
 
 export interface Alerta {
   nivel: NivelAlerta

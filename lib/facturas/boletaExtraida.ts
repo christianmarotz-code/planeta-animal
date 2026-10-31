@@ -24,7 +24,7 @@ export const TIPO_A_COMPROBANTE: Record<Exclude<TipoDocumento, 'otro_no_compra'>
 
 const TIPOS_FISCALES: TipoDocumento[] = ['factura_A', 'factura_B', 'factura_C', 'ticket_factura']
 
-export interface BonificacionExtraida {
+interface BonificacionExtraida {
   porcentaje: number | null
   monto: number | null
 }

@@ -1,7 +1,7 @@
 // Cálculo determinístico del precio final por línea de una boleta.
 // Todo se opera en centavos enteros; el modelo de visión nunca calcula.
 
-export interface LineaBoletaInput {
+interface LineaBoletaInput {
   cantidad: number
   precioLista: number | null
   /** Porcentajes de bonificación en el orden impreso. */
@@ -12,12 +12,12 @@ export interface LineaBoletaInput {
   esRegalo: boolean
 }
 
-export interface IvaImpreso {
+interface IvaImpreso {
   alicuota: number
   monto: number
 }
 
-export interface PercepcionImpresa {
+interface PercepcionImpresa {
   nombre: string
   monto: number
 }
@@ -29,7 +29,7 @@ export interface BoletaInput {
   totalImpreso: number
 }
 
-export interface LineaBoletaCalculada {
+interface LineaBoletaCalculada {
   neto: number
   ivaMonto: number
   percepciones: { nombre: string; monto: number }[]
@@ -71,7 +71,7 @@ export function prorratear(total: number, pesos: number[]): number[] {
 }
 
 /** Neto en centavos. Sin impreso: lista × cantidad con bonificaciones sumadas sobre lista. */
-export function calcularNetoLinea(l: LineaBoletaInput): number {
+function calcularNetoLinea(l: LineaBoletaInput): number {
   if (l.esRegalo) return 0
   if (l.netoImpreso !== null) return aCentavos(l.netoImpreso)
   const lista = (l.precioLista ?? 0) * l.cantidad

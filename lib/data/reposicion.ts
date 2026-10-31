@@ -20,7 +20,7 @@ export interface ReposicionSugerida {
 
 export const REPOSICION_DRAFT_KEY = 'reposicion-draft'
 
-export interface BorradorReposicionItem {
+interface BorradorReposicionItem {
   productoId: string
   cantidad: number
   costoUnitario: number

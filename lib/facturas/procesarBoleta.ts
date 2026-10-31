@@ -4,7 +4,7 @@ import type { BoletaExtraida } from './boletaExtraida'
 const ALICUOTA_IVA_POR_DEFECTO = 21
 
 /** Fila de la tabla "A pagar" de 4 columnas. */
-export interface FilaTabla {
+interface FilaTabla {
   cantidad: number
   producto: string
   precioUnitarioFinal: number
