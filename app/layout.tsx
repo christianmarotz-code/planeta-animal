@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -17,7 +18,9 @@ export const metadata: Metadata = {
   description: "Panel de gestión de Planeta Animal",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  // El proxy genera un nonce por request para la CSP; el script en línea de abajo lo necesita.
+  const nonce = (await headers()).get("x-nonce") ?? undefined
   return (
     <html
       lang="es"
@@ -26,6 +29,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <head>
         <script
+          nonce={nonce}
           dangerouslySetInnerHTML={{
             __html: `try{if(localStorage.getItem('tema')==='claro')document.documentElement.dataset.theme='light'}catch(e){}try{var h=location.hash;if(/type=(invite|recovery)|error_code=otp_expired/.test(h)&&location.pathname!=='/elegir-contrasena')location.replace('/elegir-contrasena'+h)}catch(e){}`,
           }}

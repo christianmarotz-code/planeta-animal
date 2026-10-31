@@ -66,6 +66,11 @@ export async function POST(request: Request) {
     ? body.rutas_archivo.filter((r): r is string => typeof r === 'string' && r.length > 0)
     : []
   const proveedor = comoProveedorDeclarado(body?.proveedor_declarado)
+  // Las rutas vienen del cliente: solo se aceptan rutas relativas simples dentro del bucket.
+  const rutaInvalida = (r: string) => r.length > 300 || r.startsWith('/') || r.split('/').includes('..')
+  if (rutas.some(rutaInvalida)) {
+    return NextResponse.json({ error: 'Ruta de archivo inválida' }, { status: 400 })
+  }
   if (rutas.length === 0 || rutas.length > MAX_PAGINAS) {
     return NextResponse.json({ error: `Enviá entre 1 y ${MAX_PAGINAS} archivos en rutas_archivo` }, { status: 400 })
   }
