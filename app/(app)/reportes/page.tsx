@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { listarFacturas, listarItemsFactura } from '@/lib/data/facturas'
 import { listarProveedores } from '@/lib/data/proveedores'
 import { listarProductos } from '@/lib/data/productos'
@@ -149,6 +150,16 @@ export default function ReportesPage() {
         </p>
         <h1 className="mt-1 text-[27px] text-ink">Reportes</h1>
       </div>
+
+      <Link href="/reportes/mensual" className="card rise flex items-center justify-between p-5 transition hover:-translate-y-0.5 hover:border-accent">
+        <span className="flex flex-col gap-0.5">
+          <span className="text-[17px] font-semibold text-ink">Cierre mensual</span>
+          <span className="text-sm text-ink-soft">
+            Compras, ventas, gastos, proveedores y stock de cada mes, comparado con los demás.
+          </span>
+        </span>
+        <span className="text-ink-faint">→</span>
+      </Link>
 
       <div className="shell w-fit rise">
         <div className="core">
