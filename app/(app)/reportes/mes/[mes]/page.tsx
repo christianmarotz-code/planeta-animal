@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
+import { useParams } from 'next/navigation'
 import { listarFacturas, listarItemsFactura } from '@/lib/data/facturas'
 import { listarProveedores } from '@/lib/data/proveedores'
 import { listarProductos } from '@/lib/data/productos'
@@ -22,7 +23,7 @@ import {
 } from '@/lib/reportes/mensual'
 import { useEsAdministrador } from '@/lib/hooks/useEsAdministrador'
 import { SkeletonPage, SkeletonList } from '@/components/Skeleton'
-import { NOMBRE_CATEGORIA } from '../../gastos/categorias'
+import { NOMBRE_CATEGORIA } from '../../../gastos/categorias'
 
 const ROTULO = 'text-[11.5px] font-semibold uppercase tracking-[0.14em] text-ink-faint'
 const NOMBRE_MEDIO = { efectivo: 'Efectivo', tarjeta: 'Tarjeta', transferencia: 'Transferencia' } as const
@@ -63,11 +64,11 @@ function Lista({ filas, vacio }: { filas: { clave: string; izq: React.ReactNode;
   )
 }
 
-export default function ReporteMensualPage() {
+export default function ReporteDelMesPage() {
+  const { mes: mesActivo } = useParams<{ mes: string }>()
   const esAdmin = useEsAdministrador()
   const [datos, setDatos] = useState<DatosReporte | null>(null)
   const [comparador, setComparador] = useState<FilaComparador[]>([])
-  const [mes, setMes] = useState('')
 
   useEffect(() => {
     if (!esAdmin) return
@@ -87,8 +88,7 @@ export default function ReporteMensualPage() {
   }, [esAdmin])
 
   const historial = useMemo(() => (datos ? armarHistorial(datos) : []), [datos])
-  const mesActivo = mes || historial[0]?.mes || ''
-  const reporte = useMemo(() => (datos && mesActivo ? armarReporteMensual(mesActivo, datos) : null), [datos, mesActivo])
+  const reporte = useMemo(() => (datos ? armarReporteMensual(mesActivo, datos) : null), [datos, mesActivo])
   const previo = historial.find((h) => h.mes === mesAnterior(mesActivo))
   const peor = mesQueMasSeGasto(historial)
   const ranking = useMemo(() => rankingProveedoresComparador(comparador), [comparador])
@@ -111,25 +111,12 @@ export default function ReporteMensualPage() {
           <Link href="/reportes" className={`${ROTULO} hover:text-ink`}>
             ← Reportes
           </Link>
-          <h1 className="mt-1 text-[27px] text-ink">Cierre mensual{mesActivo && ` — ${etiquetaMes(mesActivo)}`}</h1>
+          <h1 className="mt-1 text-[27px] text-ink">{etiquetaMes(mesActivo)}</h1>
         </div>
-        {historial.length > 0 && (
-          <select
-            value={mesActivo}
-            onChange={(e) => setMes(e.target.value)}
-            className="w-fit rounded-[var(--r-sm)] border border-line bg-surface p-2.5 text-sm text-ink outline-none transition focus:border-accent"
-          >
-            {historial.map((h) => (
-              <option key={h.mes} value={h.mes}>
-                {etiquetaMes(h.mes)}
-              </option>
-            ))}
-          </select>
-        )}
       </div>
 
       {!reporte ? (
-        <p className="card rise px-5 py-6 text-sm text-ink-faint">Todavía no hay movimientos para armar un reporte.</p>
+        <p className="card rise px-5 py-6 text-sm text-ink-faint">Sin movimientos en este mes.</p>
       ) : (
         <>
           <div className="grid gap-4 rise sm:grid-cols-2 lg:grid-cols-4">
@@ -230,40 +217,6 @@ export default function ReporteMensualPage() {
                 Más barato = tiene el menor precio entre varios proveedores. Cotizados = productos con precio cargado. Es la foto de hoy, no del mes.
               </p>
             </Tarjeta>
-          </div>
-
-          <div className="shell rise overflow-x-auto">
-            <div className="core">
-              <p className={`mb-3 ${ROTULO}`}>Mes contra mes</p>
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b-2 border-line-strong text-left">
-                    {['Mes', 'Compras', 'Gastos', 'Egresos', 'Ventas', 'Balance'].map((h) => (
-                      <th key={h} className="px-3 py-2 text-[11.5px] font-semibold uppercase tracking-[0.1em] text-ink-faint">
-                        {h}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {historial.map((h) => (
-                    <tr key={h.mes} className={`border-b border-line last:border-0 ${h.mes === mesActivo ? 'bg-accent/5' : ''}`}>
-                      <td className="px-3 py-2 text-ink">
-                        {etiquetaMes(h.mes)}
-                        {h.mes === peor?.mes && <span className="chip down ml-2">Más gasto</span>}
-                      </td>
-                      <td className="mono px-3 py-2 text-ink-soft">{formatearMonto(h.compras)}</td>
-                      <td className="mono px-3 py-2 text-ink-soft">{formatearMonto(h.gastos)}</td>
-                      <td className="mono px-3 py-2 font-semibold text-ink">{formatearMonto(h.egresos)}</td>
-                      <td className="mono px-3 py-2 text-ink-soft">{formatearMonto(h.ventas)}</td>
-                      <td className={`mono px-3 py-2 font-semibold ${h.balance >= 0 ? 'text-positive' : 'text-negative'}`}>
-                        {formatearMonto(h.balance)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
           </div>
         </>
       )}

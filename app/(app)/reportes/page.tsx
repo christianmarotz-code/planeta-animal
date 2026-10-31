@@ -1,347 +1,100 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { listarFacturas, listarItemsFactura } from '@/lib/data/facturas'
-import { listarProveedores } from '@/lib/data/proveedores'
-import { listarProductos } from '@/lib/data/productos'
-import { listarVentas, listarItemsVenta } from '@/lib/data/ventas'
-import { listarServicios } from '@/lib/data/servicios'
-import {
-  calcularGastoPorProveedor,
-  calcularValorStock,
-  calcularGastoPorSemana,
-  calcularGastoPorMes,
-  calcularGastoPorDiaSemana,
-  anosConFacturas,
-  calcularGastoPorTrimestre,
-  calcularSemanaGanadoraPorMes,
-  calcularProductosMasComprados,
-  calcularFrecuenciaServicioPorSemana,
-} from '@/lib/data/reportes'
+import { listarFacturas } from '@/lib/data/facturas'
+import { listarVentas } from '@/lib/data/ventas'
+import { listarGastos } from '@/lib/data/gastos'
+import { formatearMonto } from '@/lib/calc/factura'
+import { etiquetaMes } from '@/lib/facturas/meses'
+import { armarHistorial, mesAnterior, mesQueMasSeGasto, variacionPorcentual } from '@/lib/reportes/mensual'
 import { useEsAdministrador } from '@/lib/hooks/useEsAdministrador'
-import { SkeletonPage, SkeletonStatCards, SkeletonTable } from '@/components/Skeleton'
-import type { FacturaCompra, Proveedor, Producto, ItemFactura, Venta, Servicio, ItemVenta } from '@/types/database'
-
-const NOMBRES_MES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
-const ABREV_DIA: Record<string, string> = {
-  Lunes: 'Lun',
-  Martes: 'Mar',
-  Miércoles: 'Mié',
-  Jueves: 'Jue',
-  Viernes: 'Vie',
-  Sábado: 'Sáb',
-  Domingo: 'Dom',
-}
-
-function GraficoBarras({
-  titulo,
-  subtitulo,
-  datos,
-}: {
-  titulo: string
-  subtitulo: string
-  datos: { etiqueta: string; total: number }[]
-}) {
-  const maximo = Math.max(1, ...datos.map((d) => d.total))
-  return (
-    <div className="shell rise">
-      <div className="core">
-        <div className="mb-6 flex items-center justify-between">
-          <p className="text-[11.5px] font-semibold uppercase tracking-[0.14em] text-ink-faint">
-            {titulo}
-          </p>
-          <span className="mono text-xs text-ink-faint">{subtitulo}</span>
-        </div>
-        <div className="flex h-36 items-end gap-3">
-          {datos.map((d, i) => (
-            <div key={`${d.etiqueta}-${i}`} className="flex flex-1 flex-col items-center gap-2">
-              <div
-                className="w-full rounded-t-[8px] bg-accent transition-[height] duration-500"
-                style={{ height: `${Math.max(4, (d.total / maximo) * 100)}%` }}
-                title={`$${d.total.toLocaleString('es-AR')}`}
-              />
-              <span className="mono text-[10px] text-ink-faint">{d.etiqueta}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  )
-}
+import { SkeletonPage, SkeletonList } from '@/components/Skeleton'
+import type { FacturaCompra, Gasto, Venta } from '@/types/database'
 
 export default function ReportesPage() {
   const esAdmin = useEsAdministrador()
-  const [facturas, setFacturas] = useState<FacturaCompra[]>([])
-  const [proveedores, setProveedores] = useState<Proveedor[]>([])
-  const [productos, setProductos] = useState<Producto[]>([])
-  const [items, setItems] = useState<ItemFactura[]>([])
-  const [ventas, setVentas] = useState<Venta[]>([])
-  const [servicios, setServicios] = useState<Servicio[]>([])
-  const [itemsVenta, setItemsVenta] = useState<ItemVenta[]>([])
-  const [anioSeleccionado, setAnioSeleccionado] = useState<number | null>(null)
+  const [datos, setDatos] = useState<{ facturas: FacturaCompra[]; ventas: Venta[]; gastos: Gasto[] } | null>(null)
 
   useEffect(() => {
-    listarFacturas().then(setFacturas)
-    listarProveedores().then(setProveedores)
-    listarProductos().then(setProductos)
-    listarItemsFactura().then(setItems)
-    listarVentas().then(setVentas)
-    listarServicios().then(setServicios)
-    listarItemsVenta().then(setItemsVenta)
-  }, [])
+    if (!esAdmin) return
+    Promise.all([listarFacturas(), listarVentas(), listarGastos()]).then(([facturas, ventas, gastos]) =>
+      setDatos({ facturas, ventas, gastos })
+    )
+  }, [esAdmin])
 
-  if (esAdmin === null) {
+  const historial = useMemo(() => (datos ? armarHistorial(datos) : []), [datos])
+  const peor = mesQueMasSeGasto(historial)
+
+  if (esAdmin === null || (esAdmin && !datos)) {
     return (
       <SkeletonPage>
-        <SkeletonStatCards cantidad={1} />
-        <SkeletonTable filas={6} columnas={2} />
+        <SkeletonList filas={6} />
       </SkeletonPage>
     )
   }
   if (esAdmin === false) {
-    return (
-      <p className="p-8 text-sm text-negative">
-        Acceso restringido — contactá a un administrador.
-      </p>
-    )
+    return <p className="p-8 text-sm text-negative">Acceso restringido — contactá a un administrador.</p>
   }
-
-  const gastoPorProveedor = calcularGastoPorProveedor(facturas, proveedores)
-  const valorStock = calcularValorStock(productos)
-  const productosStockBajo = productos.filter((p) => p.stock_actual <= p.stock_minimo)
-
-  const datosPorMes = calcularGastoPorMes(facturas, 12).map((m) => ({
-    etiqueta: NOMBRES_MES[Number(m.mes.slice(5, 7)) - 1],
-    total: m.total,
-  }))
-  const datosPorSemana = calcularGastoPorSemana(facturas, 12).map((s) => ({
-    etiqueta: new Date(s.semana).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' }),
-    total: s.total,
-  }))
-  const datosPorDiaSemana = calcularGastoPorDiaSemana(facturas, 12).map((d) => ({
-    etiqueta: ABREV_DIA[d.dia],
-    total: d.total,
-  }))
-
-  const lavado = servicios.find((s) => s.nombre.toLowerCase() === 'lavado')
-  const datosLavadoPorSemana = lavado
-    ? calcularFrecuenciaServicioPorSemana(ventas, itemsVenta, lavado.id, 12)
-    : []
-
-  const anios = anosConFacturas(facturas)
-  const anioActivo = anioSeleccionado ?? anios[0] ?? new Date().getFullYear()
-  const opcionesAnio = anios.length > 0 ? anios : [anioActivo]
-
-  const datosPorTrimestre = calcularGastoPorTrimestre(facturas, anioActivo).map((t) => ({
-    etiqueta: t.trimestre,
-    total: t.total,
-  }))
-  const semanaGanadoraPorMes = calcularSemanaGanadoraPorMes(facturas, anioActivo)
-  const productosRanking = calcularProductosMasComprados(items, facturas, productos, anioActivo)
-  const masComprados = productosRanking.slice(0, 10)
-  const menosComprados = productosRanking.slice(Math.max(10, productosRanking.length - 10)).reverse()
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-5 p-5 sm:p-8">
-      <div className="rise">
-        <p className="text-[11.5px] font-semibold uppercase tracking-[0.14em] text-ink-faint">
-          Gestión
+      <div className="flex items-center justify-between rise">
+        <div>
+          <p className="text-[11.5px] font-semibold uppercase tracking-[0.14em] text-ink-faint">Gestión</p>
+          <h1 className="mt-1 text-[27px] text-ink">Reportes</h1>
+        </div>
+        <Link href="/reportes/general" className="pill-btn">
+          Análisis general
+        </Link>
+      </div>
+
+      {peor && (
+        <p className="card rise px-5 py-4 text-sm text-ink-soft">
+          El mes que más se gastó fue <span className="font-semibold text-ink">{etiquetaMes(peor.mes)}</span>:{' '}
+          <span className="mono font-semibold text-ink">{formatearMonto(peor.egresos)}</span> entre compras y gastos.
         </p>
-        <h1 className="mt-1 text-[27px] text-ink">Reportes</h1>
-      </div>
-
-      <Link href="/reportes/mensual" className="card rise flex items-center justify-between p-5 transition hover:-translate-y-0.5 hover:border-accent">
-        <span className="flex flex-col gap-0.5">
-          <span className="text-[17px] font-semibold text-ink">Cierre mensual</span>
-          <span className="text-sm text-ink-soft">
-            Compras, ventas, gastos, proveedores y stock de cada mes, comparado con los demás.
-          </span>
-        </span>
-        <span className="text-ink-faint">→</span>
-      </Link>
-
-      <div className="shell w-fit rise">
-        <div className="core">
-          <p className="text-[11.5px] font-semibold uppercase tracking-[0.14em] text-ink-faint">
-            Valor total del stock actual
-          </p>
-          <p className="mono mt-2 text-[40px] font-medium leading-none text-ink">
-            ${valorStock.toLocaleString('es-AR')}
-          </p>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-        <div className="shell rise">
-          <div className="core">
-            <p className="mb-3 text-[11.5px] font-semibold uppercase tracking-[0.14em] text-ink-faint">
-              Gasto en compras por proveedor
-            </p>
-            <ul className="divide-y divide-line">
-              {gastoPorProveedor.map((g) => (
-                <li key={g.proveedor} className="flex justify-between py-2.5 text-sm">
-                  <span className="text-ink">{g.proveedor}</span>
-                  <span className="mono font-semibold text-ink">${g.total.toLocaleString('es-AR')}</span>
-                </li>
-              ))}
-              {gastoPorProveedor.length === 0 && (
-                <li className="py-2.5 text-sm text-ink-faint">Sin compras aún.</li>
-              )}
-            </ul>
-          </div>
-        </div>
-
-        <div className="shell rise">
-          <div className="core">
-            <p className="mb-3 text-[11.5px] font-semibold uppercase tracking-[0.14em] text-ink-faint">
-              Productos con stock bajo
-            </p>
-            <ul className="divide-y divide-line">
-              {productosStockBajo.map((p) => (
-                <li key={p.id} className="flex items-center justify-between py-2.5 text-sm">
-                  <span className="text-ink">{p.nombre}</span>
-                  <span className="chip down">
-                    {p.stock_actual} / {p.stock_minimo} {p.unidad_stock}
-                  </span>
-                </li>
-              ))}
-              {productosStockBajo.length === 0 && (
-                <li className="py-2.5 text-sm text-ink-faint">Ningún producto está bajo el mínimo.</li>
-              )}
-            </ul>
-          </div>
-        </div>
-      </div>
-
-      <GraficoBarras titulo="Gasto por mes" subtitulo="últimos 12 meses" datos={datosPorMes} />
-      <GraficoBarras titulo="Gasto por semana" subtitulo="últimas 12 semanas" datos={datosPorSemana} />
-      <GraficoBarras titulo="Gasto por día de la semana" subtitulo="últimos 12 meses" datos={datosPorDiaSemana} />
-
-      {datosLavadoPorSemana.length > 0 && (
-        <div className="shell rise">
-          <div className="core">
-            <div className="mb-6 flex items-center justify-between">
-              <p className="text-[11.5px] font-semibold uppercase tracking-[0.14em] text-ink-faint">
-                Lavados por semana
-              </p>
-              <span className="mono text-xs text-ink-faint">últimas 12 semanas</span>
-            </div>
-            <div className="flex h-36 items-end gap-3">
-              {datosLavadoPorSemana.map((d) => {
-                const maximo = Math.max(...datosLavadoPorSemana.map((x) => x.cantidadTotal), 1)
-                return (
-                  <div key={d.semana} className="flex flex-1 flex-col items-center gap-2">
-                    <div
-                      className="w-full rounded-t-[8px] bg-accent transition-[height] duration-500"
-                      style={{ height: `${Math.max(4, (d.cantidadTotal / maximo) * 100)}%` }}
-                      title={`${d.cantidadTotal} animales (${d.vecesVendido} ventas)`}
-                    />
-                    <span className="mono text-[10px] text-ink-faint">
-                      {new Date(d.semana).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' })}
-                    </span>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        </div>
       )}
 
-      <div className="flex items-center justify-between rise">
-        <p className="text-[11.5px] font-semibold uppercase tracking-[0.14em] text-ink-faint">
-          Análisis anual
-        </p>
-        <select
-          value={anioActivo}
-          onChange={(e) => setAnioSeleccionado(Number(e.target.value))}
-          className="rounded-[var(--r-sm)] border border-line bg-surface p-2 text-sm text-ink outline-none focus:border-accent"
-        >
-          {opcionesAnio.map((a) => (
-            <option key={a} value={a}>
-              {a}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      <GraficoBarras titulo="Gasto por trimestre" subtitulo={String(anioActivo)} datos={datosPorTrimestre} />
-
-      <div className="shell rise overflow-x-auto">
-        <div className="core">
-          <p className="mb-3 text-[11.5px] font-semibold uppercase tracking-[0.14em] text-ink-faint">
-            Semana que más gastó, por mes
-          </p>
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b-2 border-line-strong text-left">
-                <th className="px-3 py-2 text-[11.5px] font-semibold uppercase tracking-[0.1em] text-ink-faint">
-                  Mes
-                </th>
-                <th className="px-3 py-2 text-[11.5px] font-semibold uppercase tracking-[0.1em] text-ink-faint">
-                  Semana ganadora
-                </th>
-                <th className="px-3 py-2 text-[11.5px] font-semibold uppercase tracking-[0.1em] text-ink-faint">
-                  Total
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {semanaGanadoraPorMes.map((s) => (
-                <tr key={s.mes} className="border-b border-line last:border-0">
-                  <td className="px-3 py-2 text-ink">{NOMBRES_MES[Number(s.mes.slice(5, 7)) - 1]}</td>
-                  <td className="mono px-3 py-2 text-ink-soft">
-                    {s.semana === 0 ? '—' : `Semana ${s.semana}`}
-                  </td>
-                  <td className="mono px-3 py-2 text-ink">
-                    {s.semana === 0 ? '—' : `$${s.total.toLocaleString('es-AR')}`}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {historial.length === 0 ? (
+        <p className="card rise px-5 py-6 text-sm text-ink-faint">Sin movimientos aún.</p>
+      ) : (
+        <div className="grid gap-4 rise sm:grid-cols-2 lg:grid-cols-3">
+          {historial.map((m) => {
+            const v = variacionPorcentual(m.egresos, historial.find((h) => h.mes === mesAnterior(m.mes))?.egresos)
+            return (
+              <Link
+                key={m.mes}
+                href={`/reportes/mes/${m.mes}`}
+                className="card flex flex-col gap-3 p-5 transition hover:-translate-y-0.5 hover:border-accent"
+              >
+                <span className="flex items-center justify-between">
+                  <span className="text-[17px] font-semibold text-ink">{etiquetaMes(m.mes)}</span>
+                  {m.mes === peor?.mes && <span className="chip down">Más gasto</span>}
+                </span>
+                <span className="flex flex-col gap-0.5">
+                  <span className="text-xs text-ink-soft">Egresos (compras + gastos)</span>
+                  <span className="mono text-lg font-semibold text-ink">{formatearMonto(m.egresos)}</span>
+                  {v !== null && (
+                    <span
+                      className={`whitespace-nowrap text-[11px] font-medium ${v >= 0 ? 'text-negative' : 'text-positive'}`}
+                      title="Contra el mes anterior (subir es gastar más)"
+                    >
+                      {v >= 0 ? '▲' : '▼'} {Math.abs(v).toFixed(0)} % vs mes anterior
+                    </span>
+                  )}
+                </span>
+                <span className="flex justify-between text-sm text-ink-soft">
+                  <span>Ventas {formatearMonto(m.ventas)}</span>
+                  <span className={m.balance >= 0 ? 'text-positive' : 'text-negative'}>
+                    Balance {formatearMonto(m.balance)}
+                  </span>
+                </span>
+              </Link>
+            )
+          })}
         </div>
-      </div>
-
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-        <div className="shell rise">
-          <div className="core">
-            <p className="mb-3 text-[11.5px] font-semibold uppercase tracking-[0.14em] text-ink-faint">
-              Productos más comprados
-            </p>
-            <ul className="divide-y divide-line">
-              {masComprados.map((p, i) => (
-                <li key={`${p.producto}-${i}`} className="flex items-center justify-between py-2.5 text-sm">
-                  <span className="text-ink">{p.producto}</span>
-                  <span className="mono font-semibold text-ink">{p.cantidad}</span>
-                </li>
-              ))}
-              {masComprados.length === 0 && (
-                <li className="py-2.5 text-sm text-ink-faint">Sin compras en {anioActivo}.</li>
-              )}
-            </ul>
-          </div>
-        </div>
-
-        <div className="shell rise">
-          <div className="core">
-            <p className="mb-3 text-[11.5px] font-semibold uppercase tracking-[0.14em] text-ink-faint">
-              Productos menos comprados
-            </p>
-            <ul className="divide-y divide-line">
-              {menosComprados.map((p, i) => (
-                <li key={`${p.producto}-${i}`} className="flex items-center justify-between py-2.5 text-sm">
-                  <span className="text-ink">{p.producto}</span>
-                  <span className="mono text-ink-soft">{p.cantidad}</span>
-                </li>
-              ))}
-              {menosComprados.length === 0 && (
-                <li className="py-2.5 text-sm text-ink-faint">Sin compras en {anioActivo}.</li>
-              )}
-            </ul>
-          </div>
-        </div>
-      </div>
+      )}
     </div>
   )
 }
