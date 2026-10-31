@@ -4,16 +4,12 @@ import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { listarGastos } from '@/lib/data/gastos'
 import type { Gasto, CategoriaGasto } from '@/types/database'
+import { formatearMonto } from '@/lib/calc/factura'
+import { resumirGastosPorMes } from '@/lib/gastos/meses'
+import { FilaGasto } from './FilaGasto'
+import { NOMBRE_CATEGORIA } from './categorias'
 import { useEsAdministrador } from '@/lib/hooks/useEsAdministrador'
 import { SkeletonPage, SkeletonList } from '@/components/Skeleton'
-
-const NOMBRE_CATEGORIA: Record<CategoriaGasto, string> = {
-  combustible: 'Combustible',
-  servicios: 'Servicios (luz/gas/agua/internet)',
-  indumentaria: 'Indumentaria',
-  impuestos: 'Impuestos',
-  otro: 'Otro',
-}
 
 export default function GastosPage() {
   const esAdmin = useEsAdministrador()
@@ -50,6 +46,7 @@ export default function GastosPage() {
     )
   }
 
+  const meses = resumirGastosPorMes(gastos)
   const total = gastosFiltrados.reduce((acc, g) => acc + g.monto, 0)
 
   return (
@@ -89,27 +86,48 @@ export default function GastosPage() {
           </select>
         </div>
         <p className="text-sm text-ink-soft">
-          Total: <span className="mono font-semibold text-ink">${total.toLocaleString('es-AR')}</span>
+          Total: <span className="mono font-semibold text-ink">{formatearMonto(total)}</span>
         </p>
       </div>
 
-      <div className="card rise divide-y divide-line">
-        {gastosFiltrados.map((g) => (
-          <div key={g.id} className="flex items-center justify-between px-5 py-3.5 text-sm">
-            <span className="text-ink">
-              <span className="mono text-ink-faint">{g.fecha}</span> — {g.concepto}
-              {g.proveedor && <span className="text-ink-faint"> ({g.proveedor})</span>}
-              <span className="chip ml-2">{NOMBRE_CATEGORIA[g.categoria]}</span>
-            </span>
-            <span className="mono font-semibold text-ink">${g.monto.toLocaleString('es-AR')}</span>
-          </div>
-        ))}
-        {gastosFiltrados.length === 0 && (
-          <p className="px-5 py-6 text-sm text-ink-faint">
-            {gastos.length === 0 ? 'Sin gastos aún.' : 'Sin gastos que coincidan con la búsqueda.'}
-          </p>
-        )}
-      </div>
+      {busqueda.trim() ? (
+        <div className="card rise divide-y divide-line">
+          {gastosFiltrados.map((g) => (
+            <FilaGasto key={g.id} gasto={g} />
+          ))}
+          {gastosFiltrados.length === 0 && (
+            <p className="px-5 py-6 text-sm text-ink-faint">Sin gastos que coincidan con la búsqueda.</p>
+          )}
+        </div>
+      ) : meses.length === 0 ? (
+        <p className="card rise px-5 py-6 text-sm text-ink-faint">Sin gastos aún.</p>
+      ) : (
+        <div className="grid gap-4 rise sm:grid-cols-2 lg:grid-cols-3">
+          {meses.map((m) => (
+            <Link
+              key={m.mes}
+              href={`/gastos/mes/${m.mes}`}
+              className="card flex flex-col gap-3 p-5 transition hover:-translate-y-0.5 hover:border-accent"
+            >
+              <span className="text-[17px] font-semibold text-ink">{m.etiqueta}</span>
+              <span className="text-sm text-ink-soft">
+                {m.cantidad} {m.cantidad === 1 ? 'gasto' : 'gastos'}
+              </span>
+              <span className="flex flex-col gap-0.5">
+                <span className="mono text-lg font-semibold text-ink">{formatearMonto(m.total)}</span>
+                {m.variacion !== null && (
+                  <span
+                    className={`whitespace-nowrap text-[11px] font-medium ${m.variacion >= 0 ? 'text-negative' : 'text-positive'}`}
+                    title="Contra el mes anterior (subir es gastar más)"
+                  >
+                    {m.variacion >= 0 ? '▲' : '▼'} {Math.abs(m.variacion).toFixed(0)} % vs mes anterior
+                  </span>
+                )}
+              </span>
+            </Link>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
