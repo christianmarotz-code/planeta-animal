@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createHash } from 'node:crypto'
 import Anthropic from '@anthropic-ai/sdk'
 import { requerirAdministrador } from '@/lib/auth/requerirAdministrador'
+import { limitarUso } from '@/lib/auth/limitarUso'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { HERRAMIENTA_EXTRAER_BOLETA, sanearBoletaExtraida } from '@/lib/facturas/boletaExtraida'
 import { procesarBoleta } from '@/lib/facturas/procesarBoleta'
@@ -16,6 +17,9 @@ export const maxDuration = 60
 
 const SEGUNDOS_VALIDEZ_URL_FIRMADA = 300
 const MAX_PAGINAS = 6
+// Cada llamada cuesta plata en la API de Anthropic: tope por administrador.
+const MAX_LLAMADAS = 30
+const VENTANA_SEGUNDOS = 60 * 60
 const MODELO = 'claude-sonnet-5-5'
 
 const TIPOS_IMAGEN = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'] as const
@@ -50,6 +54,9 @@ function comoProveedorDeclarado(v: unknown): ProveedorDeclarado | null {
 export async function POST(request: Request) {
   const { error } = await requerirAdministrador()
   if (error) return error
+
+  const excedido = await limitarUso('extraer-boleta', MAX_LLAMADAS, VENTANA_SEGUNDOS)
+  if (excedido) return excedido
 
   const body = (await request.json().catch(() => null)) as {
     rutas_archivo?: unknown

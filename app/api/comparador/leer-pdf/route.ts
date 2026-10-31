@@ -1,14 +1,20 @@
 import { NextResponse } from 'next/server'
 import { requerirSesion } from '@/lib/auth/requerirSesion'
+import { limitarUso } from '@/lib/auth/limitarUso'
 import { extraerTablaPDF } from '@/lib/pdf/extraerTablaPDF'
 
 export const maxDuration = 60
 
 const TAMANO_MAXIMO_BYTES = 15 * 1024 * 1024
+const MAX_LLAMADAS = 20
+const VENTANA_SEGUNDOS = 10 * 60
 
 export async function POST(request: Request) {
   const { error } = await requerirSesion()
   if (error) return error
+
+  const excedido = await limitarUso('leer-pdf', MAX_LLAMADAS, VENTANA_SEGUNDOS)
+  if (excedido) return excedido
 
   const formData = await request.formData().catch(() => null)
   const archivo = formData?.get('archivo')
