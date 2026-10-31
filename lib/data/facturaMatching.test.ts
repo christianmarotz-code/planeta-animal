@@ -35,6 +35,7 @@ function producto(id: string, nombre: string): Producto {
     id,
     nombre,
     categoria: null,
+    subcategoria: null,
     rama: null,
     unidad_compra: 'unidad',
     unidad_stock: 'unidad',

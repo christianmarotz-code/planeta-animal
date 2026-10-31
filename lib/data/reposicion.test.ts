@@ -8,6 +8,7 @@ function producto(id: string, stockActual: number, stockMinimo: number, nombre =
     id,
     nombre,
     categoria: null,
+    subcategoria: null,
     rama: null,
     unidad_compra: 'unidad',
     unidad_stock: 'unidad',

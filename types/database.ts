@@ -1,3 +1,5 @@
+import type { Database as BaseGenerada } from './supabase'
+
 export interface Proveedor {
   id: string
   nombre: string
@@ -31,7 +33,7 @@ export interface Producto {
   nombre: string
   categoria: string | null
   rama: Rama | null
-  subcategoria?: string | null
+  subcategoria: string | null
   unidad_compra: string
   unidad_stock: string
   factor_conversion: number
@@ -235,42 +237,47 @@ export interface ItemVenta {
   subtotal: number
 }
 
+
+type TablasBase = BaseGenerada['public']['Tables']
+
+// Fila con los tipos precisos de la app. Si sus columnas dejan de coincidir con las de la base,
+// el tipo pasa a ser un mensaje de error y el typecheck falla donde se use la tabla.
+type FilaDe<N extends keyof TablasBase, R> = [keyof R] extends [keyof TablasBase[N]['Row']]
+  ? [keyof TablasBase[N]['Row']] extends [keyof R]
+    ? R
+    : { error: `Faltan columnas de ${N} en types/database.ts` }
+  : { error: `Sobran columnas de ${N} en types/database.ts` }
+
+// Insert y Update salen tal cual de la base, así se exigen los campos obligatorios.
+type Tabla<N extends keyof TablasBase, R> = {
+  Row: FilaDe<N, R>
+  Insert: TablasBase[N]['Insert']
+  Update: TablasBase[N]['Update']
+  Relationships: TablasBase[N]['Relationships']
+}
+
 export interface Database {
+  __InternalSupabase: BaseGenerada['__InternalSupabase']
   public: {
     Tables: {
-      proveedores: { Row: Proveedor; Insert: Partial<Proveedor>; Update: Partial<Proveedor> }
-      productos: { Row: Producto; Insert: Partial<Producto>; Update: Partial<Producto> }
-      facturas_compra: {
-        Row: FacturaCompra
-        Insert: Partial<FacturaCompra>
-        Update: Partial<FacturaCompra>
-      }
-      items_factura: {
-        Row: ItemFactura
-        Insert: Partial<ItemFactura>
-        Update: Partial<ItemFactura>
-      }
-      movimientos_stock: {
-        Row: MovimientoStock
-        Insert: Partial<MovimientoStock>
-        Update: Partial<MovimientoStock>
-      }
-      perfiles: { Row: Perfil; Insert: Partial<Perfil>; Update: Partial<Perfil> }
-      gastos: { Row: Gasto; Insert: Partial<Gasto>; Update: Partial<Gasto> }
-      precios_proveedor: {
-        Row: PrecioProveedor
-        Insert: Partial<PrecioProveedor>
-        Update: Partial<PrecioProveedor>
-      }
-      registro_cambios: {
-        Row: RegistroCambio
-        Insert: Partial<RegistroCambio>
-        Update: Partial<RegistroCambio>
-      }
-      servicios: { Row: Servicio; Insert: Partial<Servicio>; Update: Partial<Servicio> }
-      clientes: { Row: Cliente; Insert: Partial<Cliente>; Update: Partial<Cliente> }
-      ventas: { Row: Venta; Insert: Partial<Venta>; Update: Partial<Venta> }
-      items_venta: { Row: ItemVenta; Insert: Partial<ItemVenta>; Update: Partial<ItemVenta> }
+      proveedores: Tabla<'proveedores', Proveedor>
+      productos: Tabla<'productos', Producto>
+      facturas_compra: Tabla<'facturas_compra', FacturaCompra>
+      items_factura: Tabla<'items_factura', ItemFactura>
+      entradas_stock_sugeridas: Tabla<'entradas_stock_sugeridas', EntradaStockSugerida>
+      movimientos_stock: Tabla<'movimientos_stock', MovimientoStock>
+      perfiles: Tabla<'perfiles', Perfil>
+      gastos: Tabla<'gastos', Gasto>
+      precios_proveedor: Tabla<'precios_proveedor', PrecioProveedor>
+      registro_cambios: Tabla<'registro_cambios', RegistroCambio>
+      servicios: Tabla<'servicios', Servicio>
+      clientes: Tabla<'clientes', Cliente>
+      ventas: Tabla<'ventas', Venta>
+      items_venta: Tabla<'items_venta', ItemVenta>
     }
+    Views: BaseGenerada['public']['Views']
+    Functions: BaseGenerada['public']['Functions']
+    Enums: BaseGenerada['public']['Enums']
+    CompositeTypes: BaseGenerada['public']['CompositeTypes']
   }
 }

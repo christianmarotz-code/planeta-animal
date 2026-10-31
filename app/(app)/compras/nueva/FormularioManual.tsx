@@ -83,6 +83,7 @@ export function FormularioManual() {
       const nuevo = await crearProducto({
         nombre,
         categoria: '',
+        subcategoria: null,
         rama: null,
         unidad_compra: 'unidad',
         unidad_stock: 'unidad',
