@@ -1,5 +1,8 @@
-import { NextResponse } from 'next/server'
+import { after, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { responderAutomatico } from '@/lib/whatsapp/automaticos'
+import { depsAutomaticosReales } from '@/lib/whatsapp/automaticosServidor'
+import { leerConfigGateway } from '@/lib/whatsapp/gateway'
 import { registrarMensaje } from '@/lib/whatsapp/registro'
 import { procesarWebhook, secretoValido } from '@/lib/whatsapp/webhook'
 
@@ -14,7 +17,23 @@ export async function POST(request: Request, ctx: RouteContext<'/api/whatsapp/we
   const body = await request.json().catch(() => null)
   const admin = createAdminClient()
   try {
-    await procesarWebhook(body, (m) => registrarMensaje(admin, m))
+    const procesado = await procesarWebhook(body, (m) => registrarMensaje(admin, m))
+    const cfg = leerConfigGateway()
+    // Solo se responde a mensajes ajenos y nuevos; la pausa corre después de contestarle al gateway.
+    if (procesado && cfg && !procesado.propio && procesado.resultado.esNuevo) {
+      after(() =>
+        responderAutomatico(
+          {
+            telefono: procesado.telefono,
+            clave: procesado.clave,
+            conversacionId: procesado.resultado.conversacionId,
+            primeraVez: procesado.resultado.primeraVez,
+            esProveedor: procesado.resultado.proveedorId !== null,
+          },
+          depsAutomaticosReales(admin, cfg)
+        ).catch((err) => console.error('Falló la respuesta automática:', err))
+      )
+    }
   } catch (err) {
     // 500 para que el gateway reintente: guardar es idempotente por wa_message_id.
     console.error('No se pudo guardar el mensaje de WhatsApp:', err)

@@ -1,5 +1,13 @@
 import { createClient } from '@/lib/supabase/client'
-import type { Cliente, Conversacion, Mensaje, Proveedor } from '@/types/database'
+import type {
+  Cliente,
+  ConfigWhatsapp,
+  Conversacion,
+  Mensaje,
+  Proveedor,
+  ReglaWhatsapp,
+  TipoReglaWhatsapp,
+} from '@/types/database'
 
 export interface ConversacionConVinculo extends Conversacion {
   proveedor: Pick<Proveedor, 'id' | 'nombre'> | null
@@ -78,4 +86,36 @@ export function suscribirseAMensajes(conversacionId: string, alCambiar: () => vo
     `conversacion_id=eq.${conversacionId}`,
     alCambiar
   )
+}
+
+export async function obtenerAutomaticos(): Promise<{ interruptor: boolean; reglas: ReglaWhatsapp[] }> {
+  const supabase = createClient()
+  const [config, reglas] = await Promise.all([
+    supabase.from('whatsapp_config').select('*').maybeSingle(),
+    supabase.from('whatsapp_reglas').select('*').order('tipo'),
+  ])
+  if (config.error) throw config.error
+  if (reglas.error) throw reglas.error
+  return {
+    interruptor: (config.data as ConfigWhatsapp | null)?.automaticos_activos ?? false,
+    reglas: reglas.data as ReglaWhatsapp[],
+  }
+}
+
+export async function guardarInterruptor(activo: boolean): Promise<void> {
+  const supabase = createClient()
+  const { error } = await supabase
+    .from('whatsapp_config')
+    .update({ automaticos_activos: activo } as never)
+    .eq('id', true)
+  if (error) throw error
+}
+
+export async function guardarRegla(
+  tipo: TipoReglaWhatsapp,
+  cambios: Partial<Pick<ReglaWhatsapp, 'activa' | 'texto' | 'abre' | 'cierra' | 'dias'>>
+): Promise<void> {
+  const supabase = createClient()
+  const { error } = await supabase.from('whatsapp_reglas').update(cambios as never).eq('tipo', tipo)
+  if (error) throw error
 }
