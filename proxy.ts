@@ -67,7 +67,10 @@ export async function proxy(request: NextRequest) {
   // así que tiene que ser accesible con o sin otra sesión abierta.
   const isLinkDeMailRoute = request.nextUrl.pathname === '/elegir-contrasena'
 
-  if (isLinkDeMailRoute) return response
+  // El gateway de WhatsApp no tiene sesión: esa ruta se protege con el secreto de su URL.
+  const isWebhookWhatsapp = request.nextUrl.pathname.startsWith('/api/whatsapp/webhook/')
+
+  if (isLinkDeMailRoute || isWebhookWhatsapp) return response
   if (!user && !isAuthRoute) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
