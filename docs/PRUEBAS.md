@@ -13,6 +13,8 @@
 - Las pantallas protegidas redirigen al login.
 - Las APIs de administración no responden sin sesión.
 - Las 11 funciones de la base están bloqueadas para la clave pública (regresión de la migración 0028).
+- WhatsApp (`e2e/whatsapp.spec.ts`): el webhook rechaza un secreto incorrecto sin mandar al login,
+  y el envío, el estado de la conexión y la pantalla `/whatsapp` exigen sesión.
 
 **Con sesión, solo lectura** (`e2e/con-sesion.spec.ts`): inicia sesión y recorre las pantallas
 principales buscando errores de JavaScript. Se saltea sola si faltan las credenciales.
@@ -24,6 +26,14 @@ Para activarlas, crear un usuario de prueba **sin rol de administrador** en Supa
 E2E_EMAIL=...
 E2E_PASSWORD=...
 ```
+
+## Pruebas de permisos de la base
+
+`supabase/tests/rls.sql` simula anon, un empleado temporal, un usuario sin perfil y el
+administrador contra la base real, dentro de una transacción que se revierte (no deja rastro).
+Se corre con `supabase db query --linked -f supabase/tests/rls.sql` y devuelve una fila por
+prueba; si alguna tiene `ok = false`, hay un agujero. Incluye los permisos y las funciones de
+WhatsApp (migración 0040).
 
 ## Por qué no hay pruebas que creen datos
 

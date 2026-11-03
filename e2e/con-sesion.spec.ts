@@ -21,7 +21,7 @@ test.describe('con sesión (solo lectura)', () => {
     await expect(page).not.toHaveURL(/\/login/)
   })
 
-  for (const ruta of ['/', '/productos', '/stock', '/compras', '/ventas', '/proveedores', '/gastos', '/reportes']) {
+  for (const ruta of ['/', '/productos', '/stock', '/compras', '/ventas', '/proveedores', '/gastos', '/reportes', '/whatsapp']) {
     test(`${ruta} carga sin errores`, async ({ page }) => {
       const errores: string[] = []
       page.on('pageerror', (e) => errores.push(e.message))

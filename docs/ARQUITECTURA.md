@@ -90,6 +90,16 @@ para revisar.
 Lo llenan triggers y los usuarios solo lo leen. El historial se ve en la pantalla de cada
 proveedor.
 
+## WhatsApp
+
+Chat con clientes y proveedores desde `/whatsapp`, usando el número del negocio vinculado por QR
+a un gateway Evolution API (un servidor aparte, siempre prendido). El gateway avisa por webhook
+a `/api/whatsapp/webhook/<secreto>`; los mensajes se guardan en `whatsapp_conversaciones` y
+`whatsapp_mensajes` (migración 0040) y la pantalla los muestra en tiempo real con Supabase
+Realtime. El envío sale siempre por `/api/whatsapp/enviar`; los pedidos a proveedores nacen en
+Reposición y las respuestas automáticas se configuran en `/whatsapp/automaticos`. Todo el detalle
+(variables de entorno, puesta en marcha, qué falta verificar) está en `docs/WHATSAPP.md`.
+
 ## Seguridad: reglas que no hay que romper
 
 - Toda función SQL que escribe es `security definer`, con `search_path` vacío y la guarda
@@ -101,6 +111,10 @@ proveedor.
   rutas de `app/api/`). Nunca con prefijo `NEXT_PUBLIC_`.
 - Cada migración nueva que cree una función debe cerrar con
   `revoke execute ... from public, anon; grant execute ... to authenticated;`.
+  Excepción: las funciones de WhatsApp (`whatsapp_registrar_mensaje`, `whatsapp_buscar_vinculo`)
+  las ejecuta solo el servidor con la `service_role`, así que se revocan también de `authenticated`.
+- El webhook de WhatsApp es la única ruta de `app/api/` que `proxy.ts` deja pasar sin sesión;
+  se protege con el secreto de su URL (`WHATSAPP_WEBHOOK_SECRET`).
 
 ## Flujo de trabajo
 
