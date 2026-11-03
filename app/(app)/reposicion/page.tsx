@@ -13,6 +13,9 @@ import {
 } from '@/lib/data/reposicion'
 import { useEsAdministrador } from '@/lib/hooks/useEsAdministrador'
 import { SkeletonPage, SkeletonTable } from '@/components/Skeleton'
+import { armarMensajePedido } from '@/lib/whatsapp/pedido'
+import { numeroParaEnviar } from '@/lib/whatsapp/telefono'
+import { ModalPedidoWhatsapp } from './ModalPedidoWhatsapp'
 
 function calcularCantidad(item: ItemReposicion, cantidades: Record<string, string>): number {
   const crudo = cantidades[item.producto.id]
@@ -27,6 +30,7 @@ export default function ReposicionPage() {
   const [datos, setDatos] = useState<ReposicionSugerida | null>(null)
   const [cantidades, setCantidades] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(true)
+  const [pedido, setPedido] = useState<PaqueteReposicion | null>(null)
 
   useEffect(() => {
     listarReposicionSugerida()
@@ -94,9 +98,23 @@ export default function ReposicionPage() {
           <div key={paquete.proveedor.id} className="card rise overflow-x-auto">
             <div className="flex items-center justify-between px-5 py-3">
               <p className="text-sm font-semibold text-ink">{paquete.proveedor.nombre}</p>
-              <button onClick={() => handleCrearCompra(paquete)} className="pill-btn">
-                Crear compra con {paquete.proveedor.nombre}
-              </button>
+              <div className="flex flex-wrap items-center gap-2">
+                {numeroParaEnviar(paquete.proveedor.telefono ?? '') ? (
+                  <button onClick={() => setPedido(paquete)} className="pill-btn">
+                    Pedir por WhatsApp
+                  </button>
+                ) : (
+                  <Link
+                    href={`/proveedores/${paquete.proveedor.id}`}
+                    className="text-xs font-semibold text-accent hover:underline"
+                  >
+                    Cargar un celular para pedir por WhatsApp →
+                  </Link>
+                )}
+                <button onClick={() => handleCrearCompra(paquete)} className="pill-btn">
+                  Crear compra con {paquete.proveedor.nombre}
+                </button>
+              </div>
             </div>
             <table className="w-full text-sm">
               <thead>
@@ -175,6 +193,20 @@ export default function ReposicionPage() {
             </Link>
           </div>
         </div>
+      )}
+
+      {pedido && (
+        <ModalPedidoWhatsapp
+          proveedor={pedido.proveedor}
+          mensajeInicial={armarMensajePedido(
+            pedido.proveedor.nombre,
+            pedido.items.map((item) => ({
+              nombre: item.producto.nombre,
+              cantidad: calcularCantidad(item, cantidades),
+            }))
+          )}
+          onCerrar={() => setPedido(null)}
+        />
       )}
     </div>
   )

@@ -127,6 +127,83 @@ begin
                                 ('admin: no puede cambiarse el rol por UPDATE', ok, null);
 end $$;
 
+-- 5b) WhatsApp: permisos por rol y comportamiento de las funciones.
+insert into public.whatsapp_conversaciones (id, telefono, clave)
+values ('00000000-0000-0000-0000-0000000000c1', '5491100000001', '00000001');
+insert into public.whatsapp_mensajes (conversacion_id, direccion, texto, origen)
+values ('00000000-0000-0000-0000-0000000000c1', 'entrante', 'hola', 'entrante');
+
+do $$
+declare
+  n_conv bigint; n_reglas bigint; filas int;
+  ok_ins boolean := false; ok_texto boolean := false; ok_tel boolean := false; ok_fn boolean := false;
+begin
+  perform set_config('request.jwt.claims',
+    '{"role":"authenticated","sub":"00000000-0000-0000-0000-0000000000e1"}', true);
+  set local role authenticated;
+  select count(*) into n_conv from public.whatsapp_conversaciones;
+  select count(*) into n_reglas from public.whatsapp_reglas;
+  begin insert into public.whatsapp_mensajes (conversacion_id, direccion, texto, origen)
+        values ('00000000-0000-0000-0000-0000000000c1', 'saliente', 'x', 'manual');
+  exception when insufficient_privilege then ok_ins := true; end;
+  begin update public.whatsapp_mensajes set texto = 'cambiado';
+  exception when insufficient_privilege then ok_texto := true; end;
+  begin update public.whatsapp_conversaciones set telefono = '5491100000009';
+  exception when insufficient_privilege then ok_tel := true; end;
+  update public.whatsapp_conversaciones set no_leidos = 0
+   where id = '00000000-0000-0000-0000-0000000000c1';
+  get diagnostics filas = row_count;
+  begin perform public.whatsapp_registrar_mensaje('5491100000002', '00000002', null, 'entrante',
+          'x', 'entrante', 'enviado', 'wa-x', null, null, null);
+  exception when insufficient_privilege then ok_fn := true; end;
+  reset role;
+  insert into resultados values
+    ('empleado: lee las conversaciones de WhatsApp', n_conv >= 1, n_conv::text),
+    ('empleado: no ve las reglas automáticas', n_reglas = 0, n_reglas::text),
+    ('empleado: no inserta mensajes de WhatsApp', ok_ins, null),
+    ('empleado: no edita el texto de un mensaje', ok_texto, null),
+    ('empleado: no cambia el teléfono de un chat', ok_tel, null),
+    ('empleado: sí marca un chat como leído', filas = 1, filas::text),
+    ('empleado: no ejecuta whatsapp_registrar_mensaje', ok_fn, null);
+end $$;
+
+do $$
+declare admin_id uuid; n bigint; n_sin_perfil bigint;
+begin
+  select id into admin_id from public.perfiles where rol = 'administrador' limit 1;
+  perform set_config('request.jwt.claims',
+    format('{"role":"authenticated","sub":"%s"}', admin_id), true);
+  set local role authenticated;
+  select count(*) into n from public.whatsapp_reglas;
+  reset role;
+  perform set_config('request.jwt.claims',
+    '{"role":"authenticated","sub":"00000000-0000-0000-0000-0000000000f1"}', true);
+  set local role authenticated;
+  select count(*) into n_sin_perfil from public.whatsapp_conversaciones;
+  reset role;
+  insert into resultados values
+    ('admin: lee las reglas automáticas', n = 2, n::text),
+    ('sin perfil: no lee conversaciones de WhatsApp', n_sin_perfil = 0, n_sin_perfil::text);
+end $$;
+
+do $$
+declare prov uuid; r1 record; r2 record; vinculada uuid;
+begin
+  -- Sin usuario simulado: el registro de cambios de proveedores toma auth.uid() y no debe apuntar a un usuario inexistente.
+  perform set_config('request.jwt.claims', '', true);
+  insert into public.proveedores (nombre, telefono)
+  values ('Proveedor WhatsApp Test', '(011) 15 9988-7766') returning id into prov;
+  select * into r1 from public.whatsapp_registrar_mensaje('5491199887766', '99887766', 'Contacto',
+    'entrante', 'hola', 'entrante', 'enviado', 'wa-test-1', null, null, null);
+  select * into r2 from public.whatsapp_registrar_mensaje('5491199887766', '99887766', 'Contacto',
+    'entrante', 'hola', 'entrante', 'enviado', 'wa-test-1', null, null, null);
+  select proveedor_id into vinculada from public.whatsapp_conversaciones where id = r1.conversacion_id;
+  insert into resultados values
+    ('WhatsApp: un mensaje nuevo se guarda y abre la conversación', r1.es_nuevo and r1.primera_vez, null),
+    ('WhatsApp: un aviso repetido no duplica el mensaje', not r2.es_nuevo, null),
+    ('WhatsApp: vincula por los últimos 8 dígitos', vinculada = prov, null);
+end $$;
+
 -- 6) Estructura: toda tabla de public tiene RLS.
 insert into resultados
 select 'todas las tablas tienen RLS', count(*) = 0, string_agg(tablename, ', ')

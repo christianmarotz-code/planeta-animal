@@ -84,6 +84,15 @@ function IconUsuarios() {
   )
 }
 
+function IconWhatsapp() {
+  return (
+    <svg viewBox="0 0 20 20" fill="none" className="h-[18px] w-[18px]" stroke="currentColor" strokeWidth="1.6">
+      <path d="M3.5 16.5 4.7 13A6.5 6.5 0 1 1 7 15.3l-3.5 1.2Z" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M7.8 8.2c.3 1.6 1.9 3.2 4 4l1-1-1.4-.9-.7.5a3.5 3.5 0 0 1-1.4-1.4l.5-.7-.9-1.4-1.1 1.9Z" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
 interface LinkMenu {
   href: string
   label: string
@@ -112,6 +121,7 @@ const GRUPOS: GrupoMenu[] = [
       { href: '/compras', label: 'Compras', Icono: IconCompras },
       { href: '/ventas', label: 'Ventas', Icono: IconVentas },
       { href: '/comparador', label: 'Comparador', Icono: IconComparador },
+      { href: '/whatsapp', label: 'WhatsApp', Icono: IconWhatsapp },
     ],
   },
   {

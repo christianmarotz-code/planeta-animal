@@ -1,7 +1,6 @@
 // Generado desde la base de Supabase (herramienta generate_typescript_types del MCP de Supabase).
 // No editar a mano: cuando cambie una tabla o una función en la base, volver a generarlo.
 // Los tipos precisos que usa la app (uniones como 'cargada' | 'anulada') viven en types/database.ts.
-
 type Json =
   | string
   | number
@@ -11,6 +10,8 @@ type Json =
   | Json[]
 
 export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "14.17"
   }
@@ -369,6 +370,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      limites_uso: {
+        Row: {
+          creado_en: string
+          endpoint: string
+          id: number
+          usuario_id: string
+        }
+        Insert: {
+          creado_en?: string
+          endpoint: string
+          id?: never
+          usuario_id: string
+        }
+        Update: {
+          creado_en?: string
+          endpoint?: string
+          id?: never
+          usuario_id?: string
+        }
+        Relationships: []
       }
       movimientos_stock: {
         Row: {
@@ -751,6 +773,149 @@ export type Database = {
           },
         ]
       }
+      whatsapp_config: {
+        Row: {
+          automaticos_activos: boolean
+          id: boolean
+        }
+        Insert: {
+          automaticos_activos?: boolean
+          id?: boolean
+        }
+        Update: {
+          automaticos_activos?: boolean
+          id?: boolean
+        }
+        Relationships: []
+      }
+      whatsapp_conversaciones: {
+        Row: {
+          clave: string
+          cliente_id: string | null
+          creado_en: string
+          id: string
+          no_leidos: number
+          nombre_whatsapp: string | null
+          proveedor_id: string | null
+          telefono: string
+          ultimo_mensaje_en: string
+          ultimo_texto: string | null
+        }
+        Insert: {
+          clave: string
+          cliente_id?: string | null
+          creado_en?: string
+          id?: string
+          no_leidos?: number
+          nombre_whatsapp?: string | null
+          proveedor_id?: string | null
+          telefono: string
+          ultimo_mensaje_en?: string
+          ultimo_texto?: string | null
+        }
+        Update: {
+          clave?: string
+          cliente_id?: string | null
+          creado_en?: string
+          id?: string
+          no_leidos?: number
+          nombre_whatsapp?: string | null
+          proveedor_id?: string | null
+          telefono?: string
+          ultimo_mensaje_en?: string
+          ultimo_texto?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_conversaciones_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whatsapp_conversaciones_proveedor_id_fkey"
+            columns: ["proveedor_id"]
+            isOneToOne: false
+            referencedRelation: "proveedores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      whatsapp_mensajes: {
+        Row: {
+          conversacion_id: string
+          creado_en: string
+          direccion: string
+          enviado_por: string | null
+          estado: string
+          id: string
+          origen: string
+          regla_tipo: string | null
+          texto: string
+          wa_message_id: string | null
+        }
+        Insert: {
+          conversacion_id: string
+          creado_en?: string
+          direccion: string
+          enviado_por?: string | null
+          estado?: string
+          id?: string
+          origen?: string
+          regla_tipo?: string | null
+          texto: string
+          wa_message_id?: string | null
+        }
+        Update: {
+          conversacion_id?: string
+          creado_en?: string
+          direccion?: string
+          enviado_por?: string | null
+          estado?: string
+          id?: string
+          origen?: string
+          regla_tipo?: string | null
+          texto?: string
+          wa_message_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_mensajes_conversacion_id_fkey"
+            columns: ["conversacion_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_conversaciones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      whatsapp_reglas: {
+        Row: {
+          abre: string | null
+          activa: boolean
+          cierra: string | null
+          dias: number[]
+          texto: string
+          tipo: string
+        }
+        Insert: {
+          abre?: string | null
+          activa?: boolean
+          cierra?: string | null
+          dias?: number[]
+          texto: string
+          tipo: string
+        }
+        Update: {
+          abre?: string | null
+          activa?: boolean
+          cierra?: string | null
+          dias?: number[]
+          texto?: string
+          tipo?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -789,12 +954,46 @@ export type Database = {
         }
         Returns: undefined
       }
+      consumir_cupo: {
+        Args: { p_endpoint: string; p_max: number; p_ventana_segundos: number }
+        Returns: boolean
+      }
       editar_factura_compra: {
         Args: { p_factura_id: string; payload: Json }
         Returns: undefined
       }
       registrar_factura_compra: { Args: { payload: Json }; Returns: string }
       registrar_venta: { Args: { payload: Json }; Returns: string }
+      whatsapp_buscar_vinculo: {
+        Args: { p_clave: string }
+        Returns: {
+          cliente_id: string
+          proveedor_id: string
+        }[]
+      }
+      whatsapp_registrar_mensaje: {
+        Args: {
+          p_clave: string
+          p_direccion: string
+          p_enviado_por: string
+          p_estado: string
+          p_nombre: string
+          p_origen: string
+          p_proveedor_id: string
+          p_regla_tipo: string
+          p_telefono: string
+          p_texto: string
+          p_wa_message_id: string
+        }
+        Returns: {
+          conversacion_id: string
+          es_nuevo: boolean
+          mensaje_id: string
+          primera_vez: boolean
+          vinculo_cliente_id: string
+          vinculo_proveedor_id: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
