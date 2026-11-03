@@ -238,6 +238,51 @@ export interface ItemVenta {
 }
 
 
+export type DireccionMensaje = 'entrante' | 'saliente'
+export type EstadoMensajeWhatsapp = 'pendiente' | 'enviado' | 'entregado' | 'leido' | 'error'
+export type OrigenMensajeWhatsapp = 'entrante' | 'manual' | 'pedido' | 'automatico'
+export type TipoReglaWhatsapp = 'saludo_inicial' | 'fuera_de_horario'
+
+export interface Conversacion {
+  id: string
+  telefono: string
+  clave: string
+  nombre_whatsapp: string | null
+  proveedor_id: string | null
+  cliente_id: string | null
+  ultimo_mensaje_en: string
+  ultimo_texto: string | null
+  no_leidos: number
+  creado_en: string
+}
+
+export interface Mensaje {
+  id: string
+  conversacion_id: string
+  direccion: DireccionMensaje
+  texto: string
+  estado: EstadoMensajeWhatsapp
+  origen: OrigenMensajeWhatsapp
+  enviado_por: string | null
+  wa_message_id: string | null
+  regla_tipo: TipoReglaWhatsapp | null
+  creado_en: string
+}
+
+export interface ReglaWhatsapp {
+  tipo: TipoReglaWhatsapp
+  activa: boolean
+  texto: string
+  abre: string | null
+  cierra: string | null
+  dias: number[]
+}
+
+export interface ConfigWhatsapp {
+  id: boolean
+  automaticos_activos: boolean
+}
+
 type TablasBase = BaseGenerada['public']['Tables']
 
 // Fila con los tipos precisos de la app. Si sus columnas dejan de coincidir con las de la base,
@@ -274,6 +319,10 @@ export interface Database {
       clientes: Tabla<'clientes', Cliente>
       ventas: Tabla<'ventas', Venta>
       items_venta: Tabla<'items_venta', ItemVenta>
+      whatsapp_conversaciones: Tabla<'whatsapp_conversaciones', Conversacion>
+      whatsapp_mensajes: Tabla<'whatsapp_mensajes', Mensaje>
+      whatsapp_reglas: Tabla<'whatsapp_reglas', ReglaWhatsapp>
+      whatsapp_config: Tabla<'whatsapp_config', ConfigWhatsapp>
     }
     Views: BaseGenerada['public']['Views']
     Functions: BaseGenerada['public']['Functions']
